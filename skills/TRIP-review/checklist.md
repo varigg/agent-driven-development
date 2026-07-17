@@ -13,13 +13,14 @@ This file is the **single source of truth** for code-review criteria. Both human
 
 ### 2. Code Quality
 
-- [ ] Proper typing (no unjustified dynamic types)
-- [ ] DRY principle - no code duplication
-- [ ] KISS principle - not unnecessarily complex
-- [ ] Consistent, descriptive naming conventions
+Formatting, import hygiene, unused imports, and naming casing are enforced deterministically by the project's linter/formatter/type-checker in the testing gate — do not re-review them.
+
+- [ ] Proper typing - no unjustified dynamic types or untyped public interfaces (the type checker verifies consistency, not justification)
+- [ ] DRY principle - no duplicated logic
+- [ ] KISS principle - not unnecessarily complex for the problem
+- [ ] Names are descriptive (casing is linted; meaning is not)
 - [ ] Complex logic has explanatory comments
 - [ ] Files/modules not excessively large
-- [ ] Imports/includes organized, unused ones removed
 
 ### 3. Architectural Compliance
 
@@ -81,7 +82,6 @@ Examples:
 
 **Minor (Should Fix)**:
 
-- Code style inconsistencies
 - Missing documentation
 - Code duplication
 - Missing edge case handling

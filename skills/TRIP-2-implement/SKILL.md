@@ -30,6 +30,21 @@ git checkout -b feat/[short-description]   # or fix/[short-description]
 
 Derive the short description from the plan/feature name. If already on a dedicated branch for this work (e.g., resuming a session), continue on it.
 
+TRIP assumes **in-place branching** (branch → ff-only merge → delete; see `TRIP-3-release`). If the repo mandates git worktrees instead, record that policy here during Init and adapt this step accordingly.
+
+---
+
+## Step 0.5: Selective Test-First (Critical Paths Only)
+
+If the plan's **Test Impact** section touches the critical-path floor — auth, deletion, persistence, cost, or external request shape — author the failing tests NOW, before delegating anything:
+
+1. Write behavioral tests from the Test Impact section, following the project's testing guide (see `TRIP-test`).
+2. Confirm they fail for the right reason: `[TEST_COMMAND] <new test files>`.
+3. Commit them (stage explicit paths): `git commit -m "test: add failing contract tests for <feature>"`.
+4. Include in the Codex instructions: "Make the tests in `<test files>` pass. Do NOT modify any test file."
+
+Codex never edits these tests. If an interface mismatch surfaces during implementation, fix the test yourself during Self-Review and note why. For changes outside the critical-path floor, skip this step — tests are authored after implementation in the testing gate (step 4).
+
 ---
 
 ## Implementation Phase — Delegate to Codex
@@ -71,6 +86,8 @@ After Codex reports, review the implementation yourself before anything else:
 - Fix any problem **directly yourself** — no back-and-forth with Codex over fixes. Resume the codex-implement thread only for genuinely new scope (e.g., the next phase).
 - Verify the plan checkboxes Codex ticked match what the diff actually contains; cross any it completed but missed.
 
+**Checkpoint commit**: once the phase passes self-review, review `git status`, stage the phase's files explicitly (never `git add -A`), and commit with a conventional message describing the phase (e.g., `feat: add tag-rename service method`). Never commit "wip" — these commits survive the ff-only merge as permanent history.
+
 Proceed to the testing gate once you consider the implementation good for review.
 
 ---
@@ -82,7 +99,9 @@ After implementation, before the Codex review loop. Any failure here blocks the 
 ### 1. Lint, type-check & build
 
 ```bash
-# [ADAPT_TO_PROJECT: Replace with actual lint/type-check/build commands during Init]
+# [ADAPT_TO_PROJECT: Replace with actual lint/type-check/build commands during Init.
+#  Prefer single-source task-runner targets (make lint, npm run lint) over raw commands
+#  so the runner config stays the single source of truth for the command strings.]
 [LINT_COMMAND] 2>&1 | tee /tmp/_trip2-lint.txt
 [TYPECHECK_COMMAND] 2>&1 | tee /tmp/_trip2-typecheck.txt
 ```
@@ -146,7 +165,7 @@ export STATE_DIR=".claude/skills/codex-code-review/state"
 
 4. **Write implementer notes** (1-3 sentences): which findings you fixed, which you pushed back on and why, any user decisions or environment limitations Codex should stop re-flagging.
 
-5. **Resume** (re-run the testing gate first — lint, typecheck, affected tests — and build a fresh summary):
+5. **Resume** (re-run the testing gate first — lint, typecheck, affected tests — and build a fresh summary; then commit the round's fixes with an explicit-path, conventional commit, e.g. `fix: address review round N findings`):
    ```bash
    bash .claude/skills/codex-plan-review/scripts/resume.sh \
        --prompt-file .claude/skills/codex-code-review/prompts/resume.tpl \

@@ -60,11 +60,11 @@ Categorize each skill into one of:
 | **Updated — pure workflow** | Changed, but no project customizations | Replace directly |
 | **Updated — customized** | Changed, AND contains project-specific content | Extract → merge → replace |
 
-**Pure workflow skills** (no project customizations): `TRIP-compact`, `TRIP-hotfix`, `TRIP-research`, `TRIP-init`, `codex-implement`, `codex-plan-review`, `codex-code-review`
+**Pure workflow skills** (no project customizations): `TRIP-compact`, `TRIP-research`, `TRIP-init`, `codex-implement`, `codex-plan-review`, `codex-code-review`
 
 **Exception — model defaults**: `codex-plan-review/scripts/_common.sh` holds the per-flow Codex model/effort defaults, which the user may have tuned. Before replacing, diff the installed `_common.sh` against staging — if the model/effort values differ from the generic defaults, carry the user's values into the new file.
 
-**Customized skills** (have project-specific content): `TRIP-1-plan`, `TRIP-2-implement`, `TRIP-3-release`, `TRIP-review`, `TRIP-test`
+**Customized skills** (have project-specific content): `TRIP-1-plan`, `TRIP-2-implement`, `TRIP-3-release`, `TRIP-hotfix` (`[TEST_COMMAND]`, `[VERSION_FILE]` — filled during Init since the hardening update), `TRIP-review`, `TRIP-test`
 
 **Renamed in TRIP v2** — when the installed folder uses an old name, treat it as the same skill under its new name (merge into the new name, then delete the old folder):
 
@@ -96,7 +96,7 @@ TRIP-3-release        | New (customized)     | New template + values from old TR
 TRIP-review           | Renamed + updated    | Extract + merge, delete TRIP-3-review/
 TRIP-test             | Renamed + updated    | Extract + merge, delete TRIP-4-test/
 TRIP-compact          | Unchanged            | Skip
-TRIP-hotfix           | Unchanged            | Skip
+TRIP-hotfix           | Updated (customized) | Extract + merge
 TRIP-init             | Updated (pure)       | Replace
 TRIP-research         | Unchanged            | Skip
 codex-plan-review     | New                  | Copy
@@ -233,7 +233,7 @@ For each customized skill, take the **new template** from staging and inject the
 
 1. Start from the new template (staging)
 2. Replace `[PROJECT_NAME]` with extracted `PROJECT_NAME`
-3. Replace `[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, `[TEST_COMMAND]` in the Testing Gate with extracted commands
+3. Replace `[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, `[TEST_COMMAND]` in the Testing Gate and Step 0.5 with extracted commands
    - If the old version didn't have Codex review (no test commands extracted), check the old TRIP-4-test for test commands, or ask the user
 4. Adapt the Integration impact check comment block to the project's integration/E2E tooling (from the old TRIP-4-test content if present)
 
@@ -248,6 +248,12 @@ For each customized skill, take the **new template** from staging and inject the
 7. Handle tutorial config:
    - If tutorials were disabled: remove the `[TUTORIAL_STEP]` block
    - If tutorials were enabled: replace the `[TUTORIAL_STEP]` block with extracted `TUTORIAL_CONFIG` and renumber subsequent steps
+
+#### TRIP-hotfix/SKILL.md
+
+1. Start from the new template (staging)
+2. Replace `[TEST_COMMAND]` with the extracted test command
+3. Replace `[VERSION_FILE]` with extracted `VERSION_FILE`
 
 #### TRIP-review/SKILL.md + checklist.md + cr-template.md (was `TRIP-3-review` in v1)
 

@@ -635,7 +635,7 @@ The testing gate in `TRIP-2-implement` and the standalone-verification block in 
 
 **A. Version File Location**
 
-Update Step 2 to reference the actual version file:
+Update TRIP-3-release Step 2 (and the `[VERSION_FILE]` occurrences in TRIP-hotfix) to reference the actual version file:
 
 - `package.json` for Node.js
 - `Cargo.toml` for Rust
@@ -708,12 +708,14 @@ Create `docs/5-tuto/tuto_x.y.z.md` explaining the core principle.
 
 **D. Codex Review Test Commands**
 
-Replace the `[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, and `[TEST_COMMAND]` placeholders in the TRIP-2 Testing Gate AND the TRIP-3-release standalone-verification block with the **actual commands** for this project (from ARCHI.md or discovered during exploration). For example:
+Replace the `[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, and `[TEST_COMMAND]` placeholders in the TRIP-2 Testing Gate and Step 0.5, the TRIP-3-release standalone-verification block, AND the TRIP-hotfix verification/commit steps (`[TEST_COMMAND]`, `[VERSION_FILE]`) with the **actual commands** for this project (from ARCHI.md or discovered during exploration). For example:
 
 - Python: `uv run ruff check .`, `uv run mypy`, `uv run pytest -q`
 - Node.js: `npm run lint`, `npx tsc --noEmit`, `npm test`
 - Rust: `cargo clippy`, (no separate typecheck), `cargo test`
 - Go: `golangci-lint run`, (no separate typecheck), `go test ./...`
+
+**Prefer single-source task-runner targets** (`make lint`, `npm run lint`) over raw commands when the project has them — the runner config then stays the single source of truth and the skills can't drift from it.
 
 If the project doesn't have a lint or typecheck step, remove the corresponding line entirely rather than leaving a placeholder.
 
@@ -1017,6 +1019,7 @@ Update: Technology Stack, and any affected architectural sections
   - [ ] `TRIP-3-release`: `[WEEK_ANCHOR_DATE]` placeholder replaced
   - [ ] `TRIP-3-release`: Standalone-verification commands replaced with actual commands
   - [ ] `TRIP-3-release`: Tutorial preference configured (if enabled: 5-tuto/ folder created + user context; if disabled: `[TUTORIAL_STEP]` block removed)
+  - [ ] `TRIP-hotfix`: `[TEST_COMMAND]` and `[VERSION_FILE]` placeholders replaced
   - [ ] `TRIP-review/checklist.md`: `[ADAPT_TO_PROJECT]` markers replaced with project-specific checklist sections
   - [ ] `TRIP-review/cr-template.md`: Checklist section names updated to match adapted `checklist.md`
   - [ ] `TRIP-test`: `[TEST_COMMAND_*]` placeholders replaced with actual commands

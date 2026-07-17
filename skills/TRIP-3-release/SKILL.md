@@ -77,7 +77,7 @@ Now that week (`a`) and version (`x.y.z`) are known:
 
 ## Step 4: Commit Message
 
-Propose a one-line commit message.
+Propose a one-line commit message for the **release commit** (version bump + docs). The implementation itself was already committed per-phase during `TRIP-2-implement`.
 
 ## Step 5: Changelog File
 
@@ -144,9 +144,15 @@ After completing all documentation steps, **use the `AskUserQuestion` tool** to 
 
 ## Step 9: Commit
 
+Review `git status` first. Stage the release artifacts **explicitly** — implementation commits already exist on the branch from TRIP-2's per-phase checkpoints, so this commit contains only version + docs:
+
 ```bash
-git add -A && git commit -m "<commit message from Step 4>"
+git status
+git add [VERSION_FILE] README.md docs/1-plans/<plan-file> docs/2-changelog/ docs/3-code-review/ docs/ARCHI.md
+git commit -m "<commit message from Step 4>"
 ```
+
+Never use `git add -A`. If `git status` shows unexpected files, resolve them (gitignore or discuss) before committing.
 
 **Important**: Only use the commit message. Do NOT add Co-Authored-By or any other trailer.
 

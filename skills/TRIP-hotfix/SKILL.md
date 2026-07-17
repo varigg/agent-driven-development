@@ -43,7 +43,7 @@ git checkout -b hotfix/[short-description]
 
 ## Step 3: Minimal Investigation
 
-First, you MUST read ALL THE LINES of @docs/ARCHI.md then explore the codebase and read the files relevant to the issue.
+First, read `docs/ARCHI.md`'s Core Architecture Principles section plus the section(s) covering the affected layer — pick them via the change-type table in `docs/ARCHI-rules.md`. (Scoped read is deliberate: this is the urgent path; the full ARCHI read belongs to planning.) Then explore the codebase and read the files relevant to the issue.
 
 Quickly identify:
 
@@ -66,7 +66,7 @@ No formal plan document needed.
 ## Step 5: Quick Verification
 
 - Manually test the fix
-- Run relevant tests only: `[test command] [affected files]`
+- Run relevant tests only: `[TEST_COMMAND] <affected files>`
 - Confirm the issue is resolved
 
 ---
@@ -75,7 +75,7 @@ No formal plan document needed.
 
 ### Version Bump
 
-Increment **patch** version only (x.y.Z+1) in version file.
+Increment **patch** version only (x.y.Z+1) in `[VERSION_FILE]`.
 
 ### Minimal Changelog Entry
 
@@ -98,8 +98,12 @@ Add to Changelog Summary:
 
 ## Step 7: Commit
 
+Review `git status`, then stage the fix's files **explicitly** (never `git add -A`):
+
 ```bash
-git add -A && git commit -m "hotfix: [brief description]"
+git status
+git add <fixed files> [VERSION_FILE] docs/2-changelog/changelog_table.md
+git commit -m "hotfix: [brief description]"
 ```
 
 ---
@@ -108,11 +112,13 @@ git add -A && git commit -m "hotfix: [brief description]"
 
 ```bash
 git checkout main
-git merge hotfix/[short-description]
+git merge --ff-only hotfix/[short-description]
 git tag vx.y.z
 git push && git push --tags
 git branch -d hotfix/[short-description]
 ```
+
+If `--ff-only` fails, rebase the hotfix branch onto main and retry. Never create a merge commit.
 
 ---
 
