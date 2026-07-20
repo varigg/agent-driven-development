@@ -15,31 +15,14 @@ This file is the **single source of truth** for code-review criteria. Both human
 
 Formatting, import hygiene, unused imports, and naming casing are enforced deterministically by the project's linter/formatter/type-checker in the testing gate — do not re-review them.
 
-- [ ] Proper typing - no unjustified dynamic types or untyped public interfaces (the type checker verifies consistency, not justification)
 - [ ] DRY principle - no duplicated logic
 - [ ] KISS principle - not unnecessarily complex for the problem
-- [ ] Names are descriptive (casing is linted; meaning is not)
-- [ ] Complex logic has explanatory comments
-- [ ] Files/modules not excessively large
+- [ ] Convention conformance - for each layer the diff touches, verify typing, naming, commenting, and module-size expectations against what ARCHI.md documents for that layer (derived at review time, not cached here)
 
 ### 3. Architectural Compliance
 
-- [ ] Code follows established patterns from ARCHI.md
-- [ ] Proper separation of concerns
-- [ ] Appropriate abstractions used
-- [ ] Consistent with existing codebase style
-
-<!-- [ADAPT_TO_PROJECT: Add project-specific checklist sections during Init.
-Examples:
-
-### 4. [Framework/Domain] Best Practices
-- [ ] [Specific check 1]
-- [ ] [Specific check 2]
-
-### 5. [Domain-Specific Concerns]
-- [ ] [Specific check 1]
-- [ ] [Specific check 2]
--->
+- [ ] For each layer the diff touches, code conforms to the conventions ARCHI.md documents for it (derived at review time)
+- [ ] Nothing reintroduces what the guardrail ADRs in `docs/adr/` rule out
 
 ### 4. Error Handling
 
@@ -57,10 +40,8 @@ Examples:
 
 ### 6. Performance
 
-- [ ] No obvious performance issues
-- [ ] Resource cleanup implemented (no leaks)
-- [ ] Appropriate data structures used
-- [ ] No unnecessary operations in hot paths
+- [ ] No obvious performance issues (unnecessary work in hot paths, missing resource cleanup)
+- [ ] Performance expectations ARCHI.md documents for the touched layers are met (derived at review time)
 
 ---
 

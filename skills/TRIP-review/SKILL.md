@@ -17,9 +17,10 @@ Review: $ARGUMENTS
 
 Read before reviewing:
 1. @docs/ARCHI.md — verify architectural compliance
-2. Related plan in `docs/1-plans/`
-3. Related changelog in `docs/2-changelog/`
-4. @.claude/skills/TRIP-review/checklist.md — **single source of truth** for review criteria, severity classification, and approval gate
+2. `docs/adr/` — guardrail and accepted ADRs relevant to the changed area
+3. Related plan in `docs/1-plans/`
+4. Related changelog in `docs/2-changelog/`
+5. @.claude/skills/TRIP-review/checklist.md — **single source of truth** for review criteria, severity classification, and approval gate
 
 ---
 
