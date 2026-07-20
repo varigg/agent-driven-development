@@ -106,11 +106,14 @@ Add entry on top of `docs/2-changelog/changelog_table.md`:
 
 Also add a summary entry in the Changelog Summary section.
 
-## Step 7: Architecture Update
+## Step 7: Design Reconciliation
 
 1. Read fully @docs/ARCHI-rules.md
 2. Update @docs/ARCHI.md following the rules
-3. Run `bash .claude/skills/TRIP-compact/count-tokens.sh docs/ARCHI.md` to check token count
+3. **ADR flips**: for each `proposed` ADR in `docs/adr/` this release implements, set Status to `accepted` and fill the release version in its Plan-Release header. If implementation taught something that changes a decision, amend the ADR now (or record a superseding one).
+4. **Charter check**: re-read `docs/charter.md`. If this release appears to invalidate anything it states, **FLAG it to the user** — never silently edit the charter. A user-approved charter change is a separate design commit, not part of the release commit.
+5. **Vocabulary sweep**: for each ADR flipped or superseded in step 3, grep the living docs (`docs/ARCHI.md`, `docs/charter.md`, `README.md`, `docs/4-unit-tests/TESTING.md`) for the vocabulary it retires — names of removed components, superseded approaches. Every hit must be a dated record, an explicit negation, or a standing lesson; anything else is doc drift — fix it in this release.
+6. Run `bash .claude/skills/TRIP-compact/count-tokens.sh docs/ARCHI.md` to check token count
 
 **Warning: If ARCHI.md exceeds ~20,000 tokens**, warn the user:
 
@@ -121,11 +124,7 @@ Also add a summary entry in the Changelog Summary section.
 
 Create `docs/5-tuto/tuto_x.y.z.md` explaining the core principle.
 
-**User context for tutorials**:
-
-- Level: [USER_LEVEL]
-- Learning focus: [USER_LEARNING_FOCUS]
-- Style: [USER_PREFERRED_STYLE]
+The audience profile (level, learning focus, style) lives in the project's CLAUDE.md — read it there; do not restate it in this skill.
 -->
 
 ## Step 8: README Update
@@ -148,11 +147,13 @@ Review `git status` first. Stage the release artifacts **explicitly** — implem
 
 ```bash
 git status
-git add [VERSION_FILE] README.md docs/1-plans/<plan-file> docs/2-changelog/ docs/3-code-review/ docs/ARCHI.md
+git add [VERSION_FILE] README.md docs/1-plans/<plan-file> docs/2-changelog/ docs/3-code-review/ docs/ARCHI.md docs/adr/
 git commit -m "<commit message from Step 4>"
 ```
 
 Never use `git add -A`. If `git status` shows unexpected files, resolve them (gitignore or discuss) before committing.
+
+**Commit taxonomy**: the release commit carries code artifacts + dated records + ARCHI.md + ADR flips. Charter changes (flagged in Step 7, user-approved) are separate design commits. Skill changes are separate process commits — never part of a release.
 
 **Important**: Only use the commit message. Do NOT add Co-Authored-By or any other trailer.
 
@@ -186,3 +187,11 @@ If `--ff-only` fails, the main branch moved during implementation — rebase the
 ```bash
 git push && git push --tags
 ```
+
+## Step 13: Maintenance Audit Nudge
+
+Count releases (changelog entries) since the newest maintenance report in `docs/7-maintenance/` (all releases since init if no report exists yet). If the count is ≥ [AUDIT_NUDGE_N], suggest:
+
+> "N releases since the last maintenance audit. Consider running `TRIP-4-maintain`."
+
+Suggest only — never start the audit automatically.
