@@ -13,6 +13,8 @@ You are now in **planning mode** for **[PROJECT_NAME]**.
 Before creating any plan, you MUST read ALL THE LINES of:
 
 1. @docs/ARCHI.md - Understand current system architecture
+2. @docs/charter.md - Stable intent: purpose, principles, scope, non-goals
+3. `docs/adr/` - Skim titles and statuses; fully read every ADR touching the feature's area (guardrail ADRs especially)
 
 ## Your Task
 
@@ -89,11 +91,10 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 
 ## Technical Considerations
 
-[ADAPT_TO_PROJECT: Replace with project-specific technical concerns during Init]
-
-- **Pattern Usage**: Which existing patterns to follow (from ARCHI.md)
-- **[Concern 1]**: [Description]
-- **[Concern 2]**: [Description]
+- **Architecture Alignment**: How this plan conforms to the constraints in ARCHI.md (as-built) and reintroduces nothing the ADRs in `docs/adr/` have superseded or ruled out. Derive this from those documents at planning time — never from memory.
+- **Doc Impact**: If this plan changes or supersedes anything the living docs state, name the affected documents (ARCHI.md, charter.md, ADRs, TESTING.md). `TRIP-3-release` consumes this list. An empty list is a claim ("this plan contradicts nothing documented"), not a default.
+- **Process/Design Separation**: `.claude/skills/` files are never modified as part of a feature. If this plan appears to need a skill edit, that is a process change — propose it separately, commit it separately.
+- **Layer Conventions**: For each layer/artifact type this plan adds to, state how the addition satisfies the conventions ARCHI.md documents for that layer (pulled at planning time).
 - **Edge Cases**: [Relevant edge cases for this feature]
 
 ## Files to Modify/Create
@@ -136,11 +137,21 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 **Note**: Do NOT write test code during planning — the Test Impact section above only names what the TRIP-2 testing gate will run and author.
 ```
 
+## ADR: When the Plan Changes Documented Intent
+
+If the plan contradicts or supersedes anything ARCHI.md, charter.md, or a prior ADR states (i.e., the Doc Impact list names any of them), draft an ADR alongside the plan:
+
+1. Copy `docs/adr/template.md` to `docs/adr/NNNN-<slug>.md` (next sequence number).
+2. Status: `proposed`. Fill Relations (supersedes/amends) and the Plan-Release header with this plan's path (the release version is filled by `TRIP-3-release`).
+3. Guardrail decisions — things deliberately NOT built — are first-class ADRs; record them the same way.
+4. Commit the ADR on the feature branch together with the plan. `TRIP-3-release` flips it to `accepted` when the release ships it.
+
+If nothing documented changes, no ADR — do not create ceremony for conforming plans.
+
 ## Quality Standards
 
 - **Zero Ambiguity**: Every step must be clear and actionable
 - **File-Level Specificity**: List exact files and functions to modify
-- **Architecture Alignment**: Must conform to existing patterns in ARCHI.md
 - **Risk Assessment**: Highlight potential failure points
 
 ---
@@ -219,26 +230,6 @@ But NOT:
 
 Keep it architectural and descriptive. Code comes in the `TRIP-2-implement` phase.
 
-## [ADAPT_TO_PROJECT: Guidance Sections]
+## Layer Guidance
 
-<!--
-During Init, replace this section with project-specific guidance.
-Examples:
-
-For Web Frontend:
-## For New UI Components
-## For Service Layer Additions
-## For Custom Hooks
-
-For Embedded:
-## For New Peripheral Drivers
-## For New Communication Protocols
-
-For CLI:
-## For New Commands
-## For Configuration Changes
-
-For Backend:
-## For New API Endpoints
-## For Database Changes
--->
+No per-layer design checklists live in this skill — they are caches that rot. When planning an addition to any layer, pull the conventions ARCHI.md documents for that layer at planning time and state in the plan how the addition satisfies them (see Technical Considerations → Layer Conventions).
