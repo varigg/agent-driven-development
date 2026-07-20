@@ -15,7 +15,9 @@ Each project's TRIP skills have two interleaved layers:
 1. **Workflow skeleton** — steps, Codex integration, file structure, process flow
 2. **Project customizations** — test commands, checklist sections, version file, technical considerations, guidance sections
 
-A naive copy would destroy layer 2. This skill separates both layers, applies the new skeleton, and re-injects the customizations.
+A naive copy would destroy layer 2. This skill separates both layers, applies the new skeleton, and preserves the customizations.
+
+> **v3 destination change**: as of v3, skills no longer carry design content or commands — the only skill-resident project values are `[PROJECT_NAME]` (all skills), `[VERSION_FILE]`/`[WEEK_ANCHOR_DATE]`/`[MAIN_BRANCH]`/`[AUDIT_NUDGE_N]`/tutorial on-off (`TRIP-3-release`), and `[VERSION_FILE]` (`TRIP-hotfix`). Everything else extracted from old skills is **relocated into the target repo's living docs** (ARCHI.md, TESTING.md, CLAUDE.md), never re-injected into a skill.
 
 ## Prerequisites
 
@@ -60,11 +62,11 @@ Categorize each skill into one of:
 | **Updated — pure workflow** | Changed, but no project customizations | Replace directly |
 | **Updated — customized** | Changed, AND contains project-specific content | Extract → merge → replace |
 
-**Pure workflow skills** (no project customizations): `TRIP-compact`, `TRIP-research`, `TRIP-init`, `codex-implement`, `codex-plan-review`, `codex-code-review`
+**Pure workflow skills** (no project customizations): `TRIP-compact`, `TRIP-research`, `TRIP-init`, `TRIP-4-maintain` (fill `[PROJECT_NAME]` after copying), `codex-implement`, `codex-plan-review`, `codex-code-review`
 
 **Exception — model defaults**: `codex-plan-review/scripts/_common.sh` holds the per-flow Codex model/effort defaults, which the user may have tuned. Before replacing, diff the installed `_common.sh` against staging — if the model/effort values differ from the generic defaults, carry the user's values into the new file.
 
-**Customized skills** (have project-specific content): `TRIP-1-plan`, `TRIP-2-implement`, `TRIP-3-release`, `TRIP-hotfix` (`[TEST_COMMAND]`, `[VERSION_FILE]` — filled during Init since the hardening update), `TRIP-review`, `TRIP-test`
+**Customized skills** (installed versions contain project content that must be extracted and, in v3, mostly relocated to living docs): `TRIP-1-plan`, `TRIP-2-implement`, `TRIP-3-release`, `TRIP-hotfix`, `TRIP-review`, `TRIP-test`
 
 **Renamed in TRIP v2** — when the installed folder uses an old name, treat it as the same skill under its new name (merge into the new name, then delete the old folder):
 
@@ -98,6 +100,7 @@ TRIP-test             | Renamed + updated    | Extract + merge, delete TRIP-4-te
 TRIP-compact          | Unchanged            | Skip
 TRIP-hotfix           | Updated (customized) | Extract + merge
 TRIP-init             | Updated (pure)       | Replace
+TRIP-4-maintain       | New (pure)           | Copy, fill [PROJECT_NAME]
 TRIP-research         | Unchanged            | Skip
 codex-plan-review     | New                  | Copy
 codex-code-review     | New                  | Copy
@@ -144,6 +147,13 @@ Build a context block by extracting these values from the installed skills:
 - `TEST_STRUCTURE` — the test structure description
 - `TESTING_PRIORITIES` — the full testing priorities section
 
+**Extraction destinations (v3)** — skills no longer receive design content or commands; the extracted values are relocated:
+- `TECHNICAL_CONSIDERATIONS`, `GUIDANCE_SECTIONS`, custom `REVIEW_CHECKLIST` sections → the target repo's `docs/ARCHI.md` (as per-layer conventions), user-reviewed before writing
+- `LINT_COMMAND`/`TYPECHECK_COMMAND`/`TEST_COMMAND`, `TEST_COMMANDS`, `TEST_STRUCTURE`, `TESTING_PRIORITIES` → `docs/4-unit-tests/TESTING.md` (Verification Recipes / Test Organization sections)
+- `TUTORIAL_CONFIG` audience values (level, focus, style) → the project's CLAUDE.md (`## Tutorial audience` section)
+
+Nothing extracted is re-injected into a new skill file.
+
 ### 2.3 Present Extracted Context
 
 Show the user a summary of what was extracted:
@@ -189,11 +199,21 @@ If the installed version already has `checklist.md`:
 **Old structure**: No Codex review steps
 **New structure**: TRIP-1-plan has Step 3 (Codex plan review), TRIP-2-implement has Codex Code Review section
 
-These are pure workflow additions — no project-specific content to migrate. They will be applied from the new template. The only project-specific part is the test commands in TRIP-2-implement's Codex pre-step, which come from the extracted context.
+These are pure workflow additions — no project-specific content to migrate. They will be applied from the new template. The verification commands they rely on live in `docs/4-unit-tests/TESTING.md` (see §3.4), not in the skills.
 
 ### 3.3 Codex Skills (codex-plan-review, codex-code-review, codex-implement)
 
-If not installed yet, these are entirely new — copy from staging directly. The review skills reference `TRIP-review/checklist.md` and `TRIP-review/cr-template.md`, which will be populated with project content. If already installed (late-v1), replace as pure workflow (see the `_common.sh` exception in Phase 1.2) — v1 prompt templates point at the old `TRIP-3-review/` paths and must be replaced with the v2 versions.
+If not installed yet, these are entirely new — copy from staging directly. The review skills reference `TRIP-review/checklist.md` and `TRIP-review/cr-template.md`. If already installed (late-v1), replace as pure workflow (see the `_common.sh` exception in Phase 1.2) — v1 prompt templates point at the old `TRIP-3-review/` paths and must be replaced with the v2 versions.
+
+### 3.4 v3 Structural Migration (charter, ADRs, maintenance, verification recipes)
+
+When upgrading a repo that lacks them, create:
+
+1. **`docs/adr/`** with `docs/adr/template.md` copied verbatim from the template in `TRIP-init` Phase 7.
+   - **If the repo has an existing decision log** (e.g. inside a design doc): move it into `docs/adr/` **verbatim as one frozen legacy file** — it is a dated record; never retro-edit it or split it into per-file ADRs (that would mean reconstructing context from memory). New ADRs **continue its numbering** so existing "decision N" citations stay valid.
+2. **`docs/charter.md`** — interview the user and get approval, exactly as in `TRIP-init` Phase 7.4. If the repo has a design doc, distill its stable-intent content (purpose, principles, scope, non-goals) into the charter as the interview's starting point.
+3. **`docs/7-maintenance/`** — empty folder for TRIP-4-maintain reports.
+4. **Verification Recipes** — add the `## Verification Recipes` and `## Integration / E2E Impact Rules` sections to the existing `docs/4-unit-tests/TESTING.md` (per the `TRIP-init` Phase 7.2 template), populated from the commands extracted in Phase 2.
 
 ---
 
@@ -218,59 +238,47 @@ cp -r <staging-path>/<skill>/ .claude/skills/<skill>/
 
 ### 4.3 Customized Skills — Extract + Merge
 
-For each customized skill, take the **new template** from staging and inject the **extracted project context** from Phase 2. This is the core of the upgrade.
-
-**General approach**: Read the new template file. Find each placeholder or generic section. Replace with the corresponding extracted value. Write the result.
+For each customized skill, take the **new template** from staging, fill only its process-owned placeholders, and **relocate** the remaining extracted content into the living docs (per the destinations table in Phase 2.2 and §3.4). This is the core of the upgrade.
 
 #### TRIP-1-plan/SKILL.md
 
 1. Start from the new template (staging)
 2. Replace `[PROJECT_NAME]` with extracted `PROJECT_NAME`
-3. Replace the generic `## Technical Considerations` block in the plan template with extracted `TECHNICAL_CONSIDERATIONS`
-4. Replace the `[ADAPT_TO_PROJECT: Guidance Sections]` comment block with extracted `GUIDANCE_SECTIONS`
+3. Relocate `TECHNICAL_CONSIDERATIONS` and `GUIDANCE_SECTIONS` into `docs/ARCHI.md` as per-layer conventions — present the merged ARCHI.md sections to the user for review before writing
 
 #### TRIP-2-implement/SKILL.md
 
 1. Start from the new template (staging)
 2. Replace `[PROJECT_NAME]` with extracted `PROJECT_NAME`
-3. Replace `[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, `[TEST_COMMAND]` in the Testing Gate and Step 0.5 with extracted commands
-   - If the old version didn't have Codex review (no test commands extracted), check the old TRIP-4-test for test commands, or ask the user
-4. Adapt the Integration impact check comment block to the project's integration/E2E tooling (from the old TRIP-4-test content if present)
+3. Relocate extracted lint/typecheck/test commands and integration/E2E rules into `docs/4-unit-tests/TESTING.md` (§3.4) — the testing gate points there
 
-#### TRIP-3-release/SKILL.md (new in v2 — values come from the old TRIP-2)
+#### TRIP-3-release/SKILL.md
 
 1. Start from the new template (staging)
 2. Replace `[PROJECT_NAME]` with extracted `PROJECT_NAME`
 3. Replace `[VERSION_FILE]` with extracted `VERSION_FILE`
 4. Replace `[WEEK_ANCHOR_DATE]` with extracted `WEEK_ANCHOR_DATE`
 5. Replace `[MAIN_BRANCH]` with the repo's default branch name
-6. Replace the standalone-verification commands with the same extracted lint/typecheck/test commands
+6. Replace `[AUDIT_NUDGE_N]` with 5 (or a user-chosen value)
 7. Handle tutorial config:
    - If tutorials were disabled: remove the `[TUTORIAL_STEP]` block
-   - If tutorials were enabled: replace the `[TUTORIAL_STEP]` block with extracted `TUTORIAL_CONFIG` and renumber subsequent steps
+   - If tutorials were enabled: uncomment the `[TUTORIAL_STEP]` block **as-is** (it is pure process), write the extracted `TUTORIAL_CONFIG` audience values into the project's CLAUDE.md (`## Tutorial audience`), and renumber subsequent steps
 
 #### TRIP-hotfix/SKILL.md
 
 1. Start from the new template (staging)
-2. Replace `[TEST_COMMAND]` with the extracted test command
-3. Replace `[VERSION_FILE]` with extracted `VERSION_FILE`
+2. Replace `[VERSION_FILE]` with extracted `VERSION_FILE`
 
 #### TRIP-review/SKILL.md + checklist.md + cr-template.md (was `TRIP-3-review` in v1)
 
-1. `SKILL.md`: Start from the new template. Replace `[PROJECT_NAME]`.
-2. `checklist.md`: Start from the new template. Replace the `[ADAPT_TO_PROJECT]` comment block with the project-specific checklist sections from the extracted `REVIEW_CHECKLIST`.
-   - The new template has generic sections 1-3 (Functional, Code Quality, Architectural) and 4-6 (Error Handling, Security, Performance). The project customization goes between section 3 and 4 (where the comment marker is), and may also modify sections 3-6.
-   - If the old checklist had custom sections (numbered 4+), insert them at the `[ADAPT_TO_PROJECT]` marker and renumber if needed.
-   - Preserve the Severity Classification and Approval Gate from the **new** template unless the project had custom overrides.
-3. `cr-template.md`: Start from the new template. Update the Checklist section names to match the actual sections in the merged `checklist.md`.
+1. All three files: replace from staging as-is; fill `[PROJECT_NAME]` in `SKILL.md`.
+2. Relocate any project-specific sections from the extracted `REVIEW_CHECKLIST` into `docs/ARCHI.md` (per-layer conventions and quality expectations) — the v3 checklist derives them from ARCHI.md at review time. Present the merged ARCHI.md sections to the user for review.
 
 #### TRIP-test/SKILL.md (was `TRIP-4-test` in v1)
 
 1. Start from the new template (staging)
 2. Replace `[PROJECT_NAME]` with extracted `PROJECT_NAME`
-3. Replace `[TEST_COMMAND_*]` placeholders with extracted `TEST_COMMANDS`
-4. Replace test structure placeholder with extracted `TEST_STRUCTURE`
-5. Replace testing priorities placeholder with extracted `TESTING_PRIORITIES`
+3. Relocate `TEST_COMMANDS`, `TEST_STRUCTURE`, and `TESTING_PRIORITIES` into `docs/4-unit-tests/TESTING.md` (Verification Recipes / Test Organization / priorities)
 
 ### 4.4 Write All Files
 
@@ -287,10 +295,12 @@ After writing all files, run a validation pass.
 Scan all upgraded skill files for leftover placeholders:
 
 ```bash
-grep -rn '\[ADAPT_TO_PROJECT\|\[PROJECT_NAME\]\|\[VERSION_FILE\]\|\[WEEK_ANCHOR_DATE\]\|\[TEST_COMMAND\]\|\[LINT_COMMAND\]\|\[TYPECHECK_COMMAND\]\|\[TUTORIAL_STEP\]\|\[MAIN_BRANCH\]' .claude/skills/TRIP-*/
+grep -rn '\[ADAPT_TO_PROJECT\|\[PROJECT_NAME\]\|\[VERSION_FILE\]\|\[WEEK_ANCHOR_DATE\]\|\[TEST_COMMAND\|\[LINT_COMMAND\]\|\[TYPECHECK_COMMAND\]\|\[TUTORIAL_STEP\]\|\[MAIN_BRANCH\]\|\[AUDIT_NUDGE_N\]\|\[USER_LEVEL\]' .claude/skills/TRIP-*/
 ```
 
-If any are found, fill them from context or ask the user.
+The live v3 inventory is `[PROJECT_NAME]`, `[VERSION_FILE]`, `[WEEK_ANCHOR_DATE]`, `[MAIN_BRANCH]`, `[AUDIT_NUDGE_N]`, `[TUTORIAL_STEP]` — a hit on any of these means an unfilled placeholder (exception: `[TUTORIAL_STEP]` inside its HTML comment marker is legitimate when tutorials are disabled). The retired tokens (`[ADAPT_TO_PROJECT`, `[TEST_COMMAND`, `[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, `[USER_LEVEL]`) stay in the grep deliberately: any hit on them means a stale, un-migrated file.
+
+If any are found, fill or migrate them from context, or ask the user.
 
 ### 5.2 Cross-Reference Check
 
@@ -298,6 +308,7 @@ If any are found, fill them from context or ask the user.
 - `codex-code-review/prompts/start.tpl` and `resume.tpl` reference `.claude/skills/TRIP-review/checklist.md` — confirm it exists, and that no template still points at the old `TRIP-3-review/` path
 - `codex-code-review/prompts/synthesize.tpl` and `codex-code-review/SKILL.md` reference `.claude/skills/TRIP-review/cr-template.md` — confirm it exists
 - `TRIP-1-plan` and `TRIP-2-implement` reference `codex-plan-review/scripts/start.sh` and `resume.sh`; `TRIP-2-implement` also references `codex-implement/scripts/start.sh` — confirm they exist
+- v3 structure (§3.4) in place: `docs/charter.md`, `docs/adr/template.md`, and `docs/7-maintenance/` exist; `docs/4-unit-tests/TESTING.md` contains a **Verification Recipes** section (TRIP-2/TRIP-3/TRIP-hotfix/TRIP-test all point at it); `TRIP-4-maintain` installed with `[PROJECT_NAME]` filled
 
 ### 5.3 Present Summary
 
@@ -350,8 +361,8 @@ These are "Removed" in the inventory — warn the user but leave them in place. 
 ### Test commands not available anywhere
 If the old version predates the Codex review pre-step and TRIP-4-test doesn't have extractable commands, ask the user:
 
-`AskUserQuestion`: "The new workflow needs lint/typecheck/test commands for Codex code review. What are the commands for this project?"
-Options: "Let me provide them" (user types commands) / "Skip for now" (leave placeholders)
+`AskUserQuestion`: "The workflow needs lint/typecheck/test commands for TESTING.md's Verification Recipes. What are the commands for this project?"
+Options: "Let me provide them" (user types commands) / "Skip for now" (leave the recipe entries as TODO in TESTING.md)
 
 ---
 
@@ -359,7 +370,7 @@ Options: "Let me provide them" (user types commands) / "Skip for now" (leave pla
 
 - **Read before writing.** Read every file you plan to modify. Never write from memory alone.
 - **Preserve semantics, not bytes.** If the old checklist had 10 custom sections, they all need to survive, even if their numbering changes.
-- **New workflow features get project context.** When Codex code review is new, the test commands still need to be filled from the project's existing test setup.
+- **New workflow features get project context.** When Codex code review is new, the verification commands still need to reach TESTING.md's Verification Recipes from the project's existing test setup.
 - **When in doubt, ask.** If you can't confidently extract a customization, show the user the relevant section and ask what to keep.
 - **Atomic application.** Build all merged content before writing any files. If something goes wrong mid-merge, the installed skills should still be intact.
 - **Never delete user-created files.** If the project has extra files in a skill directory (like project-specific fixtures or notes), leave them alone.
