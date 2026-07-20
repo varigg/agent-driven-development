@@ -33,26 +33,15 @@ Test: $ARGUMENTS
 
 ### Commands
 
-```bash
-# [ADAPT_TO_PROJECT: Replace with actual test commands during Init]
-
-# Run all tests
-[TEST_COMMAND_ALL]
-
-# Run specific test
-[TEST_COMMAND_SPECIFIC]
-
-# With coverage
-[TEST_COMMAND_COVERAGE]
-```
+All test commands (full suite, single test, coverage) live in the Verification Recipes section of `docs/4-unit-tests/TESTING.md` — you have already read it as a prerequisite. Never guess commands.
 
 ### Test Structure
 
-[ADAPT_TO_PROJECT: Describe where tests are located and naming conventions during Init]
+Test locations, naming conventions, and file patterns are documented in `docs/4-unit-tests/TESTING.md`.
 
 ### Testing Priorities
 
-<!-- [ADAPT_TO_PROJECT: Replace with project-specific testing priorities during Init] -->
+Project-specific priorities, if any, live in `docs/4-unit-tests/TESTING.md`.
 
 **Unit Tests**:
 

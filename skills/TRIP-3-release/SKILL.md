@@ -23,14 +23,7 @@ This skill runs after `TRIP-2-implement` has converged (implementation done, tes
 
 ### Standalone verification (fresh session, not chained from TRIP-2)
 
-If this skill was NOT chained from a TRIP-2 session in the current conversation, verify before any release step:
-
-```bash
-# [ADAPT_TO_PROJECT: Replace with actual lint/type-check/test commands during Init]
-[LINT_COMMAND]
-[TYPECHECK_COMMAND]
-[TEST_COMMAND] <pattern-from-the-plan's-Test-Impact-section>
-```
+If this skill was NOT chained from a TRIP-2 session in the current conversation, verify before any release step: run the lint, type-check/build, and affected-tests recipes per `docs/4-unit-tests/TESTING.md` (Verification Recipes), scoping tests to the plan's Test Impact section.
 
 All must be green. Also verify the Codex state file exists for the given plan path/label (see Step 3 below); if absent, treat as the skipped-Codex fallback (manual CR) and say so explicitly in the CR.
 

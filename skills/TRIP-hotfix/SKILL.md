@@ -66,7 +66,7 @@ No formal plan document needed.
 ## Step 5: Quick Verification
 
 - Manually test the fix
-- Run relevant tests only: `[TEST_COMMAND] <affected files>`
+- Run relevant tests only, via the affected-tests recipe in `docs/4-unit-tests/TESTING.md` (Verification Recipes)
 - Confirm the issue is resolved
 
 ---

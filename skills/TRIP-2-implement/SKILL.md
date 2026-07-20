@@ -39,7 +39,7 @@ TRIP assumes **in-place branching** (branch → ff-only merge → delete; see `T
 If the plan's **Test Impact** section touches the critical-path floor — auth, deletion, persistence, cost, or external request shape — author the failing tests NOW, before delegating anything:
 
 1. Write behavioral tests from the Test Impact section, following the project's testing guide (see `TRIP-test`).
-2. Confirm they fail for the right reason: `[TEST_COMMAND] <new test files>`.
+2. Confirm they fail for the right reason: run the affected-tests recipe from `docs/4-unit-tests/TESTING.md` (Verification Recipes) against the new test files.
 3. Commit them (stage explicit paths): `git commit -m "test: add failing contract tests for <feature>"`.
 4. Include in the Codex instructions: "Make the tests in `<test files>` pass. Do NOT modify any test file."
 
@@ -98,25 +98,15 @@ After implementation, before the Codex review loop. Any failure here blocks the 
 
 ### 1. Lint, type-check & build
 
-```bash
-# [ADAPT_TO_PROJECT: Replace with actual lint/type-check/build commands during Init.
-#  Prefer single-source task-runner targets (make lint, npm run lint) over raw commands
-#  so the runner config stays the single source of truth for the command strings.]
-[LINT_COMMAND] 2>&1 | tee /tmp/_trip2-lint.txt
-[TYPECHECK_COMMAND] 2>&1 | tee /tmp/_trip2-typecheck.txt
-```
+Run the lint and type-check/build recipes from `docs/4-unit-tests/TESTING.md` (Verification Recipes). Capture output (`2>&1 | tee /tmp/_trip2-<step>.txt`) so failures are quotable.
 
 ### 2. Run affected unit tests
 
-```bash
-[TEST_COMMAND] <pattern-for-affected-files>
-```
-
-Only the files/areas the change touched — never the full suite by default.
+Run the affected-tests recipe from `docs/4-unit-tests/TESTING.md` against the files/areas the change touched — never the full suite by default.
 
 ### 3. Integration impact check
 
-<!-- [ADAPT_TO_PROJECT: During Init, replace with the project's integration/E2E impact rules — e.g. "if selectors changed, run the E2E suite" or "if an API contract changed, exercise it against the local server/emulator". Docs-only changes skip this.] -->
+The project's integration/E2E impact rules live in `docs/4-unit-tests/TESTING.md` (Integration/E2E Impact Rules).
 
 If the change modifies an externally observable contract (API shape, UI selectors, auth behavior), exercise it with the project's integration/E2E tooling. Docs-only changes skip this.
 
