@@ -55,6 +55,8 @@ https://github.com/user-attachments/assets/d37bbc60-1868-4fa8-9be6-083b60d6a53d
 
 The `ARCHI.md` file is the **central nervous system** of this workflow. It serves as the AI agent's **long-term memory** of your codebase.
 
+It is flanked by two companions: `docs/charter.md` holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and `docs/adr/` holds dated Architecture Decision Records — drafted `proposed` when a plan changes documented intent, flipped `accepted` at release, with guardrail ADRs recording what you deliberately do *not* build so no future plan reintroduces it.
+
 ### Why ARCHI.md Matters
 
 **1. Persistent Context Across Sessions**
@@ -81,11 +83,11 @@ The `TRIP-init` skill is a **script written in human language** that programmati
 
 ### What Init Does
 
-1. **Creates the docs structure** - Folders for plans, changelogs, reviews, tests, memos
+1. **Creates the docs structure** - Folders for plans, changelogs, reviews, tests, memos, maintenance reports, and ADRs
 2. **Explores your codebase** - Identifies languages, frameworks, patterns, conventions
 3. **Classifies your project** - Web frontend? CLI tool? Embedded firmware? Library?
-4. **Generates ARCHI.md** - Tailored to your specific project type
-5. **Customizes the skills** - Replaces placeholders with your project's specifics
+4. **Generates the living docs** - ARCHI.md (as-built, tailored to your project type), charter.md (stable intent, from a short interview), TESTING.md (with your actual verification commands), and the ADR template
+5. **Fills the skill placeholders** - Process-owned values only
 
 ### The Placeholder System
 
@@ -93,9 +95,9 @@ The generic TRIP skills contain placeholders like:
 
 - `[PROJECT_NAME]` - Your project's name
 - `[VERSION_FILE]` - Where your version is stored (package.json, Cargo.toml, etc.)
-- `[ADAPT_TO_PROJECT: ...]` - Sections to customize
+- `[WEEK_ANCHOR_DATE]` / `[MAIN_BRANCH]` / `[AUDIT_NUDGE_N]` - Week formula anchor, merge target, audit cadence
 
-Init walks you through questions and replaces these placeholders based on your answers, creating a workflow tailored to your project.
+Init walks you through questions and replaces these placeholders based on your answers. Everything else it discovers about your codebase — commands, conventions, review concerns — lands in the living docs (ARCHI.md, TESTING.md), which the skills point at. Skills stay pure process: a design change never requires a skill edit.
 
 ## More Skills
 
@@ -113,9 +115,13 @@ Per-flow model defaults (implementation vs reviews) live in one file — `codex-
 
 The former steps 3 and 4, reborn as on-demand support skills: `/TRIP-review` is the manual fallback/audit review (same checklist as the Codex loop — single source of truth), `/TRIP-test` is the deep test-authoring reference with a seam ladder and a coverage-debt ledger for hard-to-test code.
 
+### `/TRIP-4-maintain`
+
+Periodic maintenance audit with four independently skippable sweeps: code health, test health, docs drift, and dependencies. Writes a dated findings report to `docs/7-maintenance/`, applies only trivial mechanical fixes, and routes anything substantive through the normal plan → implement → release cycle. `TRIP-3-release` nudges you to run it after N releases without an audit.
+
 ### `/TRIP-upgrade`
 
-Upgrades an existing project's TRIP skills to a newer version without losing project customizations. Extracts your project-specific content (test commands, checklist sections, technical considerations, version file paths), applies the new workflow skeleton, and re-injects the customizations. Copy the new skills to `new-TRIP/`, run the skill, done.
+Upgrades an existing project's TRIP skills to a newer version without losing project customizations. Extracts your project-specific content (test commands, checklist sections, technical considerations, version file paths), applies the new workflow skeleton, and relocates the customizations into your living docs (ARCHI.md, TESTING.md). It also creates the charter/ADR structure on repos that predate it. Copy the new skills to `new-TRIP/`, run the skill, done.
 
 ### `/codex-ask`
 
