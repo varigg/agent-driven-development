@@ -40,12 +40,14 @@ docs/
 ├── 2-changelog/          # Version changelog files
 ├── 3-code-review/        # Code review documentation
 ├── 4-unit-tests/         # Unit testing documentation
-└── 6-memo/               # Miscellaneous notes and memos
+├── 6-memo/               # Miscellaneous notes and memos
+├── 7-maintenance/        # Maintenance audit reports (TRIP-4-maintain)
+└── adr/                  # Architecture Decision Records
 ```
 
 Note: `5-tuto/` folder is created conditionally in Phase 6 only if the user wants tutorial generation.
 
-Files (`ARCHI.md`, `ARCHI-rules.md`, `changelog_table.md`, `TESTING.md`) will be created in later phases after codebase analysis.
+Files (`ARCHI.md`, `ARCHI-rules.md`, `charter.md`, `adr/template.md`, `changelog_table.md`, `TESTING.md`) will be created in later phases after codebase analysis.
 
 ---
 
@@ -459,21 +461,15 @@ Summarize what was generated:
 
 ## Phase 6: Update TRIP Skills
 
-After user validation, update the other TRIP skill files based on the **actual codebase architecture** documented in ARCHI.md.
+After user validation, fill the process-owned placeholders in the skill files.
 
-> **IMPORTANT**: The examples below are **recommendations and starting points**, not templates to copy blindly. Always tailor the content based on:
->
-> - What was actually discovered during codebase exploration (Phase 2)
-> - The patterns and conventions documented in the validated ARCHI.md (Phase 5)
-> - The specific tools, frameworks, and practices used in **this** project
+> **Rule**: skills receive ONLY process-owned values (`[PROJECT_NAME]`, `[VERSION_FILE]`, `[WEEK_ANCHOR_DATE]`, `[MAIN_BRANCH]`, `[AUDIT_NUDGE_N]`, tutorial on/off). Everything discovered about the codebase — commands, conventions, priorities, review concerns — lands in the living docs (ARCHI.md, TESTING.md), which the skills point at. Never inject repo facts into a skill: a design change must never require a skill edit.
 
 ### Skills to Update:
 
-1. **`TRIP-1-plan`** - Technical considerations, guidance sections
-2. **`TRIP-2-implement`** - Testing gate commands
-3. **`TRIP-3-release`** - Version file, week offset, tutorials
-4. **`TRIP-review`** - `checklist.md` and `cr-template.md` adapted to actual architecture
-5. **`TRIP-test`** - Test commands, structure, priorities
+1. **`TRIP-1-plan`** - Custom plan sections (optional)
+2. **`TRIP-3-release`** - Version file, week anchor, tutorials, audit nudge
+3. **`TRIP-hotfix`** - Version file
 
 ---
 
@@ -485,138 +481,9 @@ After user validation, update the other TRIP skill files based on the **actual c
 
 ### 6.2 Update `TRIP-1-plan`
 
-**A. Technical Considerations Section**
+**A. Technical Considerations & Layer Guidance** — no edits. These sections are process-only and pull from ARCHI.md/ADRs at planning time. Instead, verify ARCHI.md (Phase 4) documents the per-layer conventions plans will derive from — patterns, quality expectations, and common pitfalls per component type. If a layer's conventions aren't written down, add them to ARCHI.md now.
 
-Replace the `[ADAPT_TO_PROJECT]` markers in the Technical Considerations section with concerns **relevant to this specific codebase**. The examples below are starting points - adapt based on what ARCHI.md documents:
-
-- If the project uses specific patterns (e.g., a custom state management approach), include them
-- If certain concerns don't apply (e.g., no i18n in this project), omit them
-- If the project has unique concerns (e.g., regulatory compliance, specific hardware constraints), add them
-
-**For Web Frontend:**
-
-```markdown
-## Technical Considerations
-
-- **Pattern Usage**: Which existing patterns to follow (from ARCHI.md)
-- **Performance**: useMemo, useCallback, lazy loading, code splitting
-- **Accessibility**: Keyboard navigation, ARIA labels, focus management
-- **Responsive Design**: Mobile/tablet/desktop breakpoints
-- **Edge Cases**: Empty states, loading states, error states
-- **Theming**: Light/dark mode support
-```
-
-**For Web Backend:**
-
-```markdown
-## Technical Considerations
-
-- **Pattern Usage**: Which existing patterns to follow (from ARCHI.md)
-- **Database Impact**: Schema changes, migrations, query performance
-- **API Design**: REST conventions, versioning, backwards compatibility
-- **Security**: Input validation, authentication, authorization
-- **Error Handling**: Error codes, logging, client responses
-- **Edge Cases**: Rate limiting, timeouts, partial failures
-```
-
-**For CLI Tool:**
-
-```markdown
-## Technical Considerations
-
-- **Pattern Usage**: Which existing patterns to follow (from ARCHI.md)
-- **User Experience**: Help text, progress indicators, error messages
-- **Configuration**: Precedence (flags > env > config file > defaults)
-- **Exit Codes**: Success/failure codes, scripting compatibility
-- **Edge Cases**: Invalid input, missing files, permission errors
-- **Cross-Platform**: Path handling, line endings, shell compatibility
-```
-
-**For Embedded/Firmware:**
-
-```markdown
-## Technical Considerations
-
-- **Pattern Usage**: Which existing patterns to follow (from ARCHI.md)
-- **Memory Impact**: Stack usage, heap allocation, static vs dynamic
-- **Timing**: Interrupt latency, real-time constraints, blocking calls
-- **Power**: Sleep mode impact, wake sources, power budget
-- **Hardware Dependencies**: Pin assignments, peripheral conflicts
-- **Edge Cases**: Startup race conditions, watchdog, error recovery
-```
-
-**For Library/SDK:**
-
-```markdown
-## Technical Considerations
-
-- **Pattern Usage**: Which existing patterns to follow (from ARCHI.md)
-- **API Design**: Public surface, naming conventions, consistency
-- **Backwards Compatibility**: Breaking changes, deprecation strategy
-- **Documentation**: API docs, examples, migration guides
-- **Edge Cases**: Null handling, error propagation, thread safety
-```
-
-_Adapt based on actual project architecture. Only include considerations that are relevant to this codebase._
-
-**B. Guidance Sections**
-
-Replace the `[ADAPT_TO_PROJECT: Guidance Sections]` comment block with guidance that matches **the actual architectural patterns in ARCHI.md**.
-
-Look at the major component types documented and create guidance for each. Examples:
-
-**For Web Frontend** (keep existing React sections)
-
-**For Embedded/Firmware:**
-
-```markdown
-## For New Peripheral Drivers
-
-Required analysis:
-
-- Hardware interface (registers, pins, timing)
-- Interrupt requirements (priority, latency)
-- DMA usage if applicable
-- Power management impact
-- Error handling strategy
-
-## For New Communication Protocols
-
-Required analysis:
-
-- Message format and framing
-- Error detection/correction
-- Timeout and retry strategy
-- Buffer management
-- Thread/interrupt safety
-```
-
-**For CLI Tool:**
-
-```markdown
-## For New Commands
-
-Required analysis:
-
-- Command name and aliases
-- Required and optional arguments
-- Input sources (args, stdin, files)
-- Output format (human, JSON, etc.)
-- Error messages and exit codes
-
-## For Configuration Changes
-
-Required analysis:
-
-- Config key naming
-- Default value
-- Validation rules
-- Documentation updates
-```
-
-_These are examples. Create guidance sections based on what's actually in ARCHI.md - the major patterns, layers, and component types specific to this project._
-
-**C. Custom Plan Sections**
+**B. Custom Plan Sections**
 
 **Use the `AskUserQuestion` tool** to ask:
 
@@ -629,9 +496,9 @@ If the user selects "Yes" or provides custom input, add the specified sections t
 
 ---
 
-### 6.3 Update `TRIP-2-implement` and `TRIP-3-release`
+### 6.3 Update `TRIP-3-release` (and `TRIP-hotfix`)
 
-The testing gate in `TRIP-2-implement` and the standalone-verification block in `TRIP-3-release` share the same command placeholders. The release ceremony customizations (version, week, tutorials) live in `TRIP-3-release`:
+The release ceremony customizations (version, week, tutorials, audit nudge) live in `TRIP-3-release`. No skill receives commands — the testing gate and all verification steps point at TESTING.md (see E below):
 
 **A. Version File Location**
 
@@ -684,196 +551,33 @@ Then replace the `[WEEK_ANCHOR_DATE]` placeholder in `TRIP-3-release` Step 1 wit
   **Question 3** (header: "Style"): "What tutorial style do you prefer?"
   - **Options**: "Concise" (key points, minimal explanation), "Balanced" (explanations with examples), "Verbose" (detailed explanations, multiple examples, diagrams)
 
-Then update the `[TUTORIAL_STEP]` block in `TRIP-3-release` with the user's context:
+Then in `TRIP-3-release`:
 
-```markdown
-### Step 7: Tutorial
-
-Create `docs/5-tuto/tuto_x.y.z.md` explaining the core principle.
-
-**User context for tutorials**:
-
-- Level: [user's level]
-- Learning focus: [user's interests]
-- Style: [user's preferred style]
-
-[Add any specific instructions based on their choices]
-```
+1. Uncomment the `[TUTORIAL_STEP]` block **as-is** — it is pure process; do NOT write the user's answers into the skill.
+2. Write the audience answers into the **project's CLAUDE.md** instead — create or append a `## Tutorial audience` section (level, learning focus, style). The tutorial step reads it from there.
 
 **IMPORTANT — Renumber subsequent steps**: After uncommenting the Tutorial as Step 8, renumber the steps that follow:
 
 - Step 8: README Update → **Step 9**: README Update
 - Step 9: Commit → **Step 10**: Commit
 - Step 10: Tag → **Step 11**: Tag
+- Step 11: Merge → **Step 12**: Merge
+- Step 12: Push → **Step 13**: Push
+- Step 13: Maintenance Audit Nudge → **Step 14**: Maintenance Audit Nudge
 
-**D. Codex Review Test Commands**
+**D. Audit Nudge Threshold**
 
-Replace the `[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, and `[TEST_COMMAND]` placeholders in the TRIP-2 Testing Gate and Step 0.5, the TRIP-3-release standalone-verification block, AND the TRIP-hotfix verification/commit steps (`[TEST_COMMAND]`, `[VERSION_FILE]`) with the **actual commands** for this project (from ARCHI.md or discovered during exploration). For example:
+Replace `[AUDIT_NUDGE_N]` in the `TRIP-3-release` Maintenance Audit Nudge step with **5** (or a user-chosen value).
 
-- Python: `uv run ruff check .`, `uv run mypy`, `uv run pytest -q`
-- Node.js: `npm run lint`, `npx tsc --noEmit`, `npm test`
-- Rust: `cargo clippy`, (no separate typecheck), `cargo test`
-- Go: `golangci-lint run`, (no separate typecheck), `go test ./...`
+**E. Verification Recipes**
 
-**Prefer single-source task-runner targets** (`make lint`, `npm run lint`) over raw commands when the project has them — the runner config then stays the single source of truth and the skills can't drift from it.
-
-If the project doesn't have a lint or typecheck step, remove the corresponding line entirely rather than leaving a placeholder.
+Do NOT put commands in any skill. The actual lint / type-check / test / coverage / integration commands discovered in Phase 2 go into the **Verification Recipes** section of `docs/4-unit-tests/TESTING.md` (Phase 7.2). **Prefer single-source task-runner targets** (`make lint`, `npm run lint`) over raw commands when the project has them — the runner config then stays the single source of truth.
 
 ---
 
-### 6.4 Update `TRIP-review`
+### 6.4 `TRIP-review` and `TRIP-test` — no project edits
 
-The review skill uses three files: `SKILL.md` (orchestration), `checklist.md` (criteria — single source of truth), and `cr-template.md` (output skeleton). During Init, update **`checklist.md`** and **`cr-template.md`** — leave `SKILL.md` as-is.
-
-**A. Adapt `checklist.md`**
-
-`checklist.md` ships with generic sections (Functional Requirements, Code Quality, Architectural Compliance, Error Handling, Security, Performance). Replace the `[ADAPT_TO_PROJECT]` comment block with **project-specific checklist sections** based on what matters for this codebase as documented in ARCHI.md.
-
-The examples below are starting points — include only what's relevant and add project-specific checks:
-
-**For Web Backend:**
-
-```markdown
-### 4. API Best Practices
-
-- [ ] Input validation on all endpoints
-- [ ] Consistent error response format
-- [ ] Proper HTTP status codes
-- [ ] API versioning respected
-- [ ] Rate limiting considered
-```
-
-**For Embedded/Firmware:**
-
-```markdown
-### 4. Resource Management
-
-- [ ] Stack usage analyzed
-- [ ] No memory leaks
-- [ ] DMA buffers aligned
-- [ ] Peripheral resources released
-- [ ] Power modes handled correctly
-
-### 5. Timing & Safety
-
-- [ ] Real-time constraints met
-- [ ] Watchdog considerations addressed
-- [ ] Race conditions prevented
-- [ ] Error recovery implemented
-```
-
-**For CLI Tool:**
-
-```markdown
-### 4. User Experience
-
-- [ ] Help text is clear and complete
-- [ ] Error messages are actionable
-- [ ] Exit codes are correct
-- [ ] Progress feedback for long operations
-```
-
-_Build from ARCHI.md — what patterns does this project use? What quality criteria matter? What are common pitfalls?_
-
-Also update the existing generic sections (3. Architectural Compliance, etc.) with project-specific items if the generic ones are too vague. Remove sections that don't apply.
-
-**B. Update `cr-template.md`**
-
-Update the Checklist section in `cr-template.md` to list the **actual section names** from the adapted `checklist.md`. The template ships with generic section names (1-6); after adapting the checklist, the template's section list must match.
-
-**C. Update Approval Gate**
-
-If the project has specific build/test commands, update the "Review Completion Criteria" section at the bottom of `checklist.md` with the actual commands (e.g., `uv run pytest` instead of generic "All existing tests pass").
-
----
-
-### 6.5 Update `TRIP-test`
-
-**A. Test Commands**
-
-Replace the `[TEST_COMMAND_*]` placeholders with the **actual test commands** used in this project (from ARCHI.md or discovered during exploration):
-
-```markdown
-### Commands
-
-\`\`\`bash
-
-# Run all tests
-
-[actual command, e.g., npm test, cargo test, pytest, make test]
-
-# Run specific test
-
-[actual command for single test]
-
-# With coverage
-
-[actual coverage command]
-\`\`\`
-```
-
-**B. Test Structure**
-
-Replace the `[ADAPT_TO_PROJECT]` marker with actual test organization:
-
-- Where tests are located
-- Naming conventions
-- Test file patterns
-
-**C. Testing Priorities**
-
-Adapt based on **what's actually tested in this project** and what the ARCHI.md documents about testing strategy. Examples:
-
-**For Embedded:**
-
-```markdown
-### Testing Priorities
-
-**Unit Tests**:
-
-- HAL mock testing
-- Protocol parsers
-- State machines
-- Utility functions
-
-**Hardware-in-Loop Tests**:
-
-- Peripheral initialization
-- Communication protocols
-- Interrupt handling
-
-**What to Test**:
-
-- Normal operation paths
-- Error conditions
-- Boundary values
-- Timing constraints
-```
-
-**For CLI:**
-
-```markdown
-### Testing Priorities
-
-**Unit Tests**:
-
-- Argument parsing
-- Configuration loading
-- Core logic functions
-
-**Integration Tests**:
-
-- Command execution end-to-end
-- File I/O operations
-- Error scenarios
-
-**What to Test**:
-
-- Valid inputs
-- Invalid inputs (edge cases)
-- Missing files/permissions
-- Exit codes
-```
+Beyond `[PROJECT_NAME]`, do NOT edit `TRIP-review/SKILL.md`, `checklist.md`, `cr-template.md`, or `TRIP-test/SKILL.md`. They are fully generic: review criteria derive project conventions from ARCHI.md and the guardrail ADRs at review time, and test commands/structure/priorities live in `docs/4-unit-tests/TESTING.md`. Any review- or test-relevant project concern discovered at init belongs in ARCHI.md or TESTING.md, never in these files.
 
 ---
 
@@ -913,7 +617,7 @@ This file has two sections:
 - **vX.Y.Z+1 (TRIP Initialization - Week 1, DD-MM-YYYY)**:
   - **Setup**: Initialized TRIP workflow with docs structure
   - **Documentation**: Generated ARCHI.md with [project type] architecture
-  - **Files Added**: docs/ARCHI.md, docs/ARCHI-rules.md, docs/2-changelog/changelog_table.md, docs/4-unit-tests/TESTING.md
+  - **Files Added**: docs/ARCHI.md, docs/ARCHI-rules.md, docs/charter.md, docs/adr/template.md, docs/2-changelog/changelog_table.md, docs/4-unit-tests/TESTING.md
 ```
 
 The summary provides context that the table cannot capture: rationale, impact, technical decisions, and file-level details. New entries are added at the **top** of each section.
@@ -944,6 +648,23 @@ The summary provides context that the table cannot capture: rationale, impact, t
 ## Writing Tests
 
 [Project-specific conventions observed in the codebase]
+
+## Verification Recipes
+
+Single source of truth for verification commands — the TRIP skills point here and never carry commands themselves. Prefer single-source task-runner targets (make lint, npm run lint) when the project has them.
+
+\`\`\`bash
+# Lint:              [actual command, or "none"]
+# Type-check/build:  [actual command, or "none"]
+# All tests:         [actual command]
+# Affected tests:    [actual command] <pattern>
+# Single test:       [actual command]
+# Coverage:          [actual command]
+\`\`\`
+
+## Integration / E2E Impact Rules
+
+[When must the integration/E2E suite run — e.g. "if selectors changed, run the E2E suite" or "if an API contract changed, exercise it against the local server/emulator". Docs-only changes skip this.]
 
 ## Coverage Requirements
 
@@ -1000,33 +721,101 @@ Update: Technology Stack, and any affected architectural sections
 
 ---
 
+### 4. `docs/charter.md` - Stable Intent
+
+The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `TRIP-3-release` flags apparent violations to the user and never edits it silently.
+
+**Use the `AskUserQuestion` tool** to interview the user (purpose, product principles, scope, non-goals, success criteria — one question per topic, offering options derived from the codebase exploration). Draft the charter from the answers, present it, and **get explicit user approval before writing the file**:
+
+```markdown
+# [Project Name] Charter
+
+Stable intent only — this document changes rarely, via dedicated design commits.
+If a release appears to invalidate it, TRIP-3-release flags the user; the
+charter is never silently edited.
+
+## Purpose
+
+[Why this project exists — one paragraph]
+
+## Product Principles
+
+[3-6 principles that outlast any single feature]
+
+## Scope
+
+[What this project does]
+
+## Non-Goals
+
+[What this project deliberately does not do — pair lasting ones with guardrail ADRs]
+
+## Success Criteria
+
+[How we know it's working]
+```
+
+---
+
+### 5. `docs/adr/template.md` - ADR Template
+
+Create verbatim (no adaptation needed — it is process, not design):
+
+```markdown
+# ADR NNNN: <Title>
+
+- **Status**: proposed | accepted | rejected | superseded by ADR-NNNN
+- **Relations**: supersedes / amends <ADR links, or "none">
+- **Plan-Release**: <plan path under docs/1-plans/> → <release version, filled at release>
+
+## Context
+
+[Forces at play — technical, product, process. Written so a reader with no
+session memory understands why a decision was needed.]
+
+## Decision
+
+[The decision, stated in full sentences, active voice. For guardrails: what we
+deliberately do NOT build, and why.]
+
+## Alternatives Considered (optional)
+
+[Discarded options and why — this is where discarded ideas live, not in living docs]
+
+## Consequences
+
+[What becomes easier, harder, or forbidden]
+
+## Gate
+
+[What a planner or reviewer must check so future work doesn't violate this decision]
+```
+
+---
+
 ## Post-Initialization Checklist
 
-- [ ] Core `docs/` folders created (Phase 1): 1-plans, 2-changelog, 3-code-review, 4-unit-tests, 6-memo
+- [ ] Core `docs/` folders created (Phase 1): 1-plans, 2-changelog, 3-code-review, 4-unit-tests, 6-memo, 7-maintenance, adr
 - [ ] Codebase thoroughly explored (Phase 2)
 - [ ] Current version identified (Phase 2)
 - [ ] Project type correctly classified (Phase 3)
-- [ ] ARCHI.md generated with appropriate sections (Phase 4)
+- [ ] ARCHI.md generated with appropriate sections, **including per-layer conventions plans and reviews will derive from** (Phase 4)
 - [ ] Custom sections added where relevant (Phase 4)
 - [ ] **User reviewed and approved ARCHI.md** (Phase 5)
-- [ ] **TRIP skills updated** (Phase 6):
+- [ ] **TRIP skills updated — process-owned values only, no repo facts injected** (Phase 6):
   - [ ] `[PROJECT_NAME]` placeholder replaced in all skills
-  - [ ] `TRIP-1-plan`: `[ADAPT_TO_PROJECT]` markers replaced with actual technical considerations
-  - [ ] `TRIP-1-plan`: Guidance sections replaced with project-specific patterns
   - [ ] `TRIP-1-plan`: Custom plan sections added (if user requested)
-  - [ ] `TRIP-2-implement`: Testing gate commands (`[LINT_COMMAND]`, `[TYPECHECK_COMMAND]`, `[TEST_COMMAND]`) replaced with actual commands
   - [ ] `TRIP-3-release`: `[VERSION_FILE]` placeholder replaced
   - [ ] `TRIP-3-release`: `[WEEK_ANCHOR_DATE]` placeholder replaced
-  - [ ] `TRIP-3-release`: Standalone-verification commands replaced with actual commands
-  - [ ] `TRIP-3-release`: Tutorial preference configured (if enabled: 5-tuto/ folder created + user context; if disabled: `[TUTORIAL_STEP]` block removed)
-  - [ ] `TRIP-hotfix`: `[TEST_COMMAND]` and `[VERSION_FILE]` placeholders replaced
-  - [ ] `TRIP-review/checklist.md`: `[ADAPT_TO_PROJECT]` markers replaced with project-specific checklist sections
-  - [ ] `TRIP-review/cr-template.md`: Checklist section names updated to match adapted `checklist.md`
-  - [ ] `TRIP-test`: `[TEST_COMMAND_*]` placeholders replaced with actual commands
-  - [ ] `TRIP-test`: `[ADAPT_TO_PROJECT]` markers replaced with actual test structure/priorities
+  - [ ] `TRIP-3-release`: `[AUDIT_NUDGE_N]` set (default 5)
+  - [ ] `TRIP-3-release`: Tutorial preference configured (if enabled: 5-tuto/ folder created, steps renumbered, audience recorded in the project's CLAUDE.md; if disabled: `[TUTORIAL_STEP]` block removed)
+  - [ ] `TRIP-hotfix`: `[VERSION_FILE]` placeholder replaced
+  - [ ] `TRIP-review` and `TRIP-test`: NOT edited beyond `[PROJECT_NAME]`
 - [ ] changelog_table.md initialized with version+1 (Phase 7)
-- [ ] TESTING.md created, adapted to actual test setup (Phase 7)
+- [ ] TESTING.md created with **Verification Recipes** and **Integration/E2E Impact Rules** filled with the actual commands/rules (Phase 7)
 - [ ] ARCHI-rules.md created, referencing actual ARCHI sections (Phase 7)
+- [ ] charter.md interviewed, drafted, **user-approved**, and written (Phase 7)
+- [ ] `docs/adr/template.md` created verbatim (Phase 7)
 
 ---
 
