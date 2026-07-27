@@ -40,8 +40,47 @@ Maintenance: $ARGUMENTS
 
 ### Sweep C: Docs Drift
 
+**Vocabulary**
+
 - Superseded-vocabulary sweep: grep vocabulary retired by superseded/amended ADRs across the living docs — process files (`.claude/skills/`) included. Every hit must be a dated record, an explicit negation, or a standing lesson.
 - Living docs describe only current design — flag anything narrating history outside dated records (plans, changelogs, CRs, tutorials, ADRs are exempt: their date is part of their meaning; never retro-edit them).
+- A rename pass is **prose only**. Identifiers, script names, and paths are
+  code changes — file them, don't do them here.
+- Verify a rename by listing what survived, never by trusting the edit.
+  Multi-word protections fail silently when the phrase wraps a line, and a
+  blanket substitution reads plausibly while meaning something new.
+
+**Structure** — drift is not only wording; a correct document in the wrong
+place is drift too.
+
+- **Pointer direction: durable must never depend on transient.** Durable =
+  charter, `docs/adr/`, ARCHI, glossary, conventions, runbooks. Transient =
+  handoffs, worklists, task lists, audit reports. Transient → durable is
+  correct; the reverse is a finding, because the durable record's meaning
+  then degrades as tasks are checked off and breaks outright if the
+  transient file is ever emptied.
+- **Filing follows lifetime, not topic.** Check each document's location
+  against how long it lives, not what it is about. A durable reference
+  sitting in a per-release or working-notes directory is a finding even when
+  its content is perfect — and it silently legitimizes bad pointers, since a
+  reference aimed into a scratch directory looks unremarkable.
+- **Line-scoped pointers** (`file.md:94-95`) drift the moment the target is
+  edited, and read as precise while pointing at nothing. Replace with a
+  named section or entry.
+
+**Claims**
+
+- **Verify every imperative against reality.** Sweep for "must be reversed
+  before", "blocked on", "do not X until", "conflicts with". A directive
+  recorded in two documents and discharged in one becomes a phantom task
+  that survives every handoff and re-enters the backlog forever. Correct the
+  document that still asserts it; do not append "satisfied on <date>".
+- **Design records are not work logs.** When auditing an ADR: an alternative
+  earns its place only if a competent reader would independently propose it
+  and act on it; evidence earns its place only if the decision would change
+  when the evidence changes. Counts, filenames, and dated verifications
+  belong in the work log. Options invented to frame a decision are not
+  design history.
 
 ### Sweep D: Dependencies
 
