@@ -143,8 +143,9 @@ If the plan contradicts or supersedes anything ARCHI.md, charter.md, or a prior 
 
 1. Copy `docs/adr/template.md` to `docs/adr/NNNN-<slug>.md` (next sequence number).
 2. Status: `proposed`. Fill Relations (supersedes/amends) and the Plan-Release header with this plan's path (the release version is filled by `TRIP-3-release`).
-3. Guardrail decisions — things deliberately NOT built — are first-class ADRs; record them the same way.
-4. Commit the ADR on the feature branch together with the plan. `TRIP-3-release` flips it to `accepted` when the release ships it.
+3. **Adopting an existing `draft`** — if a design session already recorded this decision, do not write a second ADR. Validate the draft against the code, revise its body where planning proved it wrong (drafts are revisable; the no-retro-edit rule starts at `proposed`), discharge or restate anything in its `Gate`, fill in the Plan-Release header, and flip it to `proposed`. A draft in the plan's scope may be superseded with reasons but never silently ignored.
+4. Guardrail decisions — things deliberately NOT built — are first-class ADRs; record them the same way.
+5. Commit the ADR on the feature branch together with the plan. `TRIP-3-release` flips it to `accepted` when the release ships it.
 
 If nothing documented changes, no ADR — do not create ceremony for conforming plans.
 

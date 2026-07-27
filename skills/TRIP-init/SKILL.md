@@ -764,7 +764,9 @@ Create verbatim (no adaptation needed — it is process, not design):
 ```markdown
 # ADR NNNN: <Title>
 
-- **Status**: proposed | accepted | rejected | superseded by ADR-NNNN
+- **Status**: draft | proposed | accepted | rejected | superseded by ADR-NNNN
+  (`draft` = decided in a design session before any plan exists; TRIP-1 adopts
+  it to `proposed`, and no ADR may reach a release still marked `draft`)
 - **Relations**: supersedes / amends <ADR links, or "none">
 - **Plan-Release**: <plan path under docs/1-plans/> → <release version, filled at release>
 

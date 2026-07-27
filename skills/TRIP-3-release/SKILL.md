@@ -103,7 +103,7 @@ Also add a summary entry in the Changelog Summary section.
 
 1. Read fully @docs/ARCHI-rules.md
 2. Update @docs/ARCHI.md following the rules
-3. **ADR flips**: for each `proposed` ADR in `docs/adr/` this release implements, set Status to `accepted` and fill the release version in its Plan-Release header. If implementation taught something that changes a decision, amend the ADR now (or record a superseding one).
+3. **ADR flips**: for each `proposed` ADR in `docs/adr/` this release implements, set Status to `accepted` and fill the release version in its Plan-Release header. If implementation taught something that changes a decision, amend the ADR now (or record a superseding one). A `draft` ADR must never reach a release still marked `draft` — that means TRIP-1 skipped adoption; stop and adopt it first, so the record shows a plan validated the decision.
 4. **Charter check**: re-read `docs/charter.md`. If this release appears to invalidate anything it states, **FLAG it to the user** — never silently edit the charter. A user-approved charter change is a separate design commit, not part of the release commit.
 5. **Vocabulary sweep**: for each ADR flipped or superseded in step 3, grep the living docs (`docs/ARCHI.md`, `docs/charter.md`, `README.md`, `docs/4-unit-tests/TESTING.md`) for the vocabulary it retires — names of removed components, superseded approaches. Every hit must be a dated record, an explicit negation, or a standing lesson; anything else is doc drift — fix it in this release.
 6. Run `bash .claude/skills/TRIP-compact/count-tokens.sh docs/ARCHI.md` to check token count
