@@ -1,6 +1,6 @@
 ---
-name: TRIP-2-implement
-description: Implement a feature following TRIP plan
+name: addw-2-implement
+description: Implement a feature following ADDW plan
 argument-hint: "plan file or feature to implement"
 ---
 
@@ -12,7 +12,7 @@ You are now in **implementation mode**.
 
 Before implementing, you MUST read ALL THE LINES of:
 
-1. @docs/ARCHI.md - Understand current system architecture
+1. @docs/ARCHITECTURE.md - Understand current system architecture
 
 ## Your Task
 
@@ -22,7 +22,7 @@ Implement: $ARGUMENTS
 
 ## Step 0: Create a Branch (Pre-Implementation)
 
-**Always** create a dedicated branch before implementing — no need to ask. `TRIP-3-release` merges it back into the main branch with fast-forward, keeping a single clean linear history.
+**Always** create a dedicated branch before implementing — no need to ask. `addw-3-release` merges it back into the main branch with fast-forward, keeping a single clean linear history.
 
 ```bash
 git checkout -b feat/[short-description]   # or fix/[short-description]
@@ -30,7 +30,7 @@ git checkout -b feat/[short-description]   # or fix/[short-description]
 
 Derive the short description from the plan/feature name. If already on a dedicated branch for this work (e.g., resuming a session), continue on it.
 
-TRIP assumes **in-place branching** (branch → ff-only merge → delete; see `TRIP-3-release`). If the repo mandates git worktrees instead, record that policy here during Init and adapt this step accordingly.
+ADDW assumes **in-place branching** (branch → ff-only merge → delete; see `addw-3-release`). If the repo mandates git worktrees instead, record that policy here during Init and adapt this step accordingly.
 
 ---
 
@@ -38,7 +38,7 @@ TRIP assumes **in-place branching** (branch → ff-only merge → delete; see `T
 
 If the plan's **Test Impact** section touches the critical-path floor — auth, deletion, persistence, cost, or external request shape — author the failing tests NOW, before delegating anything:
 
-1. Write behavioral tests from the Test Impact section, following the project's testing guide (see `TRIP-test`).
+1. Write behavioral tests from the Test Impact section, following the project's testing guide (see `addw-test`).
 2. Confirm they fail for the right reason: run the affected-tests recipe from `docs/4-unit-tests/TESTING.md` (Verification Recipes) against the new test files.
 3. Commit them (stage explicit paths): `git commit -m "test: add failing contract tests for <feature>"`.
 4. Include in the Codex instructions: "Make the tests in `<test files>` pass. Do NOT modify any test file."
@@ -82,7 +82,7 @@ For phased delegation, run the Delegate → Self-Review cycle per phase; the tes
 
 After Codex reports, review the implementation yourself before anything else:
 
-- Read the full diff (`git status -s`, `git diff HEAD`) against the plan, ARCHI.md patterns, and project conventions (DRY, KISS, comment discipline, error-handling and naming conventions from ARCHI.md).
+- Read the full diff (`git status -s`, `git diff HEAD`) against the plan, ARCHITECTURE.md patterns, and project conventions (DRY, KISS, comment discipline, error-handling and naming conventions from ARCHITECTURE.md).
 - Fix any problem **directly yourself** — no back-and-forth with Codex over fixes. Resume the codex-implement thread only for genuinely new scope (e.g., the next phase).
 - Verify the plan checkboxes Codex ticked match what the diff actually contains; cross any it completed but missed.
 
@@ -112,7 +112,7 @@ If the change modifies an externally observable contract (API shape, UI selector
 
 ### 4. Author missing tests
 
-If the change adds new logic, write its tests **now**, guided by the plan's **Test Impact** section and the project's testing guide (see `TRIP-test`). If no new logic was added, skip this step.
+If the change adds new logic, write its tests **now**, guided by the plan's **Test Impact** section and the project's testing guide (see `addw-test`). If no new logic was added, skip this step.
 
 **Hard-to-cover code policy:**
 
@@ -168,7 +168,7 @@ export STATE_DIR=".claude/skills/codex-code-review/state"
 
 ### Record the Outcome
 
-No review artifact is produced. Note the round count, verdict, and any overrides or open findings the user accepted — `TRIP-3-release` records them as the Review line of the changelog entry. If the user skipped Codex, the line reads "skipped — trivial change"; if the loop was capped without `APPROVED`, list the open findings there.
+No review artifact is produced. Note the round count, verdict, and any overrides or open findings the user accepted — `addw-3-release` records them as the Review line of the changelog entry. If the user skipped Codex, the line reads "skipped — trivial change"; if the loop was capped without `APPROVED`, list the open findings there.
 
 ### Operating Notes
 
@@ -185,6 +185,6 @@ After Codex converges (or is skipped):
   - **Question**: "Is the implementation complete?"
   - **Options**: "Yes, everything is complete" (proceed to release), "No, there are remaining items" (continue working)
 
-**If "Yes"**: proceed directly into the release — read `.claude/skills/TRIP-3-release/SKILL.md` and follow it in this session, passing the same plan path (or feature label). The release skill owns everything from version bump to the fast-forward merge and push.
+**If "Yes"**: proceed directly into the release — read `.claude/skills/addw-3-release/SKILL.md` and follow it in this session, passing the same plan path (or feature label). The release skill owns everything from version bump to the fast-forward merge and push.
 
 **If "No"**: continue working, then repeat the sequence: testing gate → Codex review → this question.

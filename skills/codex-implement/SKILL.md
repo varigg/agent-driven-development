@@ -1,6 +1,6 @@
 ---
 name: codex-implement
-description: Delegate implementation of a TRIP plan (or a scoped part of it) to Codex CLI
+description: Delegate implementation of a ADDW plan (or a scoped part of it) to Codex CLI
 argument-hint: "<plan-path> [instructions] | reset <plan-path> | show <plan-path>"
 ---
 
@@ -34,13 +34,13 @@ export STATE_DIR=".claude/skills/codex-implement/state"
 4. **Show**: `bash .claude/skills/codex-plan-review/scripts/show.sh <target>`
 
 5. **Parse trailing tag** of the report:
-   - `IMPLEMENTATION_COMPLETE` — hand control back to the requester's self-review (TRIP-2).
+   - `IMPLEMENTATION_COMPLETE` — hand control back to the requester's self-review (addw-2).
    - `IMPLEMENTATION_PARTIAL` — read the report; resume with instructions for the remainder, or let the requester finish small leftovers directly.
 
 ## Notes
 
 - `--sandbox workspace-write` on start; `codex exec resume` inherits it. Codex edits files and runs repo commands (lint/build); no network, no commits.
-- **Fixes are the requester's job.** After Codex reports, the requester (TRIP-2 self-review) fixes problems directly in the tree — do NOT ping-pong fixes back to Codex. Resume only for genuinely new scope (next phase, large remainder).
+- **Fixes are the requester's job.** After Codex reports, the requester (addw-2 self-review) fixes problems directly in the tree — do NOT ping-pong fixes back to Codex. Resume only for genuinely new scope (next phase, large remainder).
 - Separate `STATE_DIR` from the review skills — the same plan path can hold an implementation thread and a review thread without collision.
 - Codex is instructed not to write tests (testing gate owns that) and not to touch release ceremony.
 - Network is blocked in the sandbox: if the plan requires installing a new dependency, Codex will report it as a leftover — install it yourself during self-review.

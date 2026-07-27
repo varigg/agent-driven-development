@@ -47,7 +47,7 @@ Codex uses `git status -s` / `git diff HEAD` in read-only sandbox. If those fail
 
 ## After Convergence
 
-Note the round count, verdict, and any overrides or accepted open findings — `TRIP-3-release` records them in the changelog entry. Then continue with `TRIP-3-release`.
+Note the round count, verdict, and any overrides or accepted open findings — `addw-3-release` records them in the changelog entry. Then continue with `addw-3-release`.
 
 ## Notes
 
@@ -64,5 +64,5 @@ turn 1: start.sh -> REQUEST_CHANGES (Critical: A, Major: B C)
          address A B C
 turn 2: resume.sh -> REQUEST_CHANGES (A B addressed, Minor: C partial, Suggestion: D)
          address C, optionally D
-turn 3: resume.sh -> APPROVED -> continue with TRIP-3-release
+turn 3: resume.sh -> APPROVED -> continue with addw-3-release
 ```

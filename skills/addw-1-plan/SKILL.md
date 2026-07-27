@@ -1,5 +1,5 @@
 ---
-name: TRIP-1-plan
+name: addw-1-plan
 description: Plan a new feature following project standards
 argument-hint: "describe the feature you want to build"
 ---
@@ -12,7 +12,7 @@ You are now in **planning mode**.
 
 Before creating any plan, you MUST read ALL THE LINES of:
 
-1. @docs/ARCHI.md - Understand current system architecture
+1. @docs/ARCHITECTURE.md - Understand current system architecture
 2. @docs/charter.md - Stable intent: purpose, principles, scope, non-goals
 3. `docs/adr/` - Skim titles and statuses; fully read every ADR touching the feature's area (guardrail ADRs especially)
 
@@ -91,10 +91,10 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 
 ## Technical Considerations
 
-- **Architecture Alignment**: How this plan conforms to the constraints in ARCHI.md (as-built) and reintroduces nothing the ADRs in `docs/adr/` have superseded or ruled out. Derive this from those documents at planning time — never from memory.
-- **Doc Impact**: If this plan changes or supersedes anything the living docs state — everything in `docs/` outside the numbered per-release directories, plus CLAUDE.md and README.md — name the affected documents here. Enumerate that scope at planning time rather than working from a remembered list. `TRIP-3-release` consumes this list. An empty list is a claim ("this plan contradicts nothing documented"), not a default.
+- **Architecture Alignment**: How this plan conforms to the constraints in ARCHITECTURE.md (as-built) and reintroduces nothing the ADRs in `docs/adr/` have superseded or ruled out. Derive this from those documents at planning time — never from memory.
+- **Doc Impact**: If this plan changes or supersedes anything the living docs state — everything in `docs/` outside the numbered per-release directories, plus CLAUDE.md and README.md — name the affected documents here. Enumerate that scope at planning time rather than working from a remembered list. `addw-3-release` consumes this list. An empty list is a claim ("this plan contradicts nothing documented"), not a default.
 - **Process/Design Separation**: `.claude/skills/` files are never modified as part of a feature. If this plan appears to need a skill edit, that is a process change — propose it separately, commit it separately.
-- **Layer Conventions**: For each layer/artifact type this plan adds to, state how the addition satisfies the conventions ARCHI.md documents for that layer — pulled at planning time. No per-layer checklist is ever cached in this skill; caches rot, ARCHI.md does not.
+- **Layer Conventions**: For each layer/artifact type this plan adds to, state how the addition satisfies the conventions ARCHITECTURE.md documents for that layer — pulled at planning time. No per-layer checklist is ever cached in this skill; caches rot, ARCHITECTURE.md does not.
 - **Edge Cases**: [Relevant edge cases for this feature]
 
 ## Files to Modify/Create
@@ -118,7 +118,7 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 
 ## Test Impact
 
-[2-5 bullets: which existing tests the change affects, what new logic will need tests, whether an integration/E2E check applies. No test code — the TRIP-2 testing gate consumes this section.]
+[2-5 bullets: which existing tests the change affects, what new logic will need tests, whether an integration/E2E check applies. No test code — the addw-2 testing gate consumes this section.]
 
 ## To-dos
 
@@ -134,7 +134,7 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 
 **Note**: For simple plans, a single phase is sufficient. Split into multiple phases only for complex features requiring sequential implementation.
 
-**Note**: Do NOT write test code during planning — the Test Impact section above only names what the TRIP-2 testing gate will run and author.
+**Note**: Do NOT write test code during planning — the Test Impact section above only names what the addw-2 testing gate will run and author.
 ```
 
 Every step must be unambiguous and actionable, name exact files and functions, and call out where it could fail.
@@ -187,11 +187,11 @@ Handle feedback:
 - **If "Other" (custom input)**: Handle accordingly.
 - **If "Approved"**: first complete **ADR Writing** (below) if the plan changes documented intent, then **use the `AskUserQuestion` tool** to ask:
   - **Question**: "Plan approved. Would you like to start implementation now?"
-  - **Options**: "Yes, implement now" (proceed with `TRIP-2-implement` using this plan), "Not yet" (I'll implement later)
+  - **Options**: "Yes, implement now" (proceed with `addw-2-implement` using this plan), "Not yet" (I'll implement later)
 
 ### ADR Writing (on approval)
 
-If the plan's Doc Impact section says it changes documented intent — it contradicts or supersedes anything ARCHI.md, charter.md, or a prior ADR states — record the decision now, while the discussion that made it is fresh:
+If the plan's Doc Impact section says it changes documented intent — it contradicts or supersedes anything ARCHITECTURE.md, charter.md, or a prior ADR states — record the decision now, while the discussion that made it is fresh:
 
 1. Copy `docs/adr/template.md` to `docs/adr/NNNN-<slug>.md` (next free sequence number), dated today, status `active`. Name this plan's path as the origin, and in Relations name any ADR it supersedes (flip that one's status to `superseded by ADR-NNNN` — the pointer is the only edit ever made to an existing ADR). Draw Alternatives from what the planning discussion actually rejected.
 2. Guardrail decisions — things deliberately NOT built — are first-class ADRs; record them the same way.
@@ -203,4 +203,4 @@ An ADR in the plan's scope may be superseded with reasons, but never silently ig
 
 ## IMPORTANT: No Code Implementation
 
-**DO NOT write code snippets or implement anything during planning** — not feature code, not test code, not algorithm sketches. The plan states WHAT changes, WHERE, and WHY; code comes in `TRIP-2-implement`.
+**DO NOT write code snippets or implement anything during planning** — not feature code, not test code, not algorithm sketches. The plan states WHAT changes, WHERE, and WHY; code comes in `addw-2-implement`.

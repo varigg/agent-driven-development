@@ -1,19 +1,19 @@
 ---
-name: TRIP-init
-description: Initialize TRIP workflow in a new project (creates docs structure and generates ARCHI.md)
+name: addw-init
+description: Initialize ADDW workflow in a new project (creates docs structure and generates ARCHITECTURE.md)
 disable-model-invocation: true
 argument-hint: "name of the project to initialize"
 ---
 
-# TRIP Initialization Mode
+# ADDW Initialization Mode
 
-You are now in **initialization mode** for setting up the TRIP workflow — Plan → Implement → Release, with review and testing gates living inside Implement.
+You are now in **initialization mode** for setting up the ADDW workflow — Plan → Implement → Release, with review and testing gates living inside Implement.
 
 ---
 
 ## Your Task
 
-Initialize the TRIP workflow for the project: **$ARGUMENTS**
+Initialize the ADDW workflow for the project: **$ARGUMENTS**
 
 If no project name provided, ask the user for the project name before proceeding.
 
@@ -29,13 +29,13 @@ docs/
 ├── 2-changelog/          # changelog_table.md — the single release record
 ├── 4-unit-tests/         # Unit testing documentation
 ├── 6-memo/               # Miscellaneous notes and memos
-├── 7-maintenance/        # Maintenance audit reports (TRIP-4-maintain)
+├── 7-maintenance/        # Maintenance audit reports (addw-4-maintain)
 └── adr/                  # Architecture Decision Records
 ```
 
 Note: `5-tuto/` folder is created conditionally in Phase 6 only if the user wants tutorial generation. (Historical installs may also have a `3-code-review/` directory — retired; its numbering gap is deliberate.)
 
-Files (`trip.env`, `ARCHI.md`, `ARCHI-rules.md`, `charter.md`, `adr/template.md`, `changelog_table.md`, `TESTING.md`) will be created in later phases after codebase analysis.
+Files (`addw.env`, `ARCHITECTURE.md`, `ARCHITECTURE-rules.md`, `charter.md`, `adr/template.md`, `changelog_table.md`, `TESTING.md`) will be created in later phases after codebase analysis.
 
 ---
 
@@ -89,9 +89,9 @@ After classification, note:
 
 ---
 
-## Phase 4: Generate ARCHI.md
+## Phase 4: Generate ARCHITECTURE.md
 
-Based on the project type, generate `docs/ARCHI.md` using the appropriate sections.
+Based on the project type, generate `docs/ARCHITECTURE.md` using the appropriate sections.
 
 ### Universal Sections (ALL projects)
 
@@ -169,14 +169,14 @@ Add a section whenever the codebase holds an architectural aspect a newcomer wou
 
 ## Phase 5: User Review & Validation
 
-After generating ARCHI.md, **stop and request user review**.
+After generating ARCHITECTURE.md, **stop and request user review**.
 
 ### Present to User
 
 Summarize what was generated:
 
 1. **Project classification** - What type was detected and why
-2. **Sections included** - List the sections added to ARCHI.md
+2. **Sections included** - List the sections added to ARCHITECTURE.md
 3. **Custom sections** - Highlight any sections added beyond the standard templates
 4. **Key architectural decisions** documented
 
@@ -184,9 +184,9 @@ Summarize what was generated:
 
 **Use the `AskUserQuestion` tool** to present the user with a structured choice:
 
-- **Question**: "Please review the generated ARCHI.md. How would you like to proceed?"
+- **Question**: "Please review the generated ARCHITECTURE.md. How would you like to proceed?"
 - **Options**:
-  1. **"Approved"** — ARCHI.md looks good, proceed to Phase 6
+  1. **"Approved"** — ARCHITECTURE.md looks good, proceed to Phase 6
   2. **"Request changes"** — I have corrections or modifications
   3. **"Add sections"** — I'd like additional sections added
 
@@ -197,13 +197,13 @@ Summarize what was generated:
 - **If "Add sections"**: Add them, then re-present for validation using `AskUserQuestion` again
 - **If "Other" (custom input)**: Handle accordingly
 
-**Do NOT proceed to Phase 6 until the user explicitly approves the ARCHI.md.**
+**Do NOT proceed to Phase 6 until the user explicitly approves the ARCHITECTURE.md.**
 
 ---
 
 ## Phase 6: Write the Project Config
 
-**Skills are never edited** — they are identical in every project. All project state lives in `docs/trip.env` (written here) or the living docs (Phase 7). Everything discovered about the codebase — commands, conventions, priorities, review concerns — lands in ARCHI.md and TESTING.md, which the skills point at. Commands specifically go into TESTING.md's **Verification Recipes** (Phase 7.2), preferring single-source task-runner targets (`make lint`, `npm run lint`) over raw commands.
+**Skills are never edited** — they are identical in every project. All project state lives in `docs/addw.env` (written here) or the living docs (Phase 7). Everything discovered about the codebase — commands, conventions, priorities, review concerns — lands in ARCHITECTURE.md and TESTING.md, which the skills point at. Commands specifically go into TESTING.md's **Verification Recipes** (Phase 7.2), preferring single-source task-runner targets (`make lint`, `npm run lint`) over raw commands.
 
 ### 6.1 Tutorial Preference
 
@@ -218,36 +218,36 @@ Summarize what was generated:
 - **Question 2** (header: "Focus", multiSelect: true): "What do you want to learn from these tutorials?" — "Language fundamentals" / "Framework specifics" / "Architecture & patterns" / "Performance & optimization"
 - **Question 3** (header: "Style"): "What tutorial style do you prefer?" — "Concise" / "Balanced" / "Verbose"
 
-Write the answers into the **project's CLAUDE.md** — create or append a `## Tutorial audience` section (level, learning focus, style). The release skill's tutorial step reads it from there; the on/off flag goes into `trip.env` below.
+Write the answers into the **project's CLAUDE.md** — create or append a `## Tutorial audience` section (level, learning focus, style). The release skill's tutorial step reads it from there; the on/off flag goes into `addw.env` below.
 
-### 6.2 Write `docs/trip.env`
+### 6.2 Write `docs/addw.env`
 
 ```bash
-# docs/trip.env — TRIP project configuration. Created by TRIP-init.
+# docs/addw.env — ADDW project configuration. Created by addw-init.
 # Skills read this at runtime; never edit a skill to change these values.
-TRIP_SCHEMA=3
-TRIP_PROJECT_NAME="<project name>"
-TRIP_VERSION_FILE="<from Phase 2: package.json, Cargo.toml, pyproject.toml, version.h, ...>"
-TRIP_MAIN_BRANCH="<git symbolic-ref --short refs/remotes/origin/HEAD, or git branch --show-current for local-only repos>"
-TRIP_AUDIT_NUDGE_N=5
-TRIP_TUTORIALS=<true|false>
+ADDW_SCHEMA=3
+ADDW_PROJECT_NAME="<project name>"
+ADDW_VERSION_FILE="<from Phase 2: package.json, Cargo.toml, pyproject.toml, version.h, ...>"
+ADDW_MAIN_BRANCH="<git symbolic-ref --short refs/remotes/origin/HEAD, or git branch --show-current for local-only repos>"
+ADDW_AUDIT_NUDGE_N=5
+ADDW_TUTORIALS=<true|false>
 # Optional codex model overrides (defaults live in codex-plan-review/scripts/_common.sh):
-# TRIP_CODEX_MODEL_IMPL="..."
-# TRIP_CODEX_MODEL_REVIEW="..."
-# TRIP_CODEX_EFFORT="..."
+# ADDW_CODEX_MODEL_IMPL="..."
+# ADDW_CODEX_MODEL_REVIEW="..."
+# ADDW_CODEX_EFFORT="..."
 ```
 
 Fill every value (audit nudge 5 unless the user chooses otherwise). The file must be shell-sourceable — the release skill and the codex scripts `source` it.
 
 ### 6.3 Verify Layer Conventions
 
-The planning skill's Technical Considerations pull per-layer conventions from ARCHI.md at planning time. Verify ARCHI.md (Phase 4) documents them — patterns, quality expectations, common pitfalls per component type. If a layer's conventions aren't written down, add them to ARCHI.md now.
+The planning skill's Technical Considerations pull per-layer conventions from ARCHITECTURE.md at planning time. Verify ARCHITECTURE.md (Phase 4) documents them — patterns, quality expectations, common pitfalls per component type. If a layer's conventions aren't written down, add them to ARCHITECTURE.md now.
 
 ---
 
 ## Phase 7: Create Supporting Files
 
-Now that ARCHI.md is validated, create the supporting documentation files adapted to the project.
+Now that ARCHITECTURE.md is validated, create the supporting documentation files adapted to the project.
 
 ### 1. `docs/2-changelog/changelog_table.md` - Version Tracking
 
@@ -266,7 +266,7 @@ This file has two sections:
 
 | Version   | Date       | Commit Message                  |
 | --------- | ---------- | ------------------------------- |
-| `X.Y.Z+1` | DD-MM-YYYY | chore: initialize TRIP workflow |
+| `X.Y.Z+1` | DD-MM-YYYY | chore: initialize ADDW workflow |
 ```
 
 **Section 2: Detailed Changelog Summary**
@@ -274,9 +274,9 @@ This file has two sections:
 ```markdown
 # Changelog Summary
 
-- **vX.Y.Z+1 (DD-MM-YYYY)**: chore: initialize TRIP workflow
-  - **Changes**: Initialized TRIP workflow — docs structure, ARCHI.md ([project type] architecture)
-  - **Files Added**: docs/trip.env, docs/ARCHI.md, docs/ARCHI-rules.md, docs/charter.md, docs/adr/template.md, docs/2-changelog/changelog_table.md, docs/4-unit-tests/TESTING.md
+- **vX.Y.Z+1 (DD-MM-YYYY)**: chore: initialize ADDW workflow
+  - **Changes**: Initialized ADDW workflow — docs structure, ARCHITECTURE.md ([project type] architecture)
+  - **Files Added**: docs/addw.env, docs/ARCHITECTURE.md, docs/ARCHITECTURE-rules.md, docs/charter.md, docs/adr/template.md, docs/2-changelog/changelog_table.md, docs/4-unit-tests/TESTING.md
 ```
 
 The summary provides context that the table cannot capture: rationale, impact, decisions, review outcome. New entries are added at the **top** of each section. This file is the **single release record** — there are no per-release changelog files.
@@ -285,24 +285,24 @@ The summary provides context that the table cannot capture: rationale, impact, d
 
 ### 2. `docs/4-unit-tests/TESTING.md` - Testing Guidelines
 
-**Adapt based on the validated ARCHI.md** - use the actual test framework, commands, and conventions discovered during codebase exploration:
+**Adapt based on the validated ARCHITECTURE.md** - use the actual test framework, commands, and conventions discovered during codebase exploration:
 
 ```markdown
 # Testing Guidelines
 
 ## Test Framework
 
-[From ARCHI: actual framework name and version]
+[From ARCHITECTURE.md: actual framework name and version]
 
 ## Running Tests
 
 \`\`\`bash
-[From ARCHI: actual test commands]
+[From ARCHITECTURE.md: actual test commands]
 \`\`\`
 
 ## Test Organization
 
-[From ARCHI: actual test file locations and patterns]
+[From ARCHITECTURE.md: actual test file locations and patterns]
 
 ## Writing Tests
 
@@ -310,7 +310,7 @@ The summary provides context that the table cannot capture: rationale, impact, d
 
 ## Verification Recipes
 
-Single source of truth for verification commands — the TRIP skills point here and never carry commands themselves. Prefer single-source task-runner targets (make lint, npm run lint) when the project has them.
+Single source of truth for verification commands — the ADDW skills point here and never carry commands themselves. Prefer single-source task-runner targets (make lint, npm run lint) when the project has them.
 
 \`\`\`bash
 # Lint:              [actual command, or "none"]
@@ -327,20 +327,20 @@ Single source of truth for verification commands — the TRIP skills point here 
 
 ## Coverage Requirements
 
-[From ARCHI: actual coverage thresholds if defined, or "Not defined" if none]
+[From ARCHITECTURE.md: actual coverage thresholds if defined, or "Not defined" if none]
 ```
 
 ---
 
-### 3. `docs/ARCHI-rules.md` - Architecture Maintenance Rules
+### 3. `docs/ARCHITECTURE-rules.md` - Architecture Maintenance Rules
 
-**Adapt based on the validated ARCHI.md** - reference the actual sections and terminology used:
+**Adapt based on the validated ARCHITECTURE.md** - reference the actual sections and terminology used:
 
 ```markdown
 # Architecture Documentation Rules
 
-[ARCHI.md](ARCHI.md) documents the [Project Name] architecture. After each
-task (new feature, refactor, bug fix), determine if ARCHI.md needs updating.
+[ARCHITECTURE.md](ARCHITECTURE.md) documents the [Project Name] architecture. After each
+task (new feature, refactor, bug fix), determine if ARCHITECTURE.md needs updating.
 
 ## When to Update
 
@@ -348,7 +348,7 @@ Update after ANY change that alters:
 
 - Project structure (new directories, moved files)
 - Technology stack (new dependencies, version changes)
-- [List actual section names from ARCHI.md that might need updates]
+- [List actual section names from ARCHITECTURE.md that might need updates]
 - Data flow or component interactions
 - Build or deployment processes
 
@@ -356,11 +356,11 @@ Update after ANY change that alters:
 
 ### Major Feature / Refactor
 
-Review: [List actual relevant section names from ARCHI.md]
+Review: [List actual relevant section names from ARCHITECTURE.md]
 
 ### Minor Feature / Enhancement
 
-Update: [List actual relevant section names from ARCHI.md]
+Update: [List actual relevant section names from ARCHITECTURE.md]
 
 ### Bug Fix
 
@@ -382,7 +382,7 @@ Update: Technology Stack, and any affected architectural sections
 
 ### 4. `docs/charter.md` - Stable Intent
 
-The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `TRIP-3-release` flags apparent violations to the user and never edits it silently.
+The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `addw-3-release` flags apparent violations to the user and never edits it silently.
 
 **Use the `AskUserQuestion` tool** to interview the user (purpose, product principles, scope, non-goals, success criteria — one question per topic, offering options derived from the codebase exploration). Draft the charter from the answers, present it, and **get explicit user approval before writing the file**:
 
@@ -390,7 +390,7 @@ The charter holds intent that outlasts any single feature. It changes rarely and
 # [Project Name] Charter
 
 Stable intent only — this document changes rarely, via dedicated design commits.
-If a release appears to invalidate it, TRIP-3-release flags the user; the
+If a release appears to invalidate it, addw-3-release flags the user; the
 charter is never silently edited.
 
 ## Purpose
@@ -460,10 +460,10 @@ deliberately do NOT build, and why.]
 
 Verify before reporting completion:
 
-- [ ] ARCHI.md documents **per-layer conventions** — plans and reviews derive from these, so a layer without written conventions is a gap
-- [ ] `docs/trip.env` written with every value filled and shell-sourceable (`bash -n docs/trip.env`)
-- [ ] **No skill file was edited** — all project state is in trip.env or the living docs
+- [ ] ARCHITECTURE.md documents **per-layer conventions** — plans and reviews derive from these, so a layer without written conventions is a gap
+- [ ] `docs/addw.env` written with every value filled and shell-sourceable (`bash -n docs/addw.env`)
+- [ ] **No skill file was edited** — all project state is in addw.env or the living docs
 - [ ] TESTING.md has **Verification Recipes** and **Integration/E2E Impact Rules** filled with the project's real commands
-- [ ] charter.md **user-approved** before writing; ARCHI.md **user-approved** at Phase 5
-- [ ] `docs/adr/template.md`, `ARCHI-rules.md`, and `changelog_table.md` created
-- [ ] Tutorial preference resolved: `TRIP_TUTORIALS` set; if true, `docs/5-tuto/` exists and the audience is in the project's CLAUDE.md
+- [ ] charter.md **user-approved** before writing; ARCHITECTURE.md **user-approved** at Phase 5
+- [ ] `docs/adr/template.md`, `ARCHITECTURE-rules.md`, and `changelog_table.md` created
+- [ ] Tutorial preference resolved: `ADDW_TUTORIALS` set; if true, `docs/5-tuto/` exists and the audience is in the project's CLAUDE.md

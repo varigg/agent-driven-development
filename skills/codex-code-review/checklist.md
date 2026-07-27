@@ -17,11 +17,11 @@ Formatting, import hygiene, unused imports, and naming casing are enforced deter
 
 - [ ] DRY principle - no duplicated logic
 - [ ] KISS principle - not unnecessarily complex for the problem
-- [ ] Convention conformance - for each layer the diff touches, verify typing, naming, commenting, and module-size expectations against what ARCHI.md documents for that layer (derived at review time, not cached here)
+- [ ] Convention conformance - for each layer the diff touches, verify typing, naming, commenting, and module-size expectations against what ARCHITECTURE.md documents for that layer (derived at review time, not cached here)
 
 ### 3. Architectural Compliance
 
-- [ ] For each layer the diff touches, code conforms to the conventions ARCHI.md documents for it (derived at review time)
+- [ ] For each layer the diff touches, code conforms to the conventions ARCHITECTURE.md documents for it (derived at review time)
 - [ ] Nothing reintroduces what the guardrail ADRs in `docs/adr/` rule out
 
 ### 4. Error Handling
@@ -41,7 +41,7 @@ Formatting, import hygiene, unused imports, and naming casing are enforced deter
 ### 6. Performance
 
 - [ ] No obvious performance issues (unnecessary work in hot paths, missing resource cleanup)
-- [ ] Performance expectations ARCHI.md documents for the touched layers are met (derived at review time)
+- [ ] Performance expectations ARCHITECTURE.md documents for the touched layers are met (derived at review time)
 
 ---
 
@@ -82,6 +82,6 @@ Minimum for approval:
 - [ ] All functional requirements implemented
 - [ ] No critical or major issues remaining
 - [ ] Build/compilation successful
-- [ ] Affected unit tests pass (per the TRIP-2 testing gate)
+- [ ] Affected unit tests pass (per the addw-2 testing gate)
 - [ ] New logic has test coverage (or a coverage-debt ledger entry per the hard-to-cover policy)
 - [ ] Documentation updated per project standards

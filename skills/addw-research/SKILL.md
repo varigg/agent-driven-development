@@ -1,5 +1,5 @@
 ---
-name: TRIP-research
+name: addw-research
 description: Exploratory research or spike - investigation without production code
 disable-model-invocation: true
 argument-hint: "what do you want to investigate?"
@@ -24,7 +24,7 @@ Research: $ARGUMENTS
 
 ---
 
-## Step 0: Read fully @docs/ARCHI.md
+## Step 0: Read fully @docs/ARCHITECTURE.md
 
 ## Step 1: Define Scope
 
@@ -40,7 +40,7 @@ Choose the investigation depth yourself — a quick lookup, a comparison, or a d
 
 ## Step 2: Research Plan
 
-Create a lightweight research plan (not a full TRIP plan):
+Create a lightweight research plan (not a full ADDW plan):
 
 ```markdown
 # Research: [Topic]
@@ -116,7 +116,7 @@ Present the findings in the conversation, structured as:
 Then **use the `AskUserQuestion` tool**:
 
 - **Question**: "Research complete. What would you like to do next?"
-- **Options**: "Write a memo" (persist findings to `docs/6-memo/`), "Elaborate on findings" (dive deeper into specific results), "Plan implementation" (hand these findings to `TRIP-1-plan`), "Done" (no further action needed)
+- **Options**: "Write a memo" (persist findings to `docs/6-memo/`), "Elaborate on findings" (dive deeper into specific results), "Plan implementation" (hand these findings to `addw-1-plan`), "Done" (no further action needed)
 
 **If "Write a memo"**, create `docs/6-memo/research_[date]_[topic].md` from this template, then confirm the file location:
 
@@ -179,4 +179,4 @@ Then **use the `AskUserQuestion` tool**:
 
 ## Boundaries
 
-This workflow produces recommendations and — optionally — a memo in `docs/6-memo/`. It produces **no production code, no version bump, no changelog entry, and no commits to the main branch**. If it concludes that implementation should proceed, that happens through `TRIP-1-plan`.
+This workflow produces recommendations and — optionally — a memo in `docs/6-memo/`. It produces **no production code, no version bump, no changelog entry, and no commits to the main branch**. If it concludes that implementation should proceed, that happens through `addw-1-plan`.

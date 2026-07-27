@@ -1,5 +1,5 @@
 ---
-name: TRIP-test
+name: addw-test
 description: Write/run tests following project standards (deep test authoring)
 disable-model-invocation: true
 argument-hint: "component or feature to test"
@@ -9,13 +9,13 @@ argument-hint: "component or feature to test"
 
 You are now in **testing mode**.
 
-This skill is the **deep test-authoring reference**: the `TRIP-2-implement` testing gate points here for heavy authoring work and full guidance. Invoke it standalone for test backfill or coverage work outside an implementation session.
+This skill is the **deep test-authoring reference**: the `addw-2-implement` testing gate points here for heavy authoring work and full guidance. Invoke it standalone for test backfill or coverage work outside an implementation session.
 
 ## Prerequisites - Read First
 
 Before testing, you MUST read:
 
-1. @docs/ARCHI.md - Understand system architecture
+1. @docs/ARCHITECTURE.md - Understand system architecture
 2. @docs/4-unit-tests/TESTING.md - Testing guidelines
 
 ## Your Task

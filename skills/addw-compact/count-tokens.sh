@@ -15,7 +15,7 @@
 #
 # Usage:
 #   ./count-tokens.sh <file> [file2 ...]
-#   ./count-tokens.sh docs/ARCHI.md docs/ARCHI-compact.md
+#   ./count-tokens.sh docs/ARCHITECTURE.md docs/ARCHITECTURE-compact.md
 
 if [ $# -eq 0 ]; then
   echo "Usage: $0 <file> [file2 ...]"

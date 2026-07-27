@@ -1,5 +1,5 @@
 ---
-name: TRIP-4-maintain
+name: addw-4-maintain
 description: Periodic maintenance audit - sweep code/test/docs/dependency health, record findings, triage fixes
 disable-model-invocation: true
 argument-hint: "optional: which sweeps to run (default: all four)"
@@ -15,7 +15,7 @@ Maintenance: $ARGUMENTS
 
 ## Prerequisites - Read First
 
-1. @docs/ARCHI.md - Current as-built architecture
+1. @docs/ARCHITECTURE.md - Current as-built architecture
 2. @docs/charter.md - Stable intent
 3. `docs/adr/` - Active decisions and guardrails
 4. The newest report in `docs/7-maintenance/` (if any) — check its open findings first
@@ -31,7 +31,7 @@ Maintenance: $ARGUMENTS
 ### Sweep A: Code Health
 
 - Duplication, dead code, oversized modules
-- Convention drift: sample each layer against the conventions ARCHI.md documents for it
+- Convention drift: sample each layer against the conventions ARCHITECTURE.md documents for it
 
 ### Sweep B: Test Health
 
@@ -54,7 +54,7 @@ Maintenance: $ARGUMENTS
 place is drift too.
 
 - **Pointer direction: durable must never depend on transient.** Durable =
-  charter, `docs/adr/`, ARCHI, glossary, conventions, runbooks. Transient =
+  charter, `docs/adr/`, ARCHITECTURE.md, glossary, conventions, runbooks. Transient =
   handoffs, worklists, task lists, audit reports. Transient → durable is
   correct; the reverse is a finding, because the durable record's meaning
   then degrades as tasks are checked off and breaks outright if the
@@ -95,7 +95,7 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
 ## Step 4: Triage & Apply
 
 - **Trivial mechanical fixes** (typo, dead import, stale doc line): apply directly, commit as `chore:`/`docs:` with explicit paths. List them in the report.
-- **Substantive findings**: never fix here. Propose a `TRIP-1-plan` per theme; ship as a patch release through the normal cycle.
+- **Substantive findings**: never fix here. Propose a `addw-1-plan` per theme; ship as a patch release through the normal cycle.
 - **Process findings** (a skill is wrong): propose separately — skills change via dedicated process commits, never inside an audit fix.
 
 ## Step 5: Commit the Report

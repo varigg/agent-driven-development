@@ -9,7 +9,7 @@ instruction block at the bottom of this prompt.
 
 ## Read first
 
-1. `docs/ARCHI.md` — architecture single source of truth
+1. `docs/ARCHITECTURE.md` — architecture single source of truth
 2. The project's agent instructions (`AGENTS.md` or `CLAUDE.md`) — conventions and commands
 3. The plan `{{TARGET}}` (if a path)
 
@@ -17,7 +17,7 @@ instruction block at the bottom of this prompt.
 
 - Implement exactly what the plan says — nothing more. If the instruction block below narrows
   the scope (e.g. "Implement Phase 1 only"), do not exceed that scope.
-- Follow the existing codebase patterns documented in ARCHI.md (module boundaries, error
+- Follow the existing codebase patterns documented in ARCHITECTURE.md (module boundaries, error
   handling, naming). Apply DRY and KISS.
 - Tick the checkboxes in the plan's To-dos for tasks you complete.
 - Run the project's lint and type-check/build commands (from the agent instructions) when done;
