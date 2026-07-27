@@ -117,7 +117,7 @@ Build a context block by extracting these values from the installed skills:
 - `TECHNICAL_CONSIDERATIONS`, `GUIDANCE_SECTIONS`, custom `REVIEW_CHECKLIST` sections → the target repo's `docs/ARCHITECTURE.md` (as per-layer conventions), user-reviewed before writing
 - `LINT_COMMAND`/`TYPECHECK_COMMAND`/`TEST_COMMAND`, `TEST_COMMANDS`, `TEST_STRUCTURE`, `TESTING_PRIORITIES` → `docs/4-unit-tests/TESTING.md` (Verification Recipes / Test Organization sections)
 - `TUTORIAL_CONFIG` audience values (level, focus, style) → the project's CLAUDE.md (`## Tutorial audience` section)
-- `CR_TEMPLATE` → **discarded** — the CR archive is retired; the annotated release tag records the review outcome
+- `CR_TEMPLATE` → **discarded** — the CR archive is retired; the CHANGELOG.md entry records the review outcome
 
 ### 2.3 Present Extracted Context
 
@@ -176,7 +176,7 @@ When upgrading a repo that lacks them, create:
 3. **`docs/charter.md`** — interview the user and get approval, exactly as in `addw-init` Phase 7.4. If the repo has a design doc, distill its stable-intent content (purpose, principles, scope, non-goals) into the charter as the interview's starting point.
 4. **`docs/7-maintenance/`** — empty folder for addw-4-maintain reports.
 5. **Verification Recipes** — add the `## Verification Recipes` and `## Integration / E2E Impact Rules` sections to the existing `docs/4-unit-tests/TESTING.md` (per the `addw-init` Phase 7.2 template), populated from the commands extracted in Phase 2.
-6. **Retired artifacts stay put** — existing `docs/3-code-review/` files, per-release changelog files, and `docs/2-changelog/changelog_table.md` are dated records; leave them **frozen exactly as written**. Release history lives in annotated git tags from this upgrade on — do not backfill tags for old changelog rows, and do not add new rows to the frozen file. Add one line at its top: "Frozen at v<current> — release history continues in annotated git tags (`git tag -n99`)."
+6. **Changelog relocation** — `git mv docs/2-changelog/changelog_table.md CHANGELOG.md` (repo root), **contents verbatim** (dated record — never rewrite old entries). New releases prepend entries in the v3 format (see `addw-3-release`) above the legacy sections. Existing `docs/3-code-review/` files and per-release changelog files stay put, frozen. CHANGELOG.md is write-only for the workflow — no skill reads it as context.
 
 ---
 

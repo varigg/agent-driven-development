@@ -25,7 +25,7 @@ Even the "simple" ones come with:
 | ------------------- | ------------------------------------------------------ |
 | `/addw-1-plan`      | Think before you code (Codex reviews the plan)         |
 | `/addw-2-implement` | Codex writes, you review, tests gate, Codex re-reviews |
-| `/addw-3-release`   | Version, docs, commit, annotated tag, merge, push      |
+| `/addw-3-release`   | Version, changelog, docs, commit, tag, merge, push     |
 
 ![ADDW Workflow loop](assets/trip-workflow-loop2.png)
 
@@ -82,7 +82,7 @@ The `addw-init` skill is a **script written in human language** that programmati
 
 ### What Init Does
 
-1. **Creates the docs structure** - Folders for plans, tests, memos, maintenance reports, and ADRs (release history lives in annotated git tags, not files)
+1. **Creates the docs structure** - Folders for plans, tests, memos, maintenance reports, and ADRs, plus a root `CHANGELOG.md` (written at release time, never read by skills — human-consumable history only)
 2. **Explores your codebase** - Identifies languages, frameworks, patterns, conventions
 3. **Classifies your project** - Web frontend? CLI tool? Embedded firmware? Library?
 4. **Generates the living docs** - ARCHITECTURE.md (as-built, tailored to your project type), charter.md (stable intent, from a short interview), TESTING.md (with your actual verification commands), and the ADR template
@@ -100,7 +100,7 @@ Implementation delegated to Codex CLI in a **workspace-write sandbox**: it reads
 
 ### `/codex-plan-review` & `/codex-code-review`
 
-Iterative review loops powered by Codex CLI. Plans get a second-opinion review before the user sees them. Code gets reviewed against the plan and a shared checklist (`codex-code-review/checklist.md` — also the criteria for any manual review) after implementation. Both use persistent thread state for multi-round convergence (`start → REQUEST_CHANGES → fix → resume → APPROVED`). Integrated directly into addw-1-plan and addw-2-implement (after the testing gate). The review outcome lands as one line in the release's annotated tag — no separate review archive.
+Iterative review loops powered by Codex CLI. Plans get a second-opinion review before the user sees them. Code gets reviewed against the plan and a shared checklist (`codex-code-review/checklist.md` — also the criteria for any manual review) after implementation. Both use persistent thread state for multi-round convergence (`start → REQUEST_CHANGES → fix → resume → APPROVED`). Integrated directly into addw-1-plan and addw-2-implement (after the testing gate). The review outcome lands as one line in the release's changelog entry — no separate review archive.
 
 Per-flow model defaults (implementation vs reviews) live in `codex-plan-review/scripts/_common.sh`, overridable per project via `docs/addw.env` or per run via `CODEX_MODEL` / `CODEX_EFFORT` env vars.
 

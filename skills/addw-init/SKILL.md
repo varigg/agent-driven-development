@@ -32,9 +32,9 @@ docs/
 └── adr/                  # Architecture Decision Records
 ```
 
-Note: `5-tuto/` folder is created conditionally in Phase 6 only if the user wants tutorial generation. (Historical installs may also have `2-changelog/` and `3-code-review/` directories — retired; the numbering gaps are deliberate. Release history lives in annotated git tags.)
+Note: `5-tuto/` folder is created conditionally in Phase 6 only if the user wants tutorial generation. (Historical installs may also have `2-changelog/` and `3-code-review/` directories — retired; the numbering gaps are deliberate. The release history lives in a root-level `CHANGELOG.md`.)
 
-Files (`addw.env`, `ARCHITECTURE.md`, `ARCHITECTURE-rules.md`, `charter.md`, `adr/template.md`, `TESTING.md`) will be created in later phases after codebase analysis.
+Files (`addw.env`, `ARCHITECTURE.md`, `ARCHITECTURE-rules.md`, `charter.md`, `adr/template.md`, `TESTING.md`, root `CHANGELOG.md`) will be created in later phases after codebase analysis.
 
 ---
 
@@ -254,7 +254,25 @@ The planning skill's Technical Considerations pull per-layer conventions from AR
 
 Now that ARCHITECTURE.md is validated, create the supporting documentation files adapted to the project.
 
-### 1. `docs/4-unit-tests/TESTING.md` - Testing Guidelines
+### 1. `CHANGELOG.md` (repo root) - Human Release History
+
+Write-only for the workflow: release and hotfix skills prepend entries; **no skill reads it as context** (agents get history from git). Create it with a header and the init entry — patch-increment the version found in Phase 2 (`1.2.3` → `1.2.4`; `0.1.0` if none exists):
+
+```markdown
+# Changelog
+
+Release history, newest first. Maintained by the ADDW release skills; humans read it, agents don't.
+
+## vX.Y.Z+1 — DD-MM-YYYY
+
+chore: initialize the ADDW workflow
+
+- Initialized ADDW — docs structure, ARCHITECTURE.md ([project type] architecture), charter, TESTING.md, addw.env
+```
+
+---
+
+### 2. `docs/4-unit-tests/TESTING.md` - Testing Guidelines
 
 **Adapt based on the validated ARCHITECTURE.md** - use the actual test framework, commands, and conventions discovered during codebase exploration:
 
@@ -303,7 +321,7 @@ Single source of truth for verification commands — the ADDW skills point here 
 
 ---
 
-### 2. `docs/ARCHITECTURE-rules.md` - Architecture Maintenance Rules
+### 3. `docs/ARCHITECTURE-rules.md` - Architecture Maintenance Rules
 
 **Adapt based on the validated ARCHITECTURE.md** - reference the actual sections and terminology used:
 
@@ -351,7 +369,7 @@ Update: Technology Stack, and any affected architectural sections
 
 ---
 
-### 3. `docs/charter.md` - Stable Intent
+### 4. `docs/charter.md` - Stable Intent
 
 The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `addw-3-release` flags apparent violations to the user and never edits it silently.
 
@@ -387,7 +405,7 @@ charter is never silently edited.
 
 ---
 
-### 4. `docs/adr/template.md` - ADR Template
+### 5. `docs/adr/template.md` - ADR Template
 
 Create verbatim (no adaptation needed — it is process, not design):
 
@@ -436,24 +454,19 @@ Verify before reporting completion:
 - [ ] **No skill file was edited** — all project state is in addw.env or the living docs
 - [ ] TESTING.md has **Verification Recipes** and **Integration/E2E Impact Rules** filled with the project's real commands
 - [ ] charter.md **user-approved** before writing; ARCHITECTURE.md **user-approved** at Phase 5
-- [ ] `docs/adr/template.md` and `ARCHITECTURE-rules.md` created
+- [ ] `docs/adr/template.md`, `ARCHITECTURE-rules.md`, and root `CHANGELOG.md` created
 - [ ] Tutorial preference resolved: `ADDW_TUTORIALS` set; if true, `docs/5-tuto/` exists and the audience is in the project's CLAUDE.md
 
 ---
 
 ## Initial Commit & Tag
 
-Release history lives in **annotated git tags** (see `addw-3-release`) — there is no changelog file. Offer to commit and tag the initialization as the first release record. Patch-increment the version found in Phase 2 (`1.2.3` → `1.2.4`; `0.1.0` if none exists):
+Offer to commit and tag the initialization as the first release (the version matching the CHANGELOG.md init entry from Phase 7):
 
 ```bash
-git add docs/ .claude/skills/ CLAUDE.md
+git add docs/ CHANGELOG.md .claude/skills/ CLAUDE.md
 git commit -m "chore: initialize the ADDW workflow"
-git tag -a vX.Y.Z+1 -F - <<'EOF'
-chore: initialize the ADDW workflow
-
-Changes:
-- Initialized ADDW — docs structure, ARCHITECTURE.md ([project type] architecture), charter, TESTING.md, addw.env
-EOF
+git tag vX.Y.Z+1
 ```
 
 If the user declines, remind them the first `addw-3-release` will assume the tag baseline exists.

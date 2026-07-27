@@ -159,7 +159,7 @@ Always run the code review after the testing gate passes — no confirmation nee
 
 ### Record the Outcome
 
-No review artifact is produced. Note the round count, verdict, and any overrides or open findings the user accepted — `addw-3-release` records them as the Review line of the release tag annotation. If the user skipped Codex, the line reads "skipped — trivial change"; if the loop was capped without `APPROVED`, list the open findings there.
+No review artifact is produced. Note the round count, verdict, and any overrides or open findings the user accepted — `addw-3-release` records them as the Review line of the changelog entry. If the user skipped Codex, the line reads "skipped — trivial change"; if the loop was capped without `APPROVED`, list the open findings there.
 
 ### Operating Notes
 
