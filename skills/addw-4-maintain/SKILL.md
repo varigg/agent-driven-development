@@ -43,7 +43,7 @@ Maintenance: $ARGUMENTS
 **Vocabulary**
 
 - Superseded-vocabulary sweep: grep vocabulary retired by superseded/amended ADRs across the living docs — process files (`.claude/skills/`) included. Every hit must be a dated record, an explicit negation, or a standing lesson.
-- Living docs describe only current design — flag anything narrating history outside dated records (plans, changelogs, CRs, tutorials, ADRs are exempt: their date is part of their meaning; never retro-edit them).
+- Living docs describe only current design — flag anything narrating history outside dated records (plans, CRs, tutorials, ADRs, frozen legacy changelogs are exempt: their date is part of their meaning; never retro-edit them).
 - A rename pass is **prose only**. Identifiers, script names, and paths are
   code changes — file them, don't do them here.
 - Verify a rename by listing what survived, never by trusting the edit.

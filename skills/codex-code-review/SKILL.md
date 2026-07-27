@@ -8,7 +8,7 @@ argument-hint: "<plan-path> [extra context] | reset <plan-path> | show <plan-pat
 
 Iterative code review via Codex CLI on uncommitted changes. Codex reads the plan and runs `git status -s` / `git diff HEAD` to inspect the change set. Criteria come from `checklist.md` in this skill's directory — the single source of truth for review sections, severity, and the approval gate.
 
-Review output stays in `state/<key>.review.txt`; no separate review artifact is produced. What survives the loop is a line in the release's changelog entry: rounds, verdict, and any overrides or accepted open findings.
+Review output stays in `state/<key>.review.txt`; no separate review artifact is produced. What survives the loop is the Review line of the release's annotated tag: rounds, verdict, and any overrides or accepted open findings.
 
 State persisted under `.claude/skills/codex-code-review/state/<sanitized-target>.{thread,review.txt,events.ndjson}`. Shared scripts live under `.claude/skills/codex-plan-review/scripts/`; always export before invoking:
 
@@ -47,7 +47,7 @@ Codex uses `git status -s` / `git diff HEAD` in read-only sandbox. If those fail
 
 ## After Convergence
 
-Note the round count, verdict, and any overrides or accepted open findings — `addw-3-release` records them in the changelog entry. Then continue with `addw-3-release`.
+Note the round count, verdict, and any overrides or accepted open findings — `addw-3-release` records them in the release tag annotation. Then continue with `addw-3-release`.
 
 ## Notes
 

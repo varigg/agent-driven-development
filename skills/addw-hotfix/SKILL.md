@@ -72,28 +72,9 @@ No formal plan document needed.
 
 ---
 
-## Step 6: Version & Changelog
-
-### Version Bump
+## Step 6: Version Bump
 
 Increment **patch** version only (x.y.Z+1) in `$ADDW_VERSION_FILE`.
-
-### Minimal Changelog Entry
-
-Add to top of `docs/2-changelog/changelog_table.md`:
-
-```markdown
-| `x.y.z` | DD-MM-YYYY | hotfix: [brief description] |
-```
-
-Add to Changelog Summary:
-
-```markdown
-- **vX.Y.Z (Hotfix, DD-MM-YYYY)**:
-  - **Issue**: [What was broken]
-  - **Fix**: [What was done]
-  - **Root Cause**: [Brief explanation]
-```
 
 ---
 
@@ -103,7 +84,7 @@ Review `git status`, then stage the fix's files **explicitly** (never `git add -
 
 ```bash
 git status
-git add <fixed files> "$ADDW_VERSION_FILE" docs/2-changelog/changelog_table.md
+git add <fixed files> "$ADDW_VERSION_FILE"
 git commit -m "hotfix: [brief description]"
 ```
 
@@ -111,10 +92,18 @@ git commit -m "hotfix: [brief description]"
 
 ## Step 8: Merge & Tag
 
+The annotated tag is the release record (see `addw-3-release` — there is no changelog file):
+
 ```bash
 git checkout "$ADDW_MAIN_BRANCH"
 git merge --ff-only hotfix/[short-description]
-git tag vx.y.z
+git tag -a vx.y.z -F - <<'EOF'
+hotfix: [brief description]
+
+Issue: [what was broken]
+Fix: [what was done]
+Root cause: [brief explanation]
+EOF
 git push && git push --tags
 git branch -d hotfix/[short-description]
 ```

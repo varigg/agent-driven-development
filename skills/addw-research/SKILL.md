@@ -179,4 +179,4 @@ Then **use the `AskUserQuestion` tool**:
 
 ## Boundaries
 
-This workflow produces recommendations and — optionally — a memo in `docs/6-memo/`. It produces **no production code, no version bump, no changelog entry, and no commits to the main branch**. If it concludes that implementation should proceed, that happens through `addw-1-plan`.
+This workflow produces recommendations and — optionally — a memo in `docs/6-memo/`. It produces **no production code, no version bump, no release tag, and no commits to the main branch**. If it concludes that implementation should proceed, that happens through `addw-1-plan`.

@@ -26,16 +26,15 @@ Create the following folder structure if it doesn't exist:
 ```
 docs/
 ├── 1-plans/              # Feature planning documents
-├── 2-changelog/          # changelog_table.md — the single release record
 ├── 4-unit-tests/         # Unit testing documentation
 ├── 6-memo/               # Miscellaneous notes and memos
 ├── 7-maintenance/        # Maintenance audit reports (addw-4-maintain)
 └── adr/                  # Architecture Decision Records
 ```
 
-Note: `5-tuto/` folder is created conditionally in Phase 6 only if the user wants tutorial generation. (Historical installs may also have a `3-code-review/` directory — retired; its numbering gap is deliberate.)
+Note: `5-tuto/` folder is created conditionally in Phase 6 only if the user wants tutorial generation. (Historical installs may also have `2-changelog/` and `3-code-review/` directories — retired; the numbering gaps are deliberate. Release history lives in annotated git tags.)
 
-Files (`addw.env`, `ARCHITECTURE.md`, `ARCHITECTURE-rules.md`, `charter.md`, `adr/template.md`, `changelog_table.md`, `TESTING.md`) will be created in later phases after codebase analysis.
+Files (`addw.env`, `ARCHITECTURE.md`, `ARCHITECTURE-rules.md`, `charter.md`, `adr/template.md`, `TESTING.md`) will be created in later phases after codebase analysis.
 
 ---
 
@@ -249,41 +248,7 @@ The planning skill's Technical Considerations pull per-layer conventions from AR
 
 Now that ARCHITECTURE.md is validated, create the supporting documentation files adapted to the project.
 
-### 1. `docs/2-changelog/changelog_table.md` - Version Tracking
-
-**Version for first entry**: Take the current version identified in Phase 2 and increment the patch number. For example:
-
-- Current `1.2.3` → First entry `1.2.4`
-- Current `0.5.0` → First entry `0.5.1`
-- No version found → First entry `0.1.0`
-
-This file has two sections:
-
-**Section 1: Quick Reference Table**
-
-```markdown
-# Changelog Table
-
-| Version   | Date       | Commit Message                  |
-| --------- | ---------- | ------------------------------- |
-| `X.Y.Z+1` | DD-MM-YYYY | chore: initialize ADDW workflow |
-```
-
-**Section 2: Detailed Changelog Summary**
-
-```markdown
-# Changelog Summary
-
-- **vX.Y.Z+1 (DD-MM-YYYY)**: chore: initialize ADDW workflow
-  - **Changes**: Initialized ADDW workflow — docs structure, ARCHITECTURE.md ([project type] architecture)
-  - **Files Added**: docs/addw.env, docs/ARCHITECTURE.md, docs/ARCHITECTURE-rules.md, docs/charter.md, docs/adr/template.md, docs/2-changelog/changelog_table.md, docs/4-unit-tests/TESTING.md
-```
-
-The summary provides context that the table cannot capture: rationale, impact, decisions, review outcome. New entries are added at the **top** of each section. This file is the **single release record** — there are no per-release changelog files.
-
----
-
-### 2. `docs/4-unit-tests/TESTING.md` - Testing Guidelines
+### 1. `docs/4-unit-tests/TESTING.md` - Testing Guidelines
 
 **Adapt based on the validated ARCHITECTURE.md** - use the actual test framework, commands, and conventions discovered during codebase exploration:
 
@@ -332,7 +297,7 @@ Single source of truth for verification commands — the ADDW skills point here 
 
 ---
 
-### 3. `docs/ARCHITECTURE-rules.md` - Architecture Maintenance Rules
+### 2. `docs/ARCHITECTURE-rules.md` - Architecture Maintenance Rules
 
 **Adapt based on the validated ARCHITECTURE.md** - reference the actual sections and terminology used:
 
@@ -380,7 +345,7 @@ Update: Technology Stack, and any affected architectural sections
 
 ---
 
-### 4. `docs/charter.md` - Stable Intent
+### 3. `docs/charter.md` - Stable Intent
 
 The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `addw-3-release` flags apparent violations to the user and never edits it silently.
 
@@ -416,7 +381,7 @@ charter is never silently edited.
 
 ---
 
-### 5. `docs/adr/template.md` - ADR Template
+### 4. `docs/adr/template.md` - ADR Template
 
 Create verbatim (no adaptation needed — it is process, not design):
 
@@ -465,5 +430,24 @@ Verify before reporting completion:
 - [ ] **No skill file was edited** — all project state is in addw.env or the living docs
 - [ ] TESTING.md has **Verification Recipes** and **Integration/E2E Impact Rules** filled with the project's real commands
 - [ ] charter.md **user-approved** before writing; ARCHITECTURE.md **user-approved** at Phase 5
-- [ ] `docs/adr/template.md`, `ARCHITECTURE-rules.md`, and `changelog_table.md` created
+- [ ] `docs/adr/template.md` and `ARCHITECTURE-rules.md` created
 - [ ] Tutorial preference resolved: `ADDW_TUTORIALS` set; if true, `docs/5-tuto/` exists and the audience is in the project's CLAUDE.md
+
+---
+
+## Initial Commit & Tag
+
+Release history lives in **annotated git tags** (see `addw-3-release`) — there is no changelog file. Offer to commit and tag the initialization as the first release record. Patch-increment the version found in Phase 2 (`1.2.3` → `1.2.4`; `0.1.0` if none exists):
+
+```bash
+git add docs/ .claude/skills/ CLAUDE.md
+git commit -m "chore: initialize the ADDW workflow"
+git tag -a vX.Y.Z+1 -F - <<'EOF'
+chore: initialize the ADDW workflow
+
+Changes:
+- Initialized ADDW — docs structure, ARCHITECTURE.md ([project type] architecture), charter, TESTING.md, addw.env
+EOF
+```
+
+If the user declines, remind them the first `addw-3-release` will assume the tag baseline exists.
