@@ -5,28 +5,38 @@ common upgrade is therefore:
 
 1. Replace the install's `.claude/skills/` contents wholesale with this repo's
    `skills/`.
-2. Keep `docs/addw.env` untouched (add any newly introduced keys — see the
-   template in `addw-init` Phase 6).
+2. Keep `docs/addw.env` untouched, except: add any newly introduced keys (see
+   the template in `addw-init` Phase 6) and bump `ADDW_SCHEMA` if a structural
+   boundary below was crossed.
 
-Some version boundaries also change the **docs contract** (file names,
-locations, retired artifacts). Those structural steps are listed below, newest
-first — apply every section between your install's version and the target.
-This file is read only when upgrading; no skill loads it as context.
+## Knowing what you're upgrading from
 
-## v2 → v3
+`ADDW_SCHEMA` in `docs/addw.env` is the install's **generation marker**. It
+changes only when a version boundary alters the docs contract (file names,
+locations, retired artifacts) — not on every release. Read it with
+`grep ADDW_SCHEMA docs/addw.env`. An install with no `docs/addw.env` and
+`TRIP-*` skill folders is generation 2.
 
-Automated by the `addw-upgrade` skill (available for this boundary only — v2
-installs carry project values inside the skills, which must be extracted and
-relocated first; see that skill). The structural steps it performs:
+Apply every section below between your install's schema and the current one,
+oldest first. Each section's last step is bumping `ADDW_SCHEMA`. This file is
+read only when upgrading; no skill loads it as context.
+
+## Schema 2 → 3
+
+Automated by the `addw-upgrade` skill (available for this boundary only —
+generation-2 installs carry project values inside the skills, which must be
+extracted and relocated first; see that skill). The structural steps it
+performs:
 
 - Skill folders `TRIP-<x>` → `addw-<x>`; `TRIP-review` retired (checklist
   lives at `codex-code-review/checklist.md`).
 - `docs/ARCHI.md` → `docs/ARCHITECTURE.md`; `docs/ARCHI-rules.md` →
   `docs/ARCHITECTURE-rules.md` (contents unchanged).
-- `docs/trip.env` does not exist on v2 — extracted values are written to a new
-  `docs/addw.env`.
+- A new `docs/addw.env` is written from the extracted values (generation 2 has
+  no config file).
 - `docs/2-changelog/changelog_table.md` → root `CHANGELOG.md` verbatim (dated
   record; new entries prepend in the v3 format). `docs/3-code-review/` and
   per-release changelog files stay put, frozen.
 - References to old names in living docs, CLAUDE.md, and README updated
   (dated records exempt).
+- `ADDW_SCHEMA=3` (included in the freshly written `addw.env`).
