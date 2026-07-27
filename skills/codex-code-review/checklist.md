@@ -1,6 +1,6 @@
 # Code Review Checklist
 
-This file is the **single source of truth** for code-review criteria. Both human-driven reviews via `.claude/skills/TRIP-review` and Codex-driven reviews via `.claude/skills/codex-code-review` apply the criteria below — referenced, not copied — so the two review surfaces cannot drift.
+This file is the **single source of truth** for code-review criteria. The Codex review loop (`codex-code-review`) applies it every round, and any manual review — auditing a past version, reviewing unplanned work, or standing in when Codex is unavailable — walks the same sections by hand and reports findings in chat or a `docs/6-memo/` file. Referenced, never copied, so review surfaces cannot drift.
 
 ## Systematic Review Checklist
 

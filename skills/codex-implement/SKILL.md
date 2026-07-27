@@ -44,4 +44,4 @@ export STATE_DIR=".claude/skills/codex-implement/state"
 - Separate `STATE_DIR` from the review skills — the same plan path can hold an implementation thread and a review thread without collision.
 - Codex is instructed not to write tests (testing gate owns that) and not to touch release ceremony.
 - Network is blocked in the sandbox: if the plan requires installing a new dependency, Codex will report it as a leftover — install it yourself during self-review.
-- Model/effort defaults live in `codex-plan-review/scripts/_common.sh` (implementation → gpt-5.6-luna, reviews → gpt-5.6-sol, effort xhigh; derived from `STATE_DIR`). Adjust that one file to your preferred models, or override per run via `CODEX_MODEL` / `CODEX_EFFORT` env vars; the scripts echo the effective values.
+- Model/effort defaults live in `codex-plan-review/scripts/_common.sh`, keyed off `STATE_DIR` (this skill's key selects the implementation-class model). Override per run with `CODEX_MODEL` / `CODEX_EFFORT`.

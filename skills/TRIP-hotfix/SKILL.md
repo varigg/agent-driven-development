@@ -35,7 +35,8 @@ Before proceeding, confirm this is a genuine hotfix:
 ## Step 2: Create Hotfix Branch
 
 ```bash
-git checkout main && git pull
+source docs/trip.env
+git checkout "$TRIP_MAIN_BRANCH" && git pull
 git checkout -b hotfix/[short-description]
 ```
 
@@ -75,20 +76,20 @@ No formal plan document needed.
 
 ### Version Bump
 
-Increment **patch** version only (x.y.Z+1) in `[VERSION_FILE]`.
+Increment **patch** version only (x.y.Z+1) in `$TRIP_VERSION_FILE`.
 
 ### Minimal Changelog Entry
 
 Add to top of `docs/2-changelog/changelog_table.md`:
 
 ```markdown
-| `x.y.z` | W | hotfix: [brief description] |
+| `x.y.z` | DD-MM-YYYY | hotfix: [brief description] |
 ```
 
 Add to Changelog Summary:
 
 ```markdown
-- **vX.Y.Z (Hotfix - Week W, DD-MM-YYYY)**:
+- **vX.Y.Z (Hotfix, DD-MM-YYYY)**:
   - **Issue**: [What was broken]
   - **Fix**: [What was done]
   - **Root Cause**: [Brief explanation]
@@ -102,7 +103,7 @@ Review `git status`, then stage the fix's files **explicitly** (never `git add -
 
 ```bash
 git status
-git add <fixed files> [VERSION_FILE] docs/2-changelog/changelog_table.md
+git add <fixed files> "$TRIP_VERSION_FILE" docs/2-changelog/changelog_table.md
 git commit -m "hotfix: [brief description]"
 ```
 
@@ -111,36 +112,23 @@ git commit -m "hotfix: [brief description]"
 ## Step 8: Merge & Tag
 
 ```bash
-git checkout main
+git checkout "$TRIP_MAIN_BRANCH"
 git merge --ff-only hotfix/[short-description]
 git tag vx.y.z
 git push && git push --tags
 git branch -d hotfix/[short-description]
 ```
 
-If `--ff-only` fails, rebase the hotfix branch onto main and retry. Never create a merge commit.
+If `--ff-only` fails, rebase the hotfix branch onto the main branch and retry. Never create a merge commit.
 
 ---
 
 ## Step 9: Post-Hotfix
 
-After the immediate crisis is resolved:
-
-1. **Document**: Create a brief incident report in `docs/6-memo/` if significant
-2. **Follow-up**: If deeper fixes are needed, create a proper TRIP plan
-3. **Retrospective**: Consider what could prevent similar issues
+Once the crisis is resolved: write a brief incident report in `docs/6-memo/` if it was significant, and open a proper `TRIP-1-plan` if the real fix is deeper than the patch.
 
 ---
 
 ## What This Workflow Skips
 
-Compared to full TRIP:
-
-- No interactive discovery questions
-- No formal plan document
-- No full code review checklist
-- No tutorial generation
-- No ARCHI.md update (unless architecture changed)
-- No README update (unless relevant)
-
-These are acceptable trade-offs for genuine emergencies only.
+No discovery questions, no plan document, no code review checklist, no tutorial, and no ARCHI.md/README update unless the fix actually changed the architecture. Acceptable trade-offs for a genuine emergency — and only for that.

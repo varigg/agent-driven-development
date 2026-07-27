@@ -7,7 +7,7 @@ argument-hint: "optional: which sweeps to run (default: all four)"
 
 # Maintenance Mode
 
-You are now in **maintenance mode** for **[PROJECT_NAME]**.
+You are now in **maintenance mode**.
 
 **Audit and triage — not repair.** This skill sweeps the project, records what it finds, applies only trivial mechanical fixes, and routes everything substantive through the normal Plan → Implement → Release cycle. It never implements big refactors itself — that would bypass exactly the plan-conformance review that makes the workflow trustworthy.
 
@@ -17,7 +17,7 @@ Maintenance: $ARGUMENTS
 
 1. @docs/ARCHI.md - Current as-built architecture
 2. @docs/charter.md - Stable intent
-3. `docs/adr/` - Statuses and guardrails
+3. `docs/adr/` - Active decisions and guardrails
 4. The newest report in `docs/7-maintenance/` (if any) — check its open findings first
 
 ---
@@ -88,7 +88,7 @@ place is drift too.
 
 ## Step 3: Write the Findings Report
 
-Create `docs/7-maintenance/MAINT_wa_vx.y.z.md` (a = project week, x.y.z = current version — no version bump for an audit). This is a dated record, like a CR: **"looked, found nothing" is a valid and required entry per sweep.** Skipped sweeps are recorded as skipped.
+Create `docs/7-maintenance/MAINT_vx.y.z.md` (x.y.z = current version — no version bump for an audit), dated in its header. This is a dated record: **"looked, found nothing" is a valid and required entry per sweep.** Skipped sweeps are recorded as skipped.
 
 Per finding: severity (trivial / substantive), evidence (file:line or command output), disposition (fixed here / routed to plan / accepted).
 
@@ -100,4 +100,4 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
 
 ## Step 5: Commit the Report
 
-Review `git status`, stage the report plus any trivial-fix paths **explicitly** (never `git add -A`), and commit with a conventional message (e.g. `chore: maintenance audit week a`).
+Review `git status`, stage the report plus any trivial-fix paths **explicitly** (never `git add -A`), and commit with a conventional message (e.g. `chore: maintenance audit vx.y.z`).

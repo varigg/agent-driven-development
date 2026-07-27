@@ -6,7 +6,7 @@ argument-hint: "plan file or feature to implement"
 
 # Implementation Mode
 
-You are now in **implementation mode** for **[PROJECT_NAME]**.
+You are now in **implementation mode**.
 
 ## Prerequisites - Read First
 
@@ -149,7 +149,7 @@ export STATE_DIR=".claude/skills/codex-code-review/state"
    ```
    `$GATE_SUMMARY` is the testing-gate summary (`lint | typecheck | tests`). For unplanned work (no `F_*.plan.md`), pass a free-form label instead of a plan path.
 
-2. **Parse trailing tag**: `APPROVED` -> synthesize. `NEEDS_REWORK` -> surface to user. `REQUEST_CHANGES` -> continue.
+2. **Parse trailing tag**: `APPROVED` -> record the outcome (below). `NEEDS_REWORK` -> surface to user. `REQUEST_CHANGES` -> continue.
 
 3. **Address findings** — quote each with `file:line`, read the actual code, fix legitimate ones, push back on incorrect ones. Critical/Major block approval; Minor/Suggestion are case-by-case.
 
@@ -166,23 +166,9 @@ export STATE_DIR=".claude/skills/codex-code-review/state"
 
 6. **Cap at 5 rounds** (or user-specified). Surface remaining findings.
 
-### Synthesize
+### Record the Outcome
 
-Skip if loop converged on Turn 1 (state file already holds full review).
-
-Turn-N state files hold only that turn's delta. After multi-round convergence, produce a consolidated review:
-
-```bash
-bash .claude/skills/codex-plan-review/scripts/resume.sh \
-    --prompt-file .claude/skills/codex-code-review/prompts/synthesize.tpl \
-    <plan-path> "Today's date is YYYY-MM-DD"
-```
-
-Outputs `PROMOTION_READY` sentinel. `<x.y.z>` Version placeholder left unfilled (resolved during `TRIP-3-release`).
-
-Edge cases:
-- **Capped without APPROVED**: still synthesize; Codex notes open findings.
-- **User skipped Codex**: no synthesis. The CR is written manually during `TRIP-3-release`: "Code review skipped — trivial change."
+No review artifact is produced. Note the round count, verdict, and any overrides or open findings the user accepted — `TRIP-3-release` records them as the Review line of the changelog entry. If the user skipped Codex, the line reads "skipped — trivial change"; if the loop was capped without `APPROVED`, list the open findings there.
 
 ### Operating Notes
 

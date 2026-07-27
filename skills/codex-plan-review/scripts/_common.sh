@@ -14,13 +14,18 @@ mkdir -p "$STATE_DIR"
 
 # Model/effort per flow (single source of truth for all codex skills):
 # implementation runs Luna, reviews (plan + code) run Sol, effort xhigh.
-# Adjust these defaults to your preferred models.
-# CODEX_MODEL / CODEX_EFFORT act as per-run overrides.
+# Per-project overrides come from docs/trip.env (TRIP_CODEX_MODEL_IMPL /
+# TRIP_CODEX_MODEL_REVIEW / TRIP_CODEX_EFFORT); CODEX_MODEL / CODEX_EFFORT
+# env vars act as per-run overrides on top of both.
+if [ -f "docs/trip.env" ]; then
+    # shellcheck disable=SC1091
+    . "docs/trip.env"
+fi
 case "$STATE_DIR" in
-    *codex-implement*) CODEX_MODEL="${CODEX_MODEL:-gpt-5.6-luna}" ;;
-    *)                 CODEX_MODEL="${CODEX_MODEL:-gpt-5.6-sol}" ;;
+    *codex-implement*) CODEX_MODEL="${CODEX_MODEL:-${TRIP_CODEX_MODEL_IMPL:-gpt-5.6-luna}}" ;;
+    *)                 CODEX_MODEL="${CODEX_MODEL:-${TRIP_CODEX_MODEL_REVIEW:-gpt-5.6-sol}}" ;;
 esac
-CODEX_EFFORT="${CODEX_EFFORT:-xhigh}"
+CODEX_EFFORT="${CODEX_EFFORT:-${TRIP_CODEX_EFFORT:-xhigh}}"
 export CODEX_MODEL CODEX_EFFORT
 
 # Derive a per-target key from a path-like string. For real paths we

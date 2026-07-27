@@ -7,7 +7,7 @@ argument-hint: "component or feature to test"
 
 # Testing Mode
 
-You are now in **testing mode** for **[PROJECT_NAME]**.
+You are now in **testing mode**.
 
 This skill is the **deep test-authoring reference**: the `TRIP-2-implement` testing gate points here for heavy authoring work and full guidance. Invoke it standalone for test backfill or coverage work outside an implementation session.
 
@@ -26,41 +26,11 @@ Test: $ARGUMENTS
 
 ## Testing Guidelines
 
-### Scope
+**Scope**: only the files the change touched — never the whole suite by default.
 
-- Only run tests for relevant files that changed (not the whole project)
-- Focus on the new feature/fix/refactor
+**Everything project-specific comes from `docs/4-unit-tests/TESTING.md`**, which you have already read as a prerequisite: commands (Verification Recipes), test locations, naming conventions, file patterns, and any stated priorities. Never guess a command.
 
-### Commands
-
-All test commands (full suite, single test, coverage) live in the Verification Recipes section of `docs/4-unit-tests/TESTING.md` — you have already read it as a prerequisite. Never guess commands.
-
-### Test Structure
-
-Test locations, naming conventions, and file patterns are documented in `docs/4-unit-tests/TESTING.md`.
-
-### Testing Priorities
-
-Project-specific priorities, if any, live in `docs/4-unit-tests/TESTING.md`.
-
-**Unit Tests**:
-
-- Core logic functions
-- Utility functions
-- Individual modules/components
-
-**Integration Tests**:
-
-- Module interactions
-- External service integration
-- End-to-end flows
-
-**What to Test**:
-
-- Happy path scenarios
-- Error states and error handling
-- Edge cases (null, empty, boundary values)
-- Invalid inputs
+Cover the happy path, error handling, and boundary conditions (null, empty, limits, invalid input) for the behavior you are testing.
 
 ---
 
@@ -76,13 +46,13 @@ Uncovered risky paths: one line each in `docs/4-unit-tests/COVERAGE-DEBT.md` (`p
 
 After completing tests, create a summary file:
 
-**File**: `docs/4-unit-tests/wa_vx.y.z_test.md`
-(a = project week, x.y.z = version)
+**File**: `docs/4-unit-tests/vx.y.z_test.md`
+(x.y.z = version)
 
 **Content**:
 
 ```markdown
-# Test Summary - Week a, V. x.y.z
+# Test Summary - DD-MM-YYYY, V. x.y.z
 
 ## What Was Tested
 
