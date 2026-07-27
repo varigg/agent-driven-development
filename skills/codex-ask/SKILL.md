@@ -10,7 +10,7 @@ Free-form second opinion from Codex CLI on **any matter** — architecture decis
 
 **Advisory, not authoritative.** Unlike `codex-plan-review` / `codex-code-review`, there are no verdict tags and nothing is gated on the answer: treat the response as one input to your judgment, exactly like a colleague's opinion. Agreement is weak evidence; *disagreement* is a strong signal that something deserves the user's attention.
 
-State persisted per topic label under `.claude/skills/codex-ask/state/` — follow-ups resume the same thread, enabling multi-round discussion. The shared scripts from `codex-plan-review` do all the work; always export first:
+State persisted per topic label under `.claude/skills/codex-ask/state/` — follow-ups resume the same thread, enabling multi-round discussion. This skill's `scripts/start.sh` and `scripts/resume.sh` are thin adapters over the shared `codex-plan-review` runner; for `reset`/`show` (shared scripts, no adapter wrapper) export first:
 
 ```bash
 export STATE_DIR=".claude/skills/codex-ask/state"
@@ -26,15 +26,13 @@ export STATE_DIR=".claude/skills/codex-ask/state"
 
 1. **Start** a discussion:
    ```bash
-   bash .claude/skills/codex-plan-review/scripts/start.sh \
-       --prompt-file .claude/skills/codex-ask/prompts/ask.tpl \
+   bash .claude/skills/codex-ask/scripts/start.sh \
        <topic-label> "<question — include your draft position and ask for disagreement>"
    ```
 
 2. **Follow up** in the same thread (counterpoints, new evidence):
    ```bash
-   bash .claude/skills/codex-plan-review/scripts/resume.sh \
-       --prompt-file .claude/skills/codex-ask/prompts/followup.tpl \
+   bash .claude/skills/codex-ask/scripts/resume.sh \
        <topic-label> "<follow-up or counterpoint>"
    ```
 

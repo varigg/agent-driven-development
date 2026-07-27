@@ -144,6 +144,15 @@ Considering Claude as your main and Codex as the copilot:
 Fable writes the plan, 5.6 Sol reviews it, Luna implements, back to Fable who reviews and fixes the diff, runs the testing gate, then a new Sol thread reviews again the code. All in one claude code session. Writer and reviewer are never the same thread.  
 As of mid july 2026, this Fable + GPT5.6 harness combo is absolute peak.
 
+### Swapping agents
+
+The process skills don't hard-code Codex — they call **roles**, resolved from `docs/addw.env`: `ADDW_PLAN_REVIEW_SKILL`, `ADDW_IMPLEMENT_SKILL`, `ADDW_CODE_REVIEW_SKILL`, and `ADDW_ASK_SKILL` (defaulting to the four `codex-*` skills). To plug in a different agent CLI, write one adapter skill per role you want to replace and point the role key at it. The adapter contract is small:
+
+- `scripts/start.sh <target> [instructions…]` — start a fresh session for the target; prompts and state are the adapter's own business.
+- `scripts/resume.sh [--notes "…"] <target> [instructions…]` — continue the same session with context retained (exit code 2 when no session exists).
+- Review roles end their output with a trailing verdict tag (`APPROVED` / `REQUEST_CHANGES` / `NEEDS_REWORK`); the implement role ends with `IMPLEMENTATION_COMPLETE` / `IMPLEMENTATION_PARTIAL`.
+- Reviews run read-only; implementation may write to the working tree but never commits.
+
 ## MCP Servers: Less Is More
 
 Last piece of advise before your new coding quest: Every MCP server you add is extra context, extra latency, and extra confusion. Keep it minimal. The one use case where MCP genuinely shines is **up-to-date documentation**, so your agent stops hallucinating deprecated APIs/whatever. Two servers cover it: [Context7](https://github.com/upstash/context7) for current library & framework docs, and [Exa](https://github.com/exa-labs/exa-mcp-server) for web search when the answer isn't in any doc. No bloat beyond that.

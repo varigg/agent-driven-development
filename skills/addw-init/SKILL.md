@@ -234,6 +234,12 @@ ADDW_TUTORIALS=<true|false>
 # ADDW_CODEX_MODEL_IMPL="..."
 # ADDW_CODEX_MODEL_REVIEW="..."
 # ADDW_CODEX_EFFORT="..."
+# Optional agent role adapters — each names a skill folder under .claude/skills/
+# providing scripts/start.sh and scripts/resume.sh (see README "Swapping agents"):
+# ADDW_PLAN_REVIEW_SKILL=codex-plan-review
+# ADDW_IMPLEMENT_SKILL=codex-implement
+# ADDW_CODE_REVIEW_SKILL=codex-code-review
+# ADDW_ASK_SKILL=codex-ask
 ```
 
 Fill every value (audit nudge 5 unless the user chooses otherwise). The file must be shell-sourceable — the release skill and the codex scripts `source` it.

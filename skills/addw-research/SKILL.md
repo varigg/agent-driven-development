@@ -87,16 +87,15 @@ Conduct the research at the confirmed depth. Throwaway prototype code is fine he
 
 ## Step 4b: Codex Cross-Check
 
-For **decision-grade findings** — architecture recommendations, technology choices, anything the user will build on — red-team the draft conclusion with the `codex-ask` skill before presenting. Skip for quick lookups.
+For **decision-grade findings** — architecture recommendations, technology choices, anything the user will build on — red-team the draft conclusion with the ask agent before presenting: the skill named by `ADDW_ASK_SKILL` in `docs/addw.env` (default `codex-ask`). Skip for quick lookups.
 
 ```bash
-export STATE_DIR=".claude/skills/codex-ask/state"
-bash .claude/skills/codex-plan-review/scripts/start.sh \
-    --prompt-file .claude/skills/codex-ask/prompts/ask.tpl \
+source docs/addw.env
+bash ".claude/skills/${ADDW_ASK_SKILL:-codex-ask}/scripts/start.sh" \
     <topic-label> "Here is my draft recommendation: <summary + key rationale>. Red-team it: what am I missing, what would you choose instead, and why?"
 ```
 
-Follow up in the same thread (`resume.sh` + `followup.tpl`) if the answer raises points worth probing. Then:
+Follow up in the same thread (the adapter's `scripts/resume.sh`) if the answer raises points worth probing. Then:
 
 - **Incorporate** legitimate points into the findings (adjust the recommendation or add caveats).
 - **Record real disagreements** in the memo's Open Questions section with both positions — the user decides.

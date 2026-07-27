@@ -3,7 +3,9 @@
 # the thread_id from the JSON event stream, and write the final review
 # to the per-target review file.
 #
-# Usage: start.sh --prompt-file <tpl> <target> [extra prompt text...]
+# Usage: start.sh [--prompt-file <tpl>] <target> [extra prompt text...]
+# --prompt-file defaults to this skill's prompts/start.tpl (adapter contract:
+# role skills expose start.sh <target> [instructions...] with templates internal).
 # Exits 0 on success, 1 on Codex / thread_id capture failure,
 # 2 on an existing thread (use reset.sh first).
 
@@ -26,8 +28,9 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if [ -z "$PROMPT_FILE" ] || [ $# -lt 1 ]; then
-    echo "usage: start.sh --prompt-file <tpl> <target> [extra prompt text...]" >&2
+PROMPT_FILE="${PROMPT_FILE:-$SCRIPT_DIR/../prompts/start.tpl}"
+if [ $# -lt 1 ]; then
+    echo "usage: start.sh [--prompt-file <tpl>] <target> [extra prompt text...]" >&2
     exit 64
 fi
 

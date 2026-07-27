@@ -33,7 +33,7 @@ source docs/addw.env
 
 If this skill was NOT chained from a addw-2 session in the current conversation, verify before any release step: run the lint, type-check/build, and affected-tests recipes per `docs/4-unit-tests/TESTING.md` (Verification Recipes), scoping tests to the plan's Test Impact section.
 
-All must be green. For the release record's review line, read the verdict and round count from the Codex state file (`.claude/skills/codex-code-review/state/`, key derived from the plan path); if absent, the review was skipped — record that explicitly.
+All must be green. For the release record's review line, read the verdict and round count from the code-review adapter's state (`.claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/state/`, key derived from the plan path); if absent, the review was skipped — record that explicitly.
 
 Any failure blocks the release — fix or return to `addw-2-implement` first.
 

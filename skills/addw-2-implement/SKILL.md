@@ -49,24 +49,22 @@ Codex never edits these tests. If an interface mismatch surfaces during implemen
 
 ## Implementation Phase — Delegate to Codex
 
-You do NOT write the implementation yourself — delegate it to Codex via the `codex-implement` skill. (Exception: trivial unplanned changes of a few lines may be done directly.)
+You do NOT write the implementation yourself — delegate it to the implementing agent: the skill named by `ADDW_IMPLEMENT_SKILL` in `docs/addw.env` (default `codex-implement`). (Exception: trivial unplanned changes of a few lines may be done directly.)
 
 1. Read the plan fully and decide the delegation scope: the whole plan, or one phase at a time for multi-phase plans.
 
-2. **Start** the implementation session (state dir is handled by the script):
+2. **Start** the implementation session (state and prompts are handled by the adapter):
 
    ```bash
-   bash .claude/skills/codex-implement/scripts/start.sh \
-       --prompt-file .claude/skills/codex-implement/prompts/implement.tpl \
+   source docs/addw.env
+   bash ".claude/skills/${ADDW_IMPLEMENT_SKILL:-codex-implement}/scripts/start.sh" \
        <plan-path> "Implement Phase 1 only"   # instructions optional — omit to implement the whole plan
    ```
 
    Follow-up phases resume the same thread (context retained):
 
    ```bash
-   export STATE_DIR=".claude/skills/codex-implement/state"
-   bash .claude/skills/codex-plan-review/scripts/resume.sh \
-       --prompt-file .claude/skills/codex-implement/prompts/continue.tpl \
+   bash ".claude/skills/${ADDW_IMPLEMENT_SKILL:-codex-implement}/scripts/resume.sh" \
        <plan-path> "Now implement Phase 2"
    ```
 
@@ -131,20 +129,14 @@ Fix failures before starting the loop.
 
 ## Codex Code Review
 
-Always run the Codex code review after the testing gate passes — no confirmation needed.
+Always run the code review after the testing gate passes — no confirmation needed. The reviewing agent is the skill named by `ADDW_CODE_REVIEW_SKILL` in `docs/addw.env` (default `codex-code-review`) — source the config first so the role key resolves.
 
 ### Loop
 
-Always export before invoking shared scripts:
-
-```bash
-export STATE_DIR=".claude/skills/codex-code-review/state"
-```
-
 1. **Start**:
    ```bash
-   bash .claude/skills/codex-plan-review/scripts/start.sh \
-       --prompt-file .claude/skills/codex-code-review/prompts/start.tpl \
+   source docs/addw.env
+   bash ".claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/scripts/start.sh" \
        <plan-path> "$GATE_SUMMARY"
    ```
    `$GATE_SUMMARY` is the testing-gate summary (`lint | typecheck | tests`). For unplanned work (no `F_*.plan.md`), pass a free-form label instead of a plan path.
@@ -157,8 +149,7 @@ export STATE_DIR=".claude/skills/codex-code-review/state"
 
 5. **Resume** (re-run the testing gate first — lint, typecheck, affected tests — and build a fresh summary; then commit the round's fixes with an explicit-path, conventional commit, e.g. `fix: address review round N findings`):
    ```bash
-   bash .claude/skills/codex-plan-review/scripts/resume.sh \
-       --prompt-file .claude/skills/codex-code-review/prompts/resume.tpl \
+   bash ".claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/scripts/resume.sh" \
        --notes "Fixed X. Pushed back on Y because Z." \
        <plan-path> "$GATE_SUMMARY"
    ```

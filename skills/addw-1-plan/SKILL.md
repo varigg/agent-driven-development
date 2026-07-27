@@ -143,18 +143,23 @@ Every step must be unambiguous and actionable, name exact files and functions, a
 
 ## Step 3: Codex Second-Opinion Review
 
-Before the user sees the plan, run the Codex plan review loop — no confirmation needed. Skip it only for genuinely trivial plans (single-file, low-risk); say so in the Step 4 summary when you do.
+Before the user sees the plan, run the second-opinion plan review loop — no confirmation needed. Skip it only for genuinely trivial plans (single-file, low-risk); say so in the Step 4 summary when you do.
+
+The reviewing agent is the skill named by `ADDW_PLAN_REVIEW_SKILL` in `docs/addw.env` (default `codex-plan-review`) — source the config first so the role key resolves.
 
 ### Loop
 
-1. **Start**: `bash .claude/skills/codex-plan-review/scripts/start.sh --prompt-file .claude/skills/codex-plan-review/prompts/start.tpl <plan-path>`
+1. **Start**:
+   ```bash
+   source docs/addw.env
+   bash ".claude/skills/${ADDW_PLAN_REVIEW_SKILL:-codex-plan-review}/scripts/start.sh" <plan-path>
+   ```
 2. **Parse trailing tag**: `APPROVED` -> Step 4. `NEEDS_REWORK` -> surface to user. `REQUEST_CHANGES` -> continue.
 3. **Address findings critically** — quote each P1/P2, push back on incorrect ones, fix legitimate ones by editing the plan in place.
 4. **Write implementer notes** (1-3 sentences): which findings you fixed, which you pushed back on and why, any user decisions that override existing docs or environment limitations that can't be resolved in the plan.
 5. **Resume** with notes:
    ```bash
-   bash .claude/skills/codex-plan-review/scripts/resume.sh \
-       --prompt-file .claude/skills/codex-plan-review/prompts/resume.tpl \
+   bash ".claude/skills/${ADDW_PLAN_REVIEW_SKILL:-codex-plan-review}/scripts/resume.sh" \
        --notes "Fixed X. Pushed back on Y because Z. User decided W." \
        <plan-path>
    ```

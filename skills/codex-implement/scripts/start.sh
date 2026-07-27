@@ -8,7 +8,8 @@
 # lint/build. `codex exec resume` inherits this sandbox, so follow-up
 # turns reuse the shared resume.sh unchanged.
 #
-# Usage: start.sh --prompt-file <tpl> <target> [custom instructions…]
+# Usage: start.sh [--prompt-file <tpl>] <target> [custom instructions…]
+# --prompt-file defaults to this skill's prompts/implement.tpl (adapter contract).
 # Exits 0 on success, 1 on Codex / thread_id capture failure,
 # 2 on an existing thread (use reset.sh first).
 
@@ -35,8 +36,9 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if [ -z "$PROMPT_FILE" ] || [ $# -lt 1 ]; then
-    echo "usage: start.sh --prompt-file <tpl> <target> [custom instructions…]" >&2
+PROMPT_FILE="${PROMPT_FILE:-$SCRIPT_DIR/../prompts/implement.tpl}"
+if [ $# -lt 1 ]; then
+    echo "usage: start.sh [--prompt-file <tpl>] <target> [custom instructions…]" >&2
     exit 64
 fi
 

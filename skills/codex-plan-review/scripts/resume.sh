@@ -3,7 +3,9 @@
 # follow-up prompt. The thread id is read from the per-target state
 # file written by start.sh.
 #
-# Usage: resume.sh --prompt-file <tpl> [--notes "..."] <target> [extra prompt text...]
+# Usage: resume.sh [--prompt-file <tpl>] [--notes "..."] <target> [extra prompt text...]
+# --prompt-file defaults to this skill's prompts/resume.tpl (adapter contract:
+# role skills expose resume.sh [--notes ...] <target> [instructions...]).
 # Exits 0 on success, 1 on Codex failure, 2 if no prior session exists.
 
 set -euo pipefail
@@ -30,8 +32,9 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if [ -z "$PROMPT_FILE" ] || [ $# -lt 1 ]; then
-    echo "usage: resume.sh --prompt-file <tpl> [--notes '...'] <target> [extra prompt text...]" >&2
+PROMPT_FILE="${PROMPT_FILE:-$SCRIPT_DIR/../prompts/resume.tpl}"
+if [ $# -lt 1 ]; then
+    echo "usage: resume.sh [--prompt-file <tpl>] [--notes '...'] <target> [extra prompt text...]" >&2
     exit 64
 fi
 

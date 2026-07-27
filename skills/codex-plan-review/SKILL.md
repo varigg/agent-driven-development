@@ -21,8 +21,8 @@ The companion `codex-code-review` skill shares the same scripts with its own pro
 1. **Parse `$ARGUMENTS`**: extract action (`reset`/`show`/auto) and plan path.
 
 2. **Auto** — try `start.sh` first (exit code 2 = thread exists -> use `resume.sh`):
-   - **Start**: `bash .claude/skills/codex-plan-review/scripts/start.sh --prompt-file .claude/skills/codex-plan-review/prompts/start.tpl <plan-path> [extra]`
-   - **Resume**: `bash .claude/skills/codex-plan-review/scripts/resume.sh --prompt-file .claude/skills/codex-plan-review/prompts/resume.tpl <plan-path> [extra]`
+   - **Start**: `bash .claude/skills/codex-plan-review/scripts/start.sh <plan-path> [extra]` (prompt defaults to `prompts/start.tpl`)
+   - **Resume**: `bash .claude/skills/codex-plan-review/scripts/resume.sh <plan-path> [extra]` (prompt defaults to `prompts/resume.tpl`)
 
 3. **Reset**: `bash .claude/skills/codex-plan-review/scripts/reset.sh <plan-path>`
 
