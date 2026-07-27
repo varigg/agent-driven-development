@@ -153,6 +153,8 @@ The process skills don't hard-code Codex — they call **roles**, resolved from 
 - Review roles end their output with a trailing verdict tag (`APPROVED` / `REQUEST_CHANGES` / `NEEDS_REWORK`); the implement role ends with `IMPLEMENTATION_COMPLETE` / `IMPLEMENTATION_PARTIAL`.
 - Reviews run read-only; implementation may write to the working tree but never commits.
 
+**Caveat**: this contract currently has exactly one implementation and inherits Codex CLI's semantics (resumable threads, exit codes, sandbox modes). Expect it to be revised the first time a real second adapter is written (`docs/backlog.md`).
+
 ## MCP Servers: Less Is More
 
 Last piece of advise before your new coding quest: Every MCP server you add is extra context, extra latency, and extra confusion. Keep it minimal. The one use case where MCP genuinely shines is **up-to-date documentation**, so your agent stops hallucinating deprecated APIs/whatever. Two servers cover it: [Context7](https://github.com/upstash/context7) for current library & framework docs, and [Exa](https://github.com/exa-labs/exa-mcp-server) for web search when the answer isn't in any doc. No bloat beyond that.
