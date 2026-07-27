@@ -114,7 +114,7 @@ Periodic maintenance audit with four independently skippable sweeps: code health
 
 ### `/addw-upgrade`
 
-Upgrades an existing project's ADDW install. On config-era installs (`docs/addw.env` present) that's just a wholesale skills replacement. On older installs it extracts your project-specific content (test commands, checklist sections, technical considerations, version file paths), writes `docs/addw.env`, relocates the rest into your living docs (ARCHITECTURE.md, TESTING.md), and creates the charter/ADR structure on repos that predate it. Copy the new skills to `new-addw/`, run the skill, done.
+Upgrades an existing project's ADDW install. On config-era installs (`docs/addw.env` present) that's just a wholesale skills replacement — see `UPGRADING.md`, which also lists the structural docs-contract steps per version boundary. On older (v2) installs this skill extracts your project-specific content (test commands, checklist sections, technical considerations, version file paths), writes `docs/addw.env`, relocates the rest into your living docs (ARCHITECTURE.md, TESTING.md), and creates the charter/ADR structure. Copy the new skills to `new-addw/`, run the skill, done. The skill exists for the v2 boundary only; once no v2 installs remain, `UPGRADING.md` is the upgrade path.
 
 ### `/codex-ask`
 
