@@ -92,7 +92,7 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 ## Technical Considerations
 
 - **Architecture Alignment**: How this plan conforms to the constraints in ARCHI.md (as-built) and reintroduces nothing the ADRs in `docs/adr/` have superseded or ruled out. Derive this from those documents at planning time — never from memory.
-- **Doc Impact**: If this plan changes or supersedes anything the living docs state, name the affected documents (ARCHI.md, charter.md, ADRs, TESTING.md). `TRIP-3-release` consumes this list. An empty list is a claim ("this plan contradicts nothing documented"), not a default.
+- **Doc Impact**: If this plan changes or supersedes anything the living docs state — everything in `docs/` outside the numbered per-release directories, plus CLAUDE.md and README.md — name the affected documents here. Enumerate that scope at planning time rather than working from a remembered list. `TRIP-3-release` consumes this list. An empty list is a claim ("this plan contradicts nothing documented"), not a default.
 - **Process/Design Separation**: `.claude/skills/` files are never modified as part of a feature. If this plan appears to need a skill edit, that is a process change — propose it separately, commit it separately.
 - **Layer Conventions**: For each layer/artifact type this plan adds to, state how the addition satisfies the conventions ARCHI.md documents for that layer (pulled at planning time).
 - **Edge Cases**: [Relevant edge cases for this feature]
