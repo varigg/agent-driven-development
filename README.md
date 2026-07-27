@@ -1,4 +1,4 @@
-![ADDW Workflow Banner](assets/trip-workflow-banner2.png)
+# Agent-Driven Development
 
 ![Version](https://img.shields.io/badge/version-3.0.0-blue) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) ![Works with](https://img.shields.io/badge/Works_with-grey) [![Claude Code](https://img.shields.io/badge/Claude_Code-E5582B)](https://docs.anthropic.com/en/docs/claude-code) [![Codex CLI](https://img.shields.io/badge/Codex_CLI-10A37F)](https://developers.openai.com/codex/cli/) [![OpenCode](https://img.shields.io/badge/OpenCode-1a3a5c)](https://github.com/sst/opencode) [![Mistral Vibe](https://img.shields.io/badge/Mistral_Vibe-F7D046)](https://github.com/mistralai/mistral-vibe)
 
@@ -27,8 +27,6 @@ Even the "simple" ones come with:
 | `/addw-2-implement` | Codex writes, you review, tests gate, Codex re-reviews |
 | `/addw-3-release`   | Version, changelog, docs, commit, tag, merge, push     |
 
-![ADDW Workflow loop](assets/trip-workflow-loop2.png)
-
 Three numbered skills. One architecture file. Zero PhD required.
 
 The onboarding is: copy the folder, run init, start coding. If you can count to 3, you can run it.
@@ -47,8 +45,6 @@ It was kept stupid simple because **the goal is to ship features, not to master 
 Also copy `AskUserQuestion/` to your agent `/skills/` — it emulates the `AskUserQuestion` tool the ADDW skills rely on. It deliberately lives outside `skills/`: agents with a native `AskUserQuestion` tool (like Claude Code) don't need the shim, so it isn't part of the wholesale copy.  
 
 Et voila ! Start using the skills like `/addw-1-plan auth for this webapp`, `/addw-2-implement @auth-plan.md`, etc.
-
-https://github.com/user-attachments/assets/d37bbc60-1868-4fa8-9be6-083b60d6a53d
 
 ## The Heart of ADDW: ARCHITECTURE.md
 
@@ -134,8 +130,6 @@ Run this skill to compact ARCHITECTURE.md size while preserving relevance, accur
 As a rule of thumb, ARCHITECTURE.md should not exceed ~10% of context window.
 
 ## Multi-Agent: Using Different LLMs at Different Steps
-
-![ADDW Workflow multiLLM](assets/trip-workflow-multiLLM4.png)
 
 Just like you wouldn't smell your own fart, an LLM is unlikely to catch bugs in its own implementation. Some people conduct adversarial review with a different session but still the same model, which is..._meh_. The best approach is to introduce a different model in the same reasoning ballpark as the first one, that will most likely catch what the other missed.
 
