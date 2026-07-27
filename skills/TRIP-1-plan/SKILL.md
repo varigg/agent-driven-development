@@ -137,18 +137,6 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 **Note**: Do NOT write test code during planning — the Test Impact section above only names what the TRIP-2 testing gate will run and author.
 ```
 
-## ADR: When the Plan Changes Documented Intent
-
-If the plan contradicts or supersedes anything ARCHI.md, charter.md, or a prior ADR states (i.e., the Doc Impact list names any of them), draft an ADR alongside the plan:
-
-1. Copy `docs/adr/template.md` to `docs/adr/NNNN-<slug>.md` (next sequence number).
-2. Status: `proposed`. Fill Relations (supersedes/amends) and the Plan-Release header with this plan's path (the release version is filled by `TRIP-3-release`).
-3. **Adopting an existing `draft`** — if a design session already recorded this decision, do not write a second ADR. Validate the draft against the code, revise its body where planning proved it wrong (drafts are revisable; the no-retro-edit rule starts at `proposed`), discharge or restate anything in its `Gate`, fill in the Plan-Release header, and flip it to `proposed`. A draft in the plan's scope may be superseded with reasons but never silently ignored.
-4. Guardrail decisions — things deliberately NOT built — are first-class ADRs; record them the same way.
-5. Commit the ADR on the feature branch together with the plan. `TRIP-3-release` flips it to `accepted` when the release ships it.
-
-If nothing documented changes, no ADR — do not create ceremony for conforming plans.
-
 ## Quality Standards
 
 - **Zero Ambiguity**: Every step must be clear and actionable
@@ -208,9 +196,21 @@ Handle feedback:
 - **If "Request changes"**: Update the plan and re-present. Run another Codex pass if changes are substantive.
 - **If "Needs rework"**: Discuss issues, rework the plan, and re-present.
 - **If "Other" (custom input)**: Handle accordingly.
-- **If "Approved"**: **Use the `AskUserQuestion` tool** to ask:
+- **If "Approved"**: first complete **ADR Drafting** (below) if the plan changes documented intent, then **use the `AskUserQuestion` tool** to ask:
   - **Question**: "Plan approved. Would you like to start implementation now?"
   - **Options**: "Yes, implement now" (proceed with `TRIP-2-implement` using this plan), "Not yet" (I'll implement later)
+
+### ADR Drafting (on approval)
+
+If the plan's Doc Impact section says it changes documented intent — it contradicts or supersedes anything ARCHI.md, charter.md, or a prior ADR states — record the decision now, while the discussion that made it is fresh:
+
+1. Copy `docs/adr/template.md` to `docs/adr/NNNN-<slug>.md` (next free sequence number).
+2. Status: `proposed`, dated today. Fill Relations (naming any decision or ADR it amends or supersedes) and the Plan-Release header with this plan's path (the release version is filled by `TRIP-3-release`). Draw Alternatives from what the planning discussion actually rejected.
+3. **Adopting an existing `draft`** — if a design session already recorded this decision, do not write a second ADR. Validate the draft against the code, revise its body where planning proved it wrong (drafts are revisable; the no-retro-edit rule starts at `proposed`), discharge or restate anything in its `Gate`, fill in the Plan-Release header, and flip it to `proposed`.
+4. Guardrail decisions — things deliberately NOT built — are first-class ADRs; record them the same way.
+5. Commit the ADR on the feature branch together with the plan. `TRIP-3-release` flips it to `accepted` when the release ships it. If the work is later abandoned, flip it to `rejected` with a one-line reason instead of deleting it.
+
+An ADR in the plan's scope may be superseded with reasons, but never silently ignored. Routine feature work that changes no documented intent drafts no ADR — do not create ceremony for conforming plans.
 
 ---
 
