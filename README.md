@@ -55,7 +55,7 @@ https://github.com/user-attachments/assets/d37bbc60-1868-4fa8-9be6-083b60d6a53d
 
 The `ARCHI.md` file is the **central nervous system** of this workflow. It serves as the AI agent's **long-term memory** of your codebase.
 
-It is flanked by two companions: `docs/charter.md` holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and `docs/adr/` holds dated Architecture Decision Records — drafted `proposed` when a plan changes documented intent, flipped `accepted` at release, with guardrail ADRs recording what you deliberately do *not* build so no future plan reintroduces it.
+It is flanked by two companions: `docs/charter.md` holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and `docs/adr/` holds dated Architecture Decision Records — entered as `draft` when a design session settles something before any plan exists, adopted as `proposed` when a plan picks the decision up (or drafted `proposed` outright when a plan changes documented intent), flipped `accepted` at release, with guardrail ADRs recording what you deliberately do *not* build so no future plan reintroduces it.
 
 ### Why ARCHI.md Matters
 
