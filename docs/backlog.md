@@ -17,5 +17,3 @@ here are one-liners with just enough context to pick the thread back up.
   **three-phase** loop diagram (Plan → Implement → Release — the old one drew
   the retired four-phase cycle), a multi-agent illustration, and optionally a
   fresh demo recording.
-- **Retire `addw-upgrade`** — after the one remaining v2 install
-  (adventure-library) is migrated; `UPGRADING.md` is the durable path.

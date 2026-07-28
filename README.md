@@ -108,9 +108,9 @@ The former step 4, reborn as an on-demand support skill: the deep test-authoring
 
 Periodic maintenance audit with four independently skippable sweeps: code health, test health, docs drift, and dependencies. Writes a dated findings report to `docs/7-maintenance/`, applies only trivial mechanical fixes, and routes anything substantive through the normal plan → implement → release cycle. `addw-3-release` nudges you to run it after N releases without an audit.
 
-### `/addw-upgrade`
+### Upgrading an install
 
-Upgrades an existing project's ADDW install. On config-era installs (`docs/addw.env` present) that's just a wholesale skills replacement — see `UPGRADING.md`, which also lists the structural docs-contract steps per version boundary. On older (v2) installs this skill extracts your project-specific content (test commands, checklist sections, technical considerations, version file paths), writes `docs/addw.env`, relocates the rest into your living docs (ARCHITECTURE.md, TESTING.md), and creates the charter/ADR structure. Copy the new skills to `new-addw/`, run the skill, done. The skill exists for the v2 boundary only; once no v2 installs remain, `UPGRADING.md` is the upgrade path.
+Not a skill. Skills carry no project state, so upgrading means replacing the project's `.claude/skills/` contents wholesale with this repo's `skills/` and keeping `docs/addw.env` untouched — plus any structural docs-contract steps `UPGRADING.md` lists for the version boundary you're crossing (each ends by bumping `ADDW_SCHEMA`). The one-time `addw-upgrade` skill that migrated pre-config (v2) installs was retired on 2026-07-28 with the last v2 migration.
 
 ### `/codex-ask`
 

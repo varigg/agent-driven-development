@@ -23,10 +23,10 @@ read only when upgrading; no skill loads it as context.
 
 ## Schema 2 → 3
 
-Automated by the `addw-upgrade` skill (available for this boundary only —
-generation-2 installs carry project values inside the skills, which must be
-extracted and relocated first; see that skill). The structural steps it
-performs:
+Was automated by the `addw-upgrade` skill — retired 2026-07-28 after the
+last generation-2 install (adventure-library) was migrated. Generation-2
+installs carried project values inside the skills, which had to be extracted
+and relocated first. The structural steps, kept for the record:
 
 - Skill folders `TRIP-<x>` → `addw-<x>`; `TRIP-review` retired (checklist
   lives at `codex-code-review/checklist.md`).
