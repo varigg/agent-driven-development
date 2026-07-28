@@ -17,3 +17,8 @@ here are one-liners with just enough context to pick the thread back up.
   **three-phase** loop diagram (Plan → Implement → Release — the old one drew
   the retired four-phase cycle), a multi-agent illustration, and optionally a
   fresh demo recording.
+- **Rename `addw-4-maintain` → `addw-maintain`** — decided 2026-07-28. The
+  "4" implies a pipeline phase, but maintain is a cadence-triggered audit;
+  the 1–3 numbers stay (they encode the happy path and sort autocomplete in
+  execution order). Skill folder names are docs contract, so ride this into
+  the next schema-bump boundary instead of spending one on cosmetics.
