@@ -457,6 +457,7 @@ Verify before reporting completion:
 - [ ] charter.md **user-approved** before writing; ARCHITECTURE.md **user-approved** at Phase 5
 - [ ] `docs/adr/template.md`, `ARCHITECTURE-rules.md`, and root `CHANGELOG.md` created
 - [ ] Tutorial preference resolved: `ADDW_TUTORIALS` set; if true, `docs/5-tuto/` exists and the audience is in the project's CLAUDE.md
+- [ ] Final gate: `bash .claude/skills/addw-init/scripts/doctor.sh` reports **HEALTHY** — it re-checks the whole contract deterministically
 
 ---
 

@@ -47,7 +47,13 @@ Any failure blocks the release — fix or return to `addw-2-implement` first.
 
 ## Changelog
 
-`CHANGELOG.md` (repo root) is the **human-consumable release history**. It is write-only for the workflow: no skill reads it as context — agents get history from git. Prepend the new entry under the file's header **without reading the rest of the file** (`date '+%d-%m-%Y'` for the entry date).
+`CHANGELOG.md` (repo root) is the **human-consumable release history**. It is write-only for the workflow: no skill reads it as context — agents get history from git. Prepend the new entry with the bundled script — **never open the file** (`date '+%d-%m-%Y'` for the entry date):
+
+```bash
+bash .claude/skills/addw-3-release/scripts/prepend-changelog.sh <<'EOF'
+[the entry — format below]
+EOF
+```
 
 Propose a one-line commit message for the **release commit** (version bump + docs) — the entry heading reuses it. The implementation was already committed per-phase during `addw-2-implement`.
 
@@ -99,6 +105,12 @@ After completing all documentation steps, **use the `AskUserQuestion` tool** to 
 
 ## Commit
 
+First run the version-sync check — every FAIL must be fixed before staging (README mismatches are WARN-only):
+
+```bash
+bash .claude/skills/addw-3-release/scripts/check-version-sync.sh vx.y.z
+```
+
 Review `git status` first. Stage the release artifacts **explicitly** — implementation commits already exist on the branch from addw-2's per-phase checkpoints, so this commit contains only version + docs:
 
 ```bash
@@ -146,7 +158,13 @@ git push && git push --tags
 
 ## Maintenance Audit Nudge
 
-Count release tags created since the newest maintenance report in `docs/7-maintenance/` (all tags since init if no report exists yet) — compare tag dates from `git for-each-ref --sort=-creatordate --format='%(refname:short) %(creatordate:short)' refs/tags` against the report's date. If the count is ≥ `$ADDW_AUDIT_NUDGE_N`, suggest:
+Run the bundled counter — it reads `$ADDW_AUDIT_NUDGE_N` itself:
+
+```bash
+bash .claude/skills/addw-3-release/scripts/audit-nudge.sh
+```
+
+If it prints `NUDGE`, suggest:
 
 > "N releases since the last maintenance audit. Consider running `addw-4-maintain`."
 

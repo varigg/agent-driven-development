@@ -17,6 +17,20 @@ here are one-liners with just enough context to pick the thread back up.
   **three-phase** loop diagram (Plan → Implement → Release — the old one drew
   the retired four-phase cycle), a multi-agent illustration, and optionally a
   fresh demo recording.
+- **Approval-staleness marker** — noted 2026-07-30 while reviewing
+  ShopDevX/adeptlydev (whose own red-team flags the same gap in itself):
+  nothing detects a plan edited between approval and implementation. The
+  same-session happy path makes the window small; it bites multi-session,
+  multi-phase work. adeptlydev's mechanic: a truncated sha256 of the plan
+  content stored in each derived artifact, compared on read. ADDW analog:
+  record the hash at approval, have addw-2-implement warn on drift.
+- **Determinism sweep leftovers** — see `docs/proposals/determinism.md`
+  (2026-07-30). Deferred script candidates: ADR scaffolder, release tail
+  sequence, compact link checker, coverage-debt liveness, `git add -A`
+  permission deny rule. Plus the big one: machine-readable Verification
+  Recipes + a deterministic `gate.sh` for the addw-2 testing gate — needs a
+  schema bump, ride the next boundary (pairs with the addw-4-maintain
+  rename below).
 - **Rename `addw-4-maintain` → `addw-maintain`** — decided 2026-07-28. The
   "4" implies a pipeline phase, but maintain is a cadence-triggered audit;
   the 1–3 numbers stay (they encode the happy path and sort autocomplete in

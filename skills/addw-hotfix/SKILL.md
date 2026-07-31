@@ -76,7 +76,13 @@ No formal plan document needed.
 
 Increment **patch** version only (x.y.Z+1) in `$ADDW_VERSION_FILE`.
 
-Prepend a minimal entry to `CHANGELOG.md` (repo root; write-only — don't read the rest of the file):
+Prepend a minimal entry to `CHANGELOG.md` via the release skill's prepender (the changelog is write-only — never open the file):
+
+```bash
+bash .claude/skills/addw-3-release/scripts/prepend-changelog.sh <<'EOF'
+[the entry — format below]
+EOF
+```
 
 ```markdown
 ## vx.y.z — DD-MM-YYYY (hotfix)
