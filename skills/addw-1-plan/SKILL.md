@@ -39,7 +39,7 @@ Frame questions around:
 
 For each question, provide 2-4 concrete options based on your analysis of the codebase and the feature request. Always let the user provide custom input via the built-in "Other" option.
 
-After the user answers, proceed **directly to writing the plan** (Step 2) — no approach-confirmation question. Ask a follow-up round with `AskUserQuestion` only if a blocking ambiguity remains (**maximum 3 rounds total**; if still unclear, summarize what you know and proceed with noted assumptions).
+After the user answers, proceed **directly to writing the plan** (Step 2) — no approach-confirmation question. Ask a follow-up round with `AskUserQuestion` only if a blocking ambiguity remains (**maximum 3 rounds total**; if still unclear, summarize what you know and proceed, recording the assumptions in the plan's **Open Questions & Assumptions** section).
 
 ---
 
@@ -120,6 +120,10 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 
 [2-5 bullets: which existing tests the change affects, what new logic will need tests, whether an integration/E2E check applies. No test code — the addw-2 testing gate consumes this section.]
 
+## Open Questions & Assumptions (if applicable)
+
+[Assumptions this plan proceeds on without explicit user confirmation, and questions the approver must answer before implementation starts. Omit when there are none.]
+
 ## To-dos
 
 ### Phase 1: [Phase Name] (if multiple phases are needed) or simply skip title if only one phase is needed
@@ -138,6 +142,16 @@ Depending on the feature (major, minor, patch), propose a new version using SemV
 ```
 
 Every step must be unambiguous and actionable, name exact files and functions, and call out where it could fail.
+
+### Declared-Files Check
+
+After writing the plan, verify the Files to Modify/Create section against the working tree — deterministically, not from memory:
+
+```bash
+bash .claude/skills/addw-1-plan/scripts/check-plan-files.sh <plan-path>
+```
+
+Every `(new)` path must not exist yet; every `(modify)` or `(delete)` path must exist. Fix each MISMATCH before the Codex review — it means the plan was written against a remembered tree, not the real one (wrong path, stale assumption, or wrong verb). Re-run until it reports OK.
 
 ---
 
@@ -179,6 +193,7 @@ After Codex review converges (or is skipped), present a summary to the user incl
 - **Files affected**: [count] files ([list key ones])
 - **Estimated complexity**: [simple/moderate/complex]
 - **Codex status**: [APPROVED / skipped / capped at N rounds with open findings]
+- **Open assumptions**: [from the plan's Open Questions & Assumptions section, or "none"]
 
 Then **use the `AskUserQuestion` tool** to collect feedback:
 

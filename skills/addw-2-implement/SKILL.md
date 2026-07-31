@@ -51,7 +51,7 @@ Codex never edits these tests. If an interface mismatch surfaces during implemen
 
 You do NOT write the implementation yourself — delegate it to the implementing agent: the skill named by `ADDW_IMPLEMENT_SKILL` in `docs/addw.env` (default `codex-implement`). (Exception: trivial unplanned changes of a few lines may be done directly.)
 
-1. Read the plan fully and decide the delegation scope: the whole plan, or one phase at a time for multi-phase plans.
+1. Read the plan fully and decide the delegation scope: the whole plan, or one phase at a time for multi-phase plans. Before the first delegation, re-run the declared-files check to catch tree drift since planning: `bash .claude/skills/addw-1-plan/scripts/check-plan-files.sh <plan-path>`. A MISMATCH means the tree moved since the plan was approved — reconcile the plan first. (First delegation only — later phases will have created the `(new)` files, so a re-run would false-positive.)
 
 2. **Start** the implementation session (state and prompts are handled by the adapter):
 
