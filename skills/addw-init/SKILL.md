@@ -329,8 +329,10 @@ Single source of truth for verification commands — the ADDW skills point here 
 ```markdown
 # Architecture Documentation Rules
 
-[ARCHITECTURE.md](ARCHITECTURE.md) documents the [Project Name] architecture. After each
-task (new feature, refactor, bug fix), determine if ARCHITECTURE.md needs updating.
+[ARCHITECTURE.md](ARCHITECTURE.md) documents the [Project Name] architecture **as
+built**: it describes the system as it currently is, never as a sequence of
+releases. After each task (new feature, refactor, bug fix), determine if
+ARCHITECTURE.md needs updating.
 
 ## When to Update
 
@@ -362,6 +364,11 @@ Update: Technology Stack, and any affected architectural sections
 
 ## Guidelines
 
+- Rewrite, never append - restate the affected passage as the system now
+  stands, rather than adding a sentence about what the latest change did.
+  Delete descriptions of machinery that no longer exists. Version numbers
+  belong in CHANGELOG.md and earn a place here only when a version is a live
+  fact a reader must act on, such as a dependency pin
 - Be precise and factual - reflect the actual codebase
 - Be concise - enough detail to understand, not implementation specifics
 - Update diagrams when data flow changes

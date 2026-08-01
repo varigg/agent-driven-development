@@ -70,8 +70,15 @@ Plan: `docs/1-plans/F_x.y.z_feature-name.plan.md` (or "unplanned") · Review: Co
 ## Design Reconciliation
 
 1. Read fully @docs/ARCHITECTURE-rules.md
-2. Update @docs/ARCHITECTURE.md following the rules
-3. Run `bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md` to check token count
+2. Update @docs/ARCHITECTURE.md following those rules, reading each affected passage whole rather than extending its end. Of everything the rules state, the rewrite-don't-append discipline is the one that decays quietest: a document passes every individual release's review and still accumulates a changelog inside itself, one appended sentence at a time.
+3. Run both document checks — they catch different failures, and passing one says nothing about the other:
+
+   ```bash
+   bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md
+   bash .claude/skills/addw-3-release/scripts/check-doc-accretion.sh
+   ```
+
+   The token count catches size. The accretion probe catches a document growing a changelog inside itself while staying comfortably under budget — the failure a size threshold cannot see. On `ACCRETION`, justify each new version reference it lists or rewrite the passage carrying it.
 4. **Reconciliation sweep** — mandatory whenever the release changed any documented mechanism. The plan's **Doc Impact** list is the starting point, not the whole job:
    - Living docs describe **only the current design**; git history is the archive. Never leave superseded text behind a "historic"/"superseded" label. For each stale passage: **delete it** if it merely describes the old state; **rewrite it as an explicit lesson or warning** if it carries evidence that constrains future work.
    - Sweep **every** living doc — the whole of `docs/` outside the numbered per-release directories, plus CLAUDE.md and README.md — starting from the plan's **Doc Impact** list, then finish with a grep for the retired mechanism's vocabulary to catch what the plan missed. Enumerate the directory rather than working from a remembered list; living documents get added, and the one nobody lists is the one that keeps the retired wording.
