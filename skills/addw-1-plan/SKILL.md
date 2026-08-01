@@ -215,7 +215,8 @@ If the plan's Doc Impact section says it changes documented intent — it contra
 
 1. Copy `docs/adr/template.md` to `docs/adr/NNNN-<slug>.md` (next free sequence number), dated today, status `active`. Name this plan's path as the origin, and in Relations name any ADR it supersedes (flip that one's status to `superseded by ADR-NNNN` — the pointer is the only edit ever made to an existing ADR). Draw Alternatives from what the planning discussion actually rejected.
 2. Guardrail decisions — things deliberately NOT built — are first-class ADRs; record them the same way.
-3. Commit the ADR on the feature branch together with the plan. ADRs are **write-once**: if a later decision changes this one, a new ADR supersedes it — including the case where this work is abandoned.
+3. **Write it self-contained.** An ADR outlives the working documents around it, so it may cite only things that live as long: other ADRs, the charter, ARCHITECTURE.md, and dated records that are never pruned — including its own origin plan. Never point it at a worklist, backlog, handoff, or audit report. Those are pruned as their tasks close, so the citation rots into a dead reference while still reading as precise. Where such a document holds the evidence, restate the evidence here in the ADR's own words.
+4. Commit the ADR on the feature branch together with the plan. ADRs are **write-once**: if a later decision changes this one, a new ADR supersedes it — including the case where this work is abandoned.
 
 An ADR in the plan's scope may be superseded with reasons, but never silently ignored. Routine feature work that changes no documented intent writes no ADR — do not create ceremony for conforming plans.
 
