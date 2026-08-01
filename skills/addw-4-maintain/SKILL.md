@@ -67,6 +67,18 @@ place is drift too.
 - **Line-scoped pointers** (`file.md:94-95`) drift the moment the target is
   edited, and read as precise while pointing at nothing. Replace with a
   named section or entry.
+- **Transient documents are pruned, not appended to.** A worklist or backlog
+  that keeps its closed entries becomes a second archive competing with git,
+  and the closed majority buries the open minority that is the file's whole
+  purpose. Closing an entry means deleting it — after anything durable it
+  carried has been moved to a durable home first. Mostly-closed is the
+  finding; check the ratio.
+- **A document that summarizes its own body will drift out of agreement with
+  it.** Header counts, status preambles, and "current state" summaries
+  restating what the sections below already say get updated in one place and
+  not the other, and the file then contradicts itself while both halves look
+  authoritative. Report the duplicated structure — reconciling the two numbers
+  and leaving the arrangement in place only resets the clock.
 
 **Claims**
 
@@ -75,6 +87,26 @@ place is drift too.
   recorded in two documents and discharged in one becomes a phantom task
   that survives every handoff and re-enters the backlog forever. Correct the
   document that still asserts it; do not append "satisfied on <date>".
+- **A document must not restate a fact it has itself delegated.** Where a doc
+  names another as authoritative for some topic, any figure, path, or count it
+  then states on that same topic is a second copy nothing keeps in sync — and
+  the two diverge silently while both read as current. Check this by following
+  the document's own pointers and looking for overlap, not by judging
+  importance. The same applies to facts owned by the operator's machine rather
+  than the project — addresses, hostnames, local paths, hardware — which no
+  repository can keep true.
+- **A procedure that has been performed and cannot be performed again is
+  spent.** Runbooks accrete one-time migrations, resets, and cutovers that
+  keep reading as legitimate reference long after the fact — a description of
+  a completed action does not look stale the way a description of a retired
+  mechanism does. Delete the steps; keep only what they taught, as a lesson or
+  a warning.
+- Accretion has a cheap measurement:
+  `bash .claude/skills/addw-3-release/scripts/check-doc-accretion.sh <file>...`
+  counts a document's version references against its copy at the previous tag.
+  A count climbing release over release means the document is narrating its own
+  history. Point it at ARCHITECTURE.md and at every runbook — the release step
+  runs it on ARCHITECTURE.md only.
 - **Design records are not work logs.** When auditing an ADR: an alternative
   earns its place only if a competent reader would independently propose it
   and act on it; evidence earns its place only if the decision would change
