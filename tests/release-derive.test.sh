@@ -181,6 +181,19 @@ c "$badtag" "feat: something"
 assert_exit 2 "badtag: unparseable last tag → exit 2" \
   bash -c "cd '$badtag' && bash '$DERIVE' version"
 
+badtag_noise="$work/badtag-noise"
+new_repo "$badtag_noise"
+c "$badtag_noise" "chore: bootstrap"
+git -C "$badtag_noise" tag snapshot-1
+c "$badtag_noise" "WIP only noise here"
+assert_exit 2 "badtag-noise: tag validation precedes the nothing-qualifies check" \
+  bash -c "cd '$badtag_noise' && bash '$DERIVE' changelog"
+
+shallow="$work/shallow"
+git clone -q --depth 1 "file://$mixed" "$shallow" 2>/dev/null
+assert_exit 2 "shallow: truncated history is refused, never derived from" \
+  bash -c "cd '$shallow' && bash '$DERIVE' version"
+
 assert_exit 2 "usage: missing subcommand → exit 2" \
   bash -c "cd '$mixed' && bash '$DERIVE'"
 assert_exit 2 "usage: unknown subcommand → exit 2" \
