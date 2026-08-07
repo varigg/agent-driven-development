@@ -16,7 +16,11 @@ State (thread ID, review text, event log) persists under
 shared runner in `codex-plan-review/scripts/` with this skill's prompts and state — the same
 pattern as `codex-code-review`. The per-issue file `state/issue-<N>.md` mirrors the issue
 body and doubles as the **edit buffer**: fixes are made there and pushed back with
-`gh issue edit`.
+`tracker.sh edit-body`.
+
+Every tracker operation — issue reads, body edits, the `spec` label, the verdict comment —
+goes through the tracker layer at `.claude/skills/lib/tracker/tracker.sh`. Never call `gh`
+for tracker work here.
 
 ## Arguments
 
@@ -29,7 +33,9 @@ body and doubles as the **edit buffer**: fixes are made there and pushed back wi
 
 1. **Parse `$ARGUMENTS`**: extract action (`reset`/`show`/auto) and issue number.
 
-2. **Auto** — try `start.sh` first (exit code 2 = thread exists -> use `resume.sh`):
+2. **Auto** — try `start.sh` first (exit code 2 = thread exists -> use `resume.sh`).
+   Starting labels the issue `spec` before anything else — reviewing an issue is what
+   makes it one, and the frontier and completion queries key on that label:
    - **Start**: `bash .claude/skills/codex-spec-review/scripts/start.sh <issue-number> [extra]`
    - **Resume**: `bash .claude/skills/codex-spec-review/scripts/resume.sh --notes "..." <issue-number> [extra]`
 
@@ -41,7 +47,7 @@ body and doubles as the **edit buffer**: fixes are made there and pushed back wi
    - `APPROVED` — post the verdict comment (below), tell the user, done.
    - `REQUEST_CHANGES` — engage critically: fix legitimate findings by editing
      `state/issue-<N>.md` and pushing with
-     `gh issue edit <N> --body-file .claude/skills/codex-spec-review/state/issue-<N>.md`;
+     `bash .claude/skills/lib/tracker/tracker.sh edit-body <N> .claude/skills/codex-spec-review/state/issue-<N>.md`;
      push back on incorrect ones in the `--notes` of the next resume. Surface the review
      verbatim.
    - `NEEDS_REWORK` — surface to the user before mass-editing.
@@ -51,15 +57,18 @@ body and doubles as the **edit buffer**: fixes are made there and pushed back wi
    state so the issue remains readable:
 
    ```bash
-   gh issue comment <N> --body "Codex spec review: APPROVED after <R> round(s)."
+   S=.claude/skills/codex-spec-review/state
+   printf 'Codex spec review: APPROVED after <R> round(s).\n' > "$S/issue-<N>.verdict.md"
+   bash .claude/skills/lib/tracker/tracker.sh comment <N> "$S/issue-<N>.verdict.md"
    ```
 
 ## Notes
 
 - **Unpushed-edit guard**: start/resume re-sync the buffer from GitHub and **refuse (exit 3)**
   if it differs from the remote body — that means unpushed local edits (push them first) or
-  an out-of-band edit on GitHub (pass `--refresh` to accept the remote as truth). Never
-  bypass the guard by deleting the buffer.
+  an out-of-band edit on GitHub (pass `--refresh` to accept the remote as truth). Trailing
+  newlines are not a difference, so pushing the buffer and resuming immediately is always
+  clean. Never bypass the guard by deleting the buffer.
 - Model/effort defaults live in the shared `_common.sh`, keyed off `STATE_DIR` (reviews run
   the review model). Override per run with `CODEX_MODEL` / `CODEX_EFFORT`.
 - `--sandbox read-only`. Safe to invoke autonomously.
@@ -70,11 +79,11 @@ body and doubles as the **edit buffer**: fixes are made there and pushed back wi
 ## Loop Shape
 
 ```
-turn 1: start.sh 42 -> REQUEST_CHANGES (A B C)
-         edit state/issue-42.md, gh issue edit 42 --body-file …
+turn 1: start.sh 42 (labels #42 spec) -> REQUEST_CHANGES (A B C)
+         edit state/issue-42.md, tracker.sh edit-body 42 state/issue-42.md
 turn 2: resume.sh --notes "Fixed A B. Pushed back on C because …" 42
         -> REQUEST_CHANGES (C stale, new D)
          edit + push
 turn 3: resume.sh --notes "…" 42 -> APPROVED
-         gh issue comment 42 --body "Codex spec review: APPROVED after 3 round(s)."
+         tracker.sh comment 42 state/issue-42.verdict.md
 ```

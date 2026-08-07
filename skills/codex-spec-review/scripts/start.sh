@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Turn 1: start a fresh Codex spec-review session for GitHub issue <N>
-# (adapter entry point). Dumps the issue body into this skill's state as
-# the review target / edit buffer, then hands off to the shared runner
+# (adapter entry point). Labels the issue as a spec, dumps its body into
+# this skill's state as the review target / edit buffer, then hands off
+# to the shared runner
 # with this skill's prompt and state (same wrapper pattern as
 # codex-code-review). Exit 2 from the runner means a thread already
 # exists — use resume.sh.
@@ -26,9 +27,14 @@ fi
 ISSUE="$1"; shift
 require_issue_number "$ISSUE"
 
+# First act: reviewing an issue is what makes it a spec. Upstream `to-spec`
+# applies only the triage label, and the frontier and completion queries key
+# on `spec` — an unlabeled spec would sit in the frontier as a ticket.
+bash "$TRACKER" label "$ISSUE" spec
+
 mkdir -p "$STATE_DIR"
 BUFFER="$STATE_DIR/issue-$ISSUE.md"
-TITLE="$(gh issue view "$ISSUE" --json title -q .title)"
+TITLE="$(bash "$TRACKER" title "$ISSUE")"
 fetch_issue_body "$ISSUE" "$BUFFER" "$REFRESH"
 
 exec bash "$SCRIPT_DIR/../../codex-plan-review/scripts/start.sh" \
