@@ -132,10 +132,10 @@ if [ -n "${ADDW_ADR_DIR:-}" ]; then
         # Presence is not enough for Status: a skill-bundled template offering
         # proposed/accepted/deprecated also has the field, and telling the two
         # apart is the whole point of checking an install's template.
-        if grep -Eq "^[[:space:]-]*\\*\\*Status\\*\\*[[:space:]]*:.*active.*superseded by" "$adr_template"; then
+        if grep -Eq "^[[:space:]-]*\\*\\*Status\\*\\*[[:space:]]*:[[:space:]]*active[[:space:]]*\\|[[:space:]]*superseded by ADR-NNNN[[:space:]]*$" "$adr_template"; then
             ok "$adr_template offers the two Status states"
         else
-            bad "$adr_template's Status must offer exactly 'active' and 'superseded by ADR-NNNN'"
+            bad "$adr_template's Status must read exactly 'active | superseded by ADR-NNNN' — two states, no third"
         fi
         if grep -Eq "^#+[[:space:]]+Gate" "$adr_template"; then
             ok "$adr_template carries the Gate section"
@@ -189,8 +189,27 @@ if [ -n "${ADDW_VERSION_FILE:-}" ]; then
     fi
 fi
 if [ -n "${ADDW_MAIN_BRANCH:-}" ]; then
-    if git rev-parse -q --verify "$ADDW_MAIN_BRANCH" >/dev/null 2>&1; then
+    # The value must be a *bare* branch name. Consumers check it out, pass it
+    # to `gh pr create --base`, and derive `origin/$ADDW_MAIN_BRANCH` — so a
+    # remote-qualified "origin/main" resolves perfectly well here while
+    # becoming "origin/origin/main" there. Checking that the ref exists would
+    # not catch that; checking its shape does. Branch names may legitimately
+    # contain slashes (release/2.x), so only a real remote's name disqualifies
+    # a first segment.
+    remote_prefixed=0
+    while IFS= read -r remote; do
+        [ -n "$remote" ] || continue
+        case "$ADDW_MAIN_BRANCH" in "$remote"/*) remote_prefixed=1 ;; esac
+    done < <(
+        git remote 2>/dev/null
+        printf 'origin\n'
+    )
+    if [ "$remote_prefixed" -eq 1 ]; then
+        bad "ADDW_MAIN_BRANCH='$ADDW_MAIN_BRANCH' is remote-qualified — it must be a bare branch name"
+    elif git rev-parse -q --verify "refs/heads/$ADDW_MAIN_BRANCH" >/dev/null 2>&1; then
         ok "main branch '$ADDW_MAIN_BRANCH' exists"
+    elif git rev-parse -q --verify "refs/remotes/origin/$ADDW_MAIN_BRANCH" >/dev/null 2>&1; then
+        ok "main branch '$ADDW_MAIN_BRANCH' exists on origin (no local branch yet)"
     else
         bad "main branch '$ADDW_MAIN_BRANCH' not found in git"
     fi
@@ -285,13 +304,31 @@ fi
 # bare name too, so a namesake from another plugin shadows the intended one at
 # the call site exactly as it satisfies the probe here. Verifying provenance
 # would be pinning, and the design probes rather than pins.
-# Only the plugin *cache* counts, never the whole plugins directory: a
-# marketplace clone sitting beside it carries every skill of every plugin on
-# offer, installed or not, and probing that would report a skill Claude cannot
-# invoke as present.
+# Where to look, narrowest first. The install record names the exact directory
+# of each installed plugin, so it excludes both the marketplace clone (which
+# carries every skill of every plugin on offer, installed or not) and cache
+# residue left by a plugin that has since been removed. It is an internal file
+# in an undocumented shape, so extraction is deliberately forgiving: a format
+# that stops matching yields no paths and drops through to scanning the whole
+# cache, which is the wider answer rather than no answer.
 claude_config_dir="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}"
+plugin_roots=()
+install_record="$claude_config_dir/plugins/installed_plugins.json"
+if [ -r "$install_record" ]; then
+    while IFS= read -r path; do
+        [ -n "$path" ] && [ -d "$path" ] && plugin_roots+=("$path")
+    done < <(
+        grep -o '"installPath"[[:space:]]*:[[:space:]]*"[^"]*"' "$install_record" 2>/dev/null |
+            sed 's|.*"installPath"[[:space:]]*:[[:space:]]*"||; s|"$||'
+    )
+fi
+if [ "${#plugin_roots[@]}" -eq 0 ] && [ -d "$claude_config_dir/plugins/cache" ]; then
+    plugin_roots+=("$claude_config_dir/plugins/cache")
+fi
+
 find_roots=()
-for root in "$claude_config_dir/plugins/cache" "$claude_config_dir/skills" ./.claude/skills; do
+[ "${#plugin_roots[@]}" -gt 0 ] && find_roots+=("${plugin_roots[@]}")
+for root in "$claude_config_dir/skills" ./.claude/skills; do
     [ -d "$root" ] && find_roots+=("$root")
 done
 

@@ -246,6 +246,14 @@ assert_eq 1 "$RUN_STATUS" \
   "adr: a template offering the wrong Status states is unhealthy"
 assert_contains "$RUN_OUT" "Status" "adr: the failing line names the field"
 
+# added at codex round 2: two states means two, so a third smuggled in beside
+# the right pair must not pass on the strength of the pair being there.
+d="$(case_dir threestatus)"
+sed -i 's|^- \*\*Status\*\*.*|- **Status**: proposed \| active \| superseded by ADR-NNNN|' \
+  "$d/project/docs/adr/template.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adr: a third Status state is unhealthy"
+
 # added at codex round 1: the Gate section is where an author of a guardrail
 # ADR learns it is required, so a template without one is a broken surface.
 d="$(case_dir nogate)"
@@ -288,6 +296,18 @@ run "$d"
 assert_eq 0 "$RUN_STATUS" \
   "adr-dir: an ADR location other than docs/adr/ is healthy when its artifacts are there"
 assert_contains "$RUN_OUT" "HEALTHY" "adr-dir: no hardcoded ADR path"
+
+# added at codex round 2: consumers check the value out, pass it to
+# `gh pr create --base`, and derive `origin/$ADDW_MAIN_BRANCH` — so a
+# remote-qualified value resolves as a ref while being wrong everywhere it is
+# used. Checking the ref exists cannot catch that; checking its shape can.
+d="$(case_dir remotebranch)"
+sed -i 's|^ADDW_MAIN_BRANCH=.*|ADDW_MAIN_BRANCH="origin/main"|' \
+  "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "branch: a remote-qualified main branch is unhealthy"
+assert_contains "$RUN_OUT" "bare branch name" \
+  "branch: the failing line says what shape is required"
 
 # added at codex round 1: `inline` is the reserved non-adapter value for the
 # implement role — the main agent drives `tdd` itself — so there is no skill
@@ -351,6 +371,32 @@ assert_contains "$RUN_OUT" "WARN:" "plugin: its absence warns"
 assert_contains "$RUN_OUT" "to-spec" "plugin: the warning names the skill"
 assert_contains "$RUN_OUT" "HEALTHY: all checks passed (1 warning" \
   "plugin: the terminal line carries the warning count"
+
+# added at codex round 2: when the install record is readable it names the
+# installed plugins exactly, so a skill sitting in cache residue from a plugin
+# that is no longer installed must not read as available.
+d="$(case_dir stale-cache)"
+plugin_skills "$d/home-residue" to-spec   # a second, unrecorded cache tree
+mv "$d/home-residue/.claude/plugins/cache/vendor/pack" \
+   "$d/home/.claude/plugins/cache/vendor/removed-pack"
+rm -r "$d/home/.claude/plugins/cache/vendor/pack/1.0.0/skills/engineering/to-spec"
+cat > "$d/home/.claude/plugins/installed_plugins.json" <<JSON
+{ "version": 2, "plugins": { "pack@vendor": [ {
+  "installPath": "$d/home/.claude/plugins/cache/vendor/pack/1.0.0" } ] } }
+JSON
+run "$d"
+assert_eq 0 "$RUN_STATUS" "residue: the run still completes"
+assert_contains "$RUN_OUT" "WARN:" "residue: an uninstalled plugin's skill warns"
+assert_contains "$RUN_OUT" "to-spec" "residue: the warning names the skill"
+
+# An unreadable or reshaped install record must widen the search rather than
+# empty it: no paths extracted falls back to scanning the whole cache.
+d="$(case_dir unparsable-record)"
+printf 'not json at all\n' > "$d/home/.claude/plugins/installed_plugins.json"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "fallback: an unreadable install record stays healthy"
+assert_not_contains "$RUN_OUT" "WARN:" \
+  "fallback: the cache scan still finds every installed skill"
 
 # A project-local skills folder is a search root too, so the same skill
 # installed there clears the probe.
