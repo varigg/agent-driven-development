@@ -225,7 +225,12 @@ syntax error here breaks skills far from the edit.
 ADDW_SCHEMA=3
 ADDW_PROJECT_NAME="<project name>"
 ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, ...>"
-ADDW_MAIN_BRANCH="<git symbolic-ref --short refs/remotes/origin/HEAD, or the current branch>"
+# A bare branch name — never remote-qualified. Consumers check it out and pass
+# it to `gh pr create --base`, and one derives `origin/$ADDW_MAIN_BRANCH`, so
+# an "origin/main" here becomes "origin/origin/main" there:
+#   git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||'
+# falling back to `git branch --show-current` in a repo with no remote.
+ADDW_MAIN_BRANCH="<bare branch name>"
 ADDW_AUDIT_NUDGE_N=5
 # The ADR directory the domain-layout contract declares (Step 1.4):
 ADDW_ADR_DIR="<resolved ADR directory>"
@@ -302,8 +307,9 @@ Then add one line to the project instructions — the `CLAUDE.md` or
 declaring that `<ADDW_ADR_DIR>/template.md` is authoritative over any
 ADR format bundled with a skill, including `domain-modeling`'s. That
 override is what makes the template the enforcing surface for every
-authoring path. Write the resolved path literally: doctor greps the
-instructions for it.
+authoring path. Put the resolved path and the word **authoritative** on the
+same line: doctor looks for both together, so that a passing mention of the
+template somewhere else in the file cannot be mistaken for the declaration.
 
 ### 2.9 `docs/ARCHITECTURE-rules.md` and `CHANGELOG.md`
 

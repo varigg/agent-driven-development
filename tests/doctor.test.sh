@@ -124,6 +124,12 @@ ENV
 - **Status**: active | superseded by ADR-NNNN
 - **Date**: <YYYY-MM-DD>
 - **Origin**: <#spec-issue, #ticket, PR #n, or "design session">
+
+<One paragraph.>
+
+## Gate (required for a guardrail decision)
+
+<What a future reviewer must check.>
 ADR
 
   cat > CLAUDE.md <<'MD'
@@ -229,6 +235,36 @@ assert_eq 1 "$RUN_STATUS" \
   "adr: a template without the mandatory Origin field is unhealthy"
 assert_contains "$RUN_OUT" "Origin" "adr: the failing line names the field"
 
+# added at codex round 1: the field being present is not the check — a
+# skill-bundled template offering proposed/accepted/deprecated has a Status
+# line too, and an install still carrying one is exactly what doctor is for.
+d="$(case_dir wrongstatus)"
+sed -i 's|^- \*\*Status\*\*.*|- **Status**: proposed / accepted / deprecated|' \
+  "$d/project/docs/adr/template.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "adr: a template offering the wrong Status states is unhealthy"
+assert_contains "$RUN_OUT" "Status" "adr: the failing line names the field"
+
+# added at codex round 1: the Gate section is where an author of a guardrail
+# ADR learns it is required, so a template without one is a broken surface.
+d="$(case_dir nogate)"
+grep -v '^## Gate' "$d/project/docs/adr/template.md" \
+  > "$d/project/docs/adr/template.md.new"
+mv "$d/project/docs/adr/template.md.new" "$d/project/docs/adr/template.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adr: a template without a Gate section is unhealthy"
+assert_contains "$RUN_OUT" "Gate" "adr: the failing line names the section"
+
+# added at codex round 1: the declaration is the path and the word together.
+# A file that merely mentions the template is not declaring anything.
+d="$(case_dir passingmention)"
+printf '# Project\n\nADRs use the template at `docs/adr/template.md`.\n' \
+  > "$d/project/CLAUDE.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "override: a passing mention of the template is not a declaration"
+
 d="$(case_dir nooverride)"
 printf '# Project\n' > "$d/project/CLAUDE.md"
 run "$d"
@@ -252,6 +288,15 @@ run "$d"
 assert_eq 0 "$RUN_STATUS" \
   "adr-dir: an ADR location other than docs/adr/ is healthy when its artifacts are there"
 assert_contains "$RUN_OUT" "HEALTHY" "adr-dir: no hardcoded ADR path"
+
+# added at codex round 1: `inline` is the reserved non-adapter value for the
+# implement role — the main agent drives `tdd` itself — so there is no skill
+# folder to look for and doctor must not go looking for one.
+d="$(case_dir inline)"
+printf 'ADDW_IMPLEMENT_SKILL=inline\n' >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "role: ADDW_IMPLEMENT_SKILL=inline is healthy"
+assert_not_contains "$RUN_OUT" "FAIL:" "role: inline needs no adapter scripts"
 
 # --- tracker validation ----------------------------------------------------
 

@@ -129,6 +129,19 @@ if [ -n "${ADDW_ADR_DIR:-}" ]; then
                 bad "$adr_template lacks mandatory $field field"
             fi
         done
+        # Presence is not enough for Status: a skill-bundled template offering
+        # proposed/accepted/deprecated also has the field, and telling the two
+        # apart is the whole point of checking an install's template.
+        if grep -Eq "^[[:space:]-]*\\*\\*Status\\*\\*[[:space:]]*:.*active.*superseded by" "$adr_template"; then
+            ok "$adr_template offers the two Status states"
+        else
+            bad "$adr_template's Status must offer exactly 'active' and 'superseded by ADR-NNNN'"
+        fi
+        if grep -Eq "^#+[[:space:]]+Gate" "$adr_template"; then
+            ok "$adr_template carries the Gate section"
+        else
+            bad "$adr_template lacks a Gate section — guardrail ADRs require one, and the template is where an author sees it"
+        fi
     else
         bad "$adr_template missing"
     fi
@@ -150,16 +163,20 @@ if [ -f docs/4-unit-tests/TESTING.md ]; then
 fi
 
 if [ -n "$adr_template" ]; then
+    # The path and the word together, on one line: a template mentioned in
+    # passing elsewhere in the instructions is not a declaration, and matching
+    # the path alone would accept one.
     instructions_override=0
     for instructions in CLAUDE.md AGENTS.md; do
-        if [ -f "$instructions" ] && grep -Fq -- "$adr_template" "$instructions"; then
+        if [ -f "$instructions" ] &&
+            grep -F -- "$adr_template" "$instructions" | grep -qi authoritative; then
             instructions_override=1
         fi
     done
     if [ "$instructions_override" -eq 1 ]; then
         ok "project instructions declare $adr_template authoritative"
     else
-        bad "CLAUDE.md or AGENTS.md must declare $adr_template authoritative"
+        bad "CLAUDE.md or AGENTS.md must carry one line naming $adr_template and calling it authoritative"
     fi
 fi
 
@@ -183,6 +200,12 @@ fi
 for key in ADDW_PLAN_REVIEW_SKILL ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_ASK_SKILL; do
     value="${!key:-}"
     [ -z "$value" ] && continue
+    # `inline` is the reserved non-adapter value: the main agent drives `tdd`
+    # itself, so there is no skill folder to find.
+    if [ "$key" = ADDW_IMPLEMENT_SKILL ] && [ "$value" = inline ]; then
+        ok "$key=inline (no adapter — the main agent implements)"
+        continue
+    fi
     if [ -f ".claude/skills/$value/scripts/start.sh" ] &&
         [ -f ".claude/skills/$value/scripts/resume.sh" ]; then
         ok "$key=$value adapter scripts present"
@@ -262,9 +285,13 @@ fi
 # bare name too, so a namesake from another plugin shadows the intended one at
 # the call site exactly as it satisfies the probe here. Verifying provenance
 # would be pinning, and the design probes rather than pins.
+# Only the plugin *cache* counts, never the whole plugins directory: a
+# marketplace clone sitting beside it carries every skill of every plugin on
+# offer, installed or not, and probing that would report a skill Claude cannot
+# invoke as present.
 claude_config_dir="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}"
 find_roots=()
-for root in "$claude_config_dir/plugins" "$claude_config_dir/skills" ./.claude/skills; do
+for root in "$claude_config_dir/plugins/cache" "$claude_config_dir/skills" ./.claude/skills; do
     [ -d "$root" ] && find_roots+=("$root")
 done
 
