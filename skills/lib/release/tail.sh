@@ -1,25 +1,31 @@
 #!/usr/bin/env bash
 # The re-runnable post-merge tail of the ADDW release flow.
 #
-# Usage: tail.sh [--spec <n>] <version>
+# Usage: tail.sh [--spec <n>] [--commit <sha>] <version>
 #
-# Run from the repository root with the release PR's merge commit checked out.
-# The tail lays the version tag on HEAD, pushes it to origin, publishes the
-# GitHub Release from the changelog entry, and for a spec release closes the
-# spec issue. Each step skips work that is already complete, so an interrupted
-# run is finished by running it again rather than by hand.
+# Run from the repository root after the release PR has been merged. The tail
+# lays the version tag on the release commit, pushes it to origin, publishes
+# the GitHub Release from the changelog entry, and for a spec release closes
+# the spec issue. Each step skips work that is already complete, so an
+# interrupted run is finished by running it again rather than by hand.
 #
-# Skipping asks whether the step's *result* is present, not merely whether
-# something with the right name is: an existing tag pointing somewhere other
-# than HEAD is refused rather than skipped, since a tag laid from a stale
-# checkout would otherwise be cemented by the very re-run meant to recover the
-# release. The version argument is likewise checked against the changelog,
-# which is what catches a version that does not match the one the release PR
-# committed.
+# --commit is the release PR's merge commit, and the caller should always pass
+# it: HEAD is only a convenience default, and it is wrong the moment another
+# PR merges between the release merge and this run — the tag would then cover
+# commits the changelog entry never mentions.
 #
-# Exit 0 when every step succeeded or skipped; 1 when a release must be created
-# but CHANGELOG.md has no entry for the version; 2 on usage errors, outside a
-# git work tree, or on a tag that already exists but points elsewhere.
+# Everything is validated before anything is mutated. A tag is public and
+# awkward to retract, so a version that does not match the changelog, or a tag
+# already pointing somewhere else, must fail before the first `git tag` rather
+# than after the push. For the same reason, skipping asks whether the step's
+# *result* is present, not merely whether something with the right name is: a
+# tag pointing away from the release commit — locally or on the remote — is
+# refused rather than skipped, since skipping would cement a tag laid from a
+# stale checkout and publish notes against the wrong code.
+#
+# Exit 0 when every step succeeded or skipped; 1 when CHANGELOG.md has no
+# entry for the version; 2 on usage errors, outside a git work tree, on an
+# unresolvable --commit, or on a tag that exists but points elsewhere.
 set -euo pipefail
 
 usage() {
@@ -33,6 +39,7 @@ usage() {
 changelog=CHANGELOG.md
 remote=origin
 spec=""
+commit=""
 version=""
 
 while [ "$#" -gt 0 ]; do
@@ -41,6 +48,12 @@ while [ "$#" -gt 0 ]; do
       [ "$#" -ge 2 ] || usage
       spec=$2
       [[ "$spec" =~ ^[1-9][0-9]*$ ]] || usage
+      shift 2
+      ;;
+    --commit)
+      [ "$#" -ge 2 ] || usage
+      commit=$2
+      [ -n "$commit" ] || usage
       shift 2
       ;;
     --)
@@ -70,24 +83,96 @@ fi
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tracker="$here/../tracker/tracker.sh"
 
-if git rev-parse --verify --quiet "refs/tags/$version" >/dev/null 2>&1; then
-  tagged="$(git rev-parse "refs/tags/$version^{commit}")"
-  head="$(git rev-parse HEAD)"
-  if [ "$tagged" != "$head" ]; then
-    printf 'tail.sh: tag %s points at %s, not HEAD (%s)\n' \
-      "$version" "$(git rev-parse --short "$tagged")" \
-      "$(git rev-parse --short "$head")" >&2
-    printf '  check out the merge commit, or delete the tag if it is wrong\n' >&2
-    exit 2
-  fi
-  printf 'skip: tag %s already exists\n' "$version"
-else
-  git tag "$version"
-  printf 'done: tagged %s at %s\n' "$version" "$(git rev-parse --short HEAD)"
+# --- validation: nothing below this block mutates anything -----------------
+
+if ! target="$(git rev-parse --verify --quiet "${commit:-HEAD}^{commit}")"; then
+  printf 'tail.sh: cannot resolve %s to a commit\n' "${commit:-HEAD}" >&2
+  exit 2
 fi
 
-if git ls-remote --exit-code --refs "$remote" "refs/tags/$version" \
-  >/dev/null 2>&1; then
+# The notes are the changelog entry's body, read rather than re-derived:
+# deriving twice could disagree, and the published release and the committed
+# changelog have to be the same words. Reading it here also catches a version
+# that disagrees with the one the release PR committed — before any tag.
+notes_file="$(mktemp)"
+trap 'rm -f "$notes_file"' EXIT
+
+if ! awk -v wanted="$version" '
+  function is_h2(line) {
+    return substr(line, 1, 3) == "## "
+  }
+  !found {
+    if (is_h2($0)) {
+      heading = substr($0, 4)
+      if (heading == wanted ||
+        (substr(heading, 1, length(wanted) + 1) == wanted " ")) {
+        found = 1
+      }
+    }
+    next
+  }
+  is_h2($0) {
+    exit
+  }
+  { lines[++count] = $0 }
+  END {
+    if (!found) {
+      exit 1
+    }
+    first = 1
+    while (first <= count && lines[first] ~ /^[[:space:]]*$/) {
+      first++
+    }
+    last = count
+    while (last >= first && lines[last] ~ /^[[:space:]]*$/) {
+      last--
+    }
+    for (i = first; i <= last; i++) {
+      print lines[i]
+    }
+  }
+' "$changelog" >"$notes_file" 2>/dev/null; then
+  printf 'tail.sh: no %s entry for %s\n' "$changelog" "$version" >&2
+  exit 1
+fi
+
+refuse_tag() { # where sha
+  printf 'tail.sh: the %s tag %s points at %s, not the release commit (%s)\n' \
+    "$1" "$version" "$(git rev-parse --short "$2" 2>/dev/null || printf '%s' "$2")" \
+    "$(git rev-parse --short "$target")" >&2
+  printf '  pass --commit <merge-sha>, or delete the tag if it is wrong\n' >&2
+  exit 2
+}
+
+local_tag=""
+if local_tag="$(git rev-parse --verify --quiet "refs/tags/$version^{commit}")"; then
+  [ "$local_tag" = "$target" ] || refuse_tag local "$local_tag"
+fi
+
+# ls-remote reports the tag object; the peeled `^{}` ref is the commit an
+# annotated tag wraps, and is absent for the lightweight tags this lays.
+remote_tag=""
+if remote_refs="$(git ls-remote --tags "$remote" \
+  "refs/tags/$version" "refs/tags/$version^{}" 2>/dev/null)" \
+  && [ -n "$remote_refs" ]; then
+  remote_tag="$(printf '%s\n' "$remote_refs" | awk '
+    $2 ~ /\^\{\}$/ { peeled = $1 }
+    $2 !~ /\^\{\}$/ { plain = $1 }
+    END { print (peeled != "" ? peeled : plain) }
+  ')"
+  [ "$remote_tag" = "$target" ] || refuse_tag remote "$remote_tag"
+fi
+
+# --- mutation: four steps, each skipping what is already done --------------
+
+if [ -n "$local_tag" ]; then
+  printf 'skip: tag %s already at %s\n' "$version" "$(git rev-parse --short "$target")"
+else
+  git tag "$version" "$target"
+  printf 'done: tagged %s at %s\n' "$version" "$(git rev-parse --short "$target")"
+fi
+
+if [ -n "$remote_tag" ]; then
   printf 'skip: tag %s already on %s\n' "$version" "$remote"
 else
   # --quiet drops the progress and summary lines, not the errors: the tail's
@@ -99,51 +184,6 @@ fi
 if gh release view "$version" >/dev/null 2>&1; then
   printf 'skip: GitHub Release %s already published\n' "$version"
 else
-  notes_file="$(mktemp)"
-  trap 'rm -f "$notes_file"' EXIT
-
-  # The notes are the changelog entry's body, read rather than re-derived:
-  # deriving twice could disagree, and the published release and the committed
-  # changelog have to be the same words.
-  if ! awk -v wanted="$version" '
-    function is_h2(line) {
-      return substr(line, 1, 3) == "## "
-    }
-    !found {
-      if (is_h2($0)) {
-        heading = substr($0, 4)
-        if (heading == wanted ||
-          (substr(heading, 1, length(wanted) + 1) == wanted " ")) {
-          found = 1
-        }
-      }
-      next
-    }
-    is_h2($0) {
-      exit
-    }
-    { lines[++count] = $0 }
-    END {
-      if (!found) {
-        exit 1
-      }
-      first = 1
-      while (first <= count && lines[first] ~ /^[[:space:]]*$/) {
-        first++
-      }
-      last = count
-      while (last >= first && lines[last] ~ /^[[:space:]]*$/) {
-        last--
-      }
-      for (i = first; i <= last; i++) {
-        print lines[i]
-      }
-    }
-  ' "$changelog" >"$notes_file"; then
-    printf 'tail.sh: no %s entry for %s\n' "$changelog" "$version" >&2
-    exit 1
-  fi
-
   gh release create "$version" --title "$version" \
     --notes-file "$notes_file" >/dev/null
   printf 'done: published GitHub Release %s\n' "$version"

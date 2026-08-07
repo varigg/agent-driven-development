@@ -26,13 +26,18 @@ Pull requests and GitHub Releases are not tracker operations and use `gh pr` and
 
 ```bash
 source docs/addw.env
-git checkout "$ADDW_MAIN_BRANCH" && git pull
+git checkout "$ADDW_MAIN_BRANCH" && git fetch origin && git pull
 git status --short
+git rev-parse HEAD "origin/$ADDW_MAIN_BRANCH"
 ```
 
-The main branch, up to date, with a clean tree. The version and changelog are
-derived from what is *merged*; deriving them from a tree carrying anything else
-publishes a version for commits nobody reviewed.
+The version and changelog are derived from what is *merged*, so the branch must
+be **exactly** the remote's, not merely up to date with it. Those last two
+lines are the check: a clean tree, and the two SHAs identical. A local commit
+sitting ahead of the remote — a stray fix, an experiment, anything that never
+went through a PR — would otherwise be projected into the changelog and shipped
+under a version number, which is the one thing this flow exists to prevent.
+Stop if they differ.
 
 ---
 
@@ -51,8 +56,14 @@ the end of an implement session; this step re-runs it rather than trusting it.
 **The invocation names a spec** — verify it:
 
 ```bash
+bash .claude/skills/lib/tracker/tracker.sh state <n>
 bash .claude/skills/lib/tracker/tracker.sh spec-complete <n>
 ```
+
+A **closed** spec has already been released — its closure is what the last
+release's tail did — so releasing it again would cut a second version for the
+same intent. Refuse unless it is open; the completion query answers only
+whether the children are done, not whether the spec is still in flight.
 
 It prints `release-ready` or `not-release-ready`, then one
 `<completed|open|not-planned>` line per child. Read the child lines before
@@ -179,12 +190,19 @@ branch arrives through a reviewed PR needs no exception for releases.
 
 ## Step 5: The Post-Merge Tail
 
-After the human merges, the merge commit is what gets tagged:
+After the human merges, **the release PR's merge commit** is what gets tagged —
+not whatever the main branch has drifted to since:
 
 ```bash
 git checkout "$ADDW_MAIN_BRANCH" && git pull
-bash .claude/skills/lib/release/tail.sh [--spec <n>] <version>
+merge_sha="$(gh pr view <pr-number> --json mergeCommit --jq .mergeCommit.oid)"
+bash .claude/skills/lib/release/tail.sh --commit "$merge_sha" [--spec <n>] <version>
 ```
+
+Always pass `--commit`. If another PR merged in the minutes between the release
+merge and this step — routine on any repo with more than one person — then
+tagging the branch tip would ship a version covering commits its changelog
+entry never mentions, and the tail cannot detect that on its own.
 
 Four steps — tag, push, publish the GitHub Release from the changelog entry, and
 for a spec release close the spec issue as completed. Each **skips what is

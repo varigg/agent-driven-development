@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Contract: skills/lib/release/tail.sh — the re-runnable post-merge tail.
 #
-#   tail.sh [--spec <n>] <version>
+#   tail.sh [--spec <n>] [--commit <sha>] <version>
 #
-# Run from the repo root with the merge commit checked out. Four steps, in
-# order, each skipping what is already done so that running the tail twice is
-# harmless and an interrupted run completes on the next invocation:
+# Run from the repo root after the release PR merged. --commit is that PR's
+# merge commit and is what gets tagged; HEAD is only the default. Four steps,
+# in order, each skipping what is already done so that running the tail twice
+# is harmless and an interrupted run completes on the next invocation:
 #
-#   1. tag      lay <version> on HEAD, unless the tag already exists there
+#   1. tag      lay <version> on the release commit, unless already there
 #   2. push     push the tag to origin, unless it is already there
 #   3. release  publish the GitHub Release from the CHANGELOG.md entry for
 #               <version>, unless a release for the tag already exists
@@ -18,10 +19,13 @@
 # Each step prints exactly one line to stdout, `done: ...` or `skip: ...`, so
 # the caller can see what an interrupted run had already accomplished.
 #
-# Skipping is about the step's result, not its name: a tag that already exists
-# but points somewhere other than HEAD is refused, never skipped. Skipping it
-# would let a tag laid from a stale checkout survive the re-run that exists to
-# recover the release.
+# Everything is validated before anything is mutated: a version with no
+# changelog entry, or a tag already pointing elsewhere, fails before the first
+# `git tag` rather than after the push, because a published tag is awkward to
+# retract. Skipping is likewise about the step's result, not its name — a tag
+# that exists but points away from the release commit, locally or on the
+# remote, is refused rather than skipped, since skipping would let a tag laid
+# from a stale checkout survive the re-run that exists to recover the release.
 #
 # The release notes are the changelog entry's body: everything under the
 # `## <version> ...` heading up to the next `## ` heading, with the heading
@@ -30,9 +34,9 @@
 # than re-deriving it is what makes the published release and the committed
 # changelog the same words.
 #
-# Exit 0 when every step succeeded or skipped; 1 when the release must be
-# created but the changelog has no entry for <version>; 2 on usage errors,
-# outside a git work tree, or on a tag that exists but points elsewhere.
+# Exit 0 when every step succeeded or skipped; 1 when the changelog has no
+# entry for <version>; 2 on usage errors, outside a git work tree, on an
+# unresolvable --commit, or on a tag that exists but points elsewhere.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 . ./lib.sh
@@ -162,6 +166,9 @@ assert_exit 2 "unknown flag" run_tail usage --nope v1.2.0
 assert_exit 2 "--spec without a number" run_tail usage --spec v1.2.0
 assert_exit 2 "--spec with a non-numeric value" run_tail usage --spec abc v1.2.0
 assert_exit 2 "extra positional argument" run_tail usage v1.2.0 v1.3.0
+assert_exit 2 "--commit without a value" run_tail usage --commit v1.2.0 extra
+assert_exit 2 "--commit that resolves to nothing" \
+  run_tail usage --commit deadbeef v1.2.0
 
 outside="$work/not-a-repo"
 mkdir -p "$outside"
@@ -196,7 +203,7 @@ assert_eq "$EXPECTED_NOTES" "$(cat "$work/spec-state/notes-v1.2.0")" \
 
 # Running it again must change nothing and say so.
 out2="$(run_tail spec --spec 2 v1.2.0)"
-assert_contains "$out2" "skip: tag v1.2.0 already exists" "re-run skips the tag"
+assert_contains "$out2" "skip: tag v1.2.0 already at" "re-run skips the tag"
 assert_contains "$out2" "skip: tag v1.2.0 already on origin" "re-run skips the push"
 assert_contains "$out2" "skip: GitHub Release v1.2.0" "re-run skips the release"
 assert_contains "$out2" "skip: spec #2 already closed" "re-run skips the closure"
@@ -233,13 +240,41 @@ assert_eq "" "$(git -C "$work/stale" ls-remote --tags origin)" \
 assert_not_contains "$(cat "$work/stale-state/gh.log")" "release create" \
   "no release is published against the wrong commit"
 
+# A remote tag pointing elsewhere is refused too. The local tag can be absent
+# — a fresh clone, or a bad local tag already deleted — so checking only the
+# local one would still publish a release against the wrong commit.
+setup staleremote
+git -C "$work/staleremote" commit -q --allow-empty -m "fix: a later commit"
+git -C "$work/staleremote" tag v1.2.0 HEAD~1
+git -C "$work/staleremote" push -q origin v1.2.0
+git -C "$work/staleremote" tag -d v1.2.0 >/dev/null
+status=0
+out="$(run_tail staleremote v1.2.0 2>&1)" || status=$?
+assert_eq 2 "$status" "a remote tag pointing away from the release commit exits 2"
+assert_contains "$out" "remote" "the refusal says which tag is wrong"
+assert_eq "" "$(git -C "$work/staleremote" tag -l)" "no local tag is laid over it"
+assert_not_contains "$(cat "$work/staleremote-state/gh.log")" "release create" \
+  "no release is published against the wrong commit"
+
+# --- the release commit, not whatever HEAD drifted to ----------------------
+
+# The case --commit exists for: another PR merged after the release PR, so
+# HEAD covers commits the changelog entry never mentions.
+setup drifted
+release_sha="$(git -C "$work/drifted" rev-parse HEAD)"
+git -C "$work/drifted" commit -q --allow-empty -m "feat: merged after the release"
+out="$(run_tail drifted --commit "$release_sha" v1.2.0)"
+assert_contains "$out" "done: tagged v1.2.0" "the tag is laid"
+assert_eq "$release_sha" "$(git -C "$work/drifted" rev-parse 'v1.2.0^{commit}')" \
+  "the tag lands on the release commit, not on HEAD"
+
 # --- interruption: each partial state resumes ------------------------------
 
 # Interrupted after the tag was laid but before it was pushed.
 setup partial1
 git -C "$work/partial1" tag v1.2.0
 out="$(run_tail partial1 v1.2.0)"
-assert_contains "$out" "skip: tag v1.2.0 already exists" "an existing tag is left alone"
+assert_contains "$out" "skip: tag v1.2.0 already at" "an existing tag is left alone"
 assert_contains "$out" "done: pushed v1.2.0" "the interrupted push completes"
 assert_contains "$out" "done: published" "the release still publishes"
 
@@ -248,7 +283,7 @@ setup partial2
 git -C "$work/partial2" tag v1.2.0
 git -C "$work/partial2" push -q origin v1.2.0
 out="$(run_tail partial2 v1.2.0)"
-assert_contains "$out" "skip: tag v1.2.0 already exists" "the tag is left alone"
+assert_contains "$out" "skip: tag v1.2.0 already at" "the tag is left alone"
 assert_contains "$out" "skip: tag v1.2.0 already on origin" \
   "the pushed tag is left alone"
 assert_not_contains "$out" "done: pushed" "an already-pushed tag is not re-pushed"
@@ -287,10 +322,12 @@ status=0
 out="$(run_tail noentry v9.9.9 2>&1)" || status=$?
 assert_eq 1 "$status" "a missing changelog entry exits 1"
 assert_contains "$out" "v9.9.9" "the failure names the version it looked for"
-assert_contains "$(git -C "$work/noentry" tag -l)" "v9.9.9" \
-  "the steps before the failure are not rolled back"
-assert_not_contains "$(cat "$work/noentry-state/gh.log")" "release create" \
-  "no release is published without notes"
+assert_eq "" "$(git -C "$work/noentry" tag -l)" \
+  "a version the changelog does not know lays no tag"
+assert_eq "" "$(git -C "$work/noentry" ls-remote --tags origin)" \
+  "and pushes nothing"
+assert_eq "" "$(cat "$work/noentry-state/gh.log")" \
+  "and reaches no external service at all"
 
 # A bare version (no v prefix) is matched as written, since the tag namespace
 # is whatever the repo's last tag established.

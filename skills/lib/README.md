@@ -66,9 +66,13 @@ lives inside `skills/` rather than at the repo root.
   Each step skips what is already done and prints one `done:`/`skip:` line, so
   running the tail twice is harmless and an interrupted run completes on the
   next invocation — the property that makes a half-finished release
-  recoverable by re-running rather than by hand. Skipping tests for the step's
-  *result*, not its name: a tag that exists but points away from HEAD is
-  refused, since skipping it would cement a tag laid from a stale checkout.
+  recoverable by re-running rather than by hand. Everything is validated
+  before anything is mutated, since a published tag is awkward to retract, and
+  skipping tests for the step's *result*, not its name: a tag that exists but
+  points away from the release commit — locally or on the remote — is refused,
+  since skipping it would cement a tag laid from a stale checkout. `--commit`
+  names the release PR's merge commit and callers should always pass it; HEAD
+  is a default that goes wrong the moment another PR merges in between.
   The release notes are the changelog entry's body, read from the file rather
   than re-derived, which is what keeps the published release and the committed
   changelog the same words — and the entry lookup is what catches a version
