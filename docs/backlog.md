@@ -4,6 +4,14 @@ Ideas noted but not yet designed. When one graduates, it gets a full write-up
 in `docs/proposals/` (design) and eventually lands as process commits. Entries
 here are one-liners with just enough context to pick the thread back up.
 
+- **Native stacked PRs for large tickets** — noted 2026-08-07: GitHub now has
+  a first-class stacked-pull-request workflow
+  (https://docs.github.com/en/pull-requests/how-tos/stacked-pull-requests).
+  Not for starting blocked tickets early — the frontier rule stands — but for
+  decomposing one ticket's large change into separately reviewable blocks.
+  Before adopting: revisit addw-implement's open-PR mode detection (assumes
+  one PR per ticket) and the squash-merge/changelog projection (a squashed
+  base rewrites what the rest of the stack sits on).
 - **Second agent adapter** — write a non-Codex adapter for one role (implement
   or code-review) and revise the adapter contract against it. The current
   contract (README "Swapping agents") is codex-shaped: resumable thread IDs,
