@@ -1,0 +1,173 @@
+[
+  {
+    "number": 2,
+    "title": "Spec: sample overlay",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "spec" }, { "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Problem Statement\n\nA sample spec whose only child is closed as completed.\n"
+  },
+  {
+    "number": 3,
+    "title": "Add the parsers",
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Parent\n\n- #2\n\n## What to build\n\nParsers.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 4,
+    "title": "Add the gate runner",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nThe gate.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 5,
+    "title": "Slim the maintain skill",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [{ "login": "octocat" }],
+    "body": "## What to build\n\nSlimming.\n\n## Blocked by\n\n- #3\n"
+  },
+  {
+    "number": 6,
+    "title": "Add the tracker layer",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nThe layer.\n\n## Blocked by\n\n- #4\n"
+  },
+  {
+    "number": 7,
+    "title": "Rework the exporter",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nExporter rework.\n\n## Blocked by\n\n- #9\n"
+  },
+  {
+    "number": 8,
+    "title": "Backlog: second adapter",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "backlog" }, { "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nSomeday.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 9,
+    "title": "Prototype the old exporter",
+    "state": "CLOSED",
+    "stateReason": "NOT_PLANNED",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nAbandoned prototype.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 10,
+    "title": "Add the widget",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nThe widget.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 11,
+    "title": "Draft idea without label",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [],
+    "assignees": [],
+    "body": "## What to build\n\nUnlabeled draft.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 12,
+    "title": "Ride the missing blocker",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nDepends on an issue absent from the snapshot.\n\n## Blocked by\n\n- #99\n"
+  },
+  {
+    "number": 13,
+    "title": "Assemble the release wrapper",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## What to build\n\nWrapper.\n\n## Blocked by\n\n- #3\n- #6\n"
+  },
+  {
+    "number": 20,
+    "title": "Spec: childless",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "spec" }],
+    "assignees": [],
+    "body": "## Problem Statement\n\nA spec nobody has decomposed yet.\n"
+  },
+  {
+    "number": 21,
+    "title": "Spec: one open child",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "spec" }],
+    "assignees": [],
+    "body": "## Problem Statement\n\nA spec with one completed and one open child.\n"
+  },
+  {
+    "number": 22,
+    "title": "Wire the schema",
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Parent\n\n- #21\n\n## What to build\n\nSchema wiring.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 23,
+    "title": "Document the schema",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Parent\n\n- #21\n\n## What to build\n\nSchema docs.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 24,
+    "title": "Spec: waived child",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "spec" }],
+    "assignees": [],
+    "body": "## Problem Statement\n\nA spec with one completed and one not-planned child.\n"
+  },
+  {
+    "number": 25,
+    "title": "Ship the importer",
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Parent\n\n- #24\n\n## What to build\n\nImporter.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 26,
+    "title": "Polish the importer docs",
+    "state": "CLOSED",
+    "stateReason": "NOT_PLANNED",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Parent\n\n- #24\n\n## What to build\n\nDocs polish nobody needed.\n\n## Blocked by\n\n- #25\n"
+  }
+]
