@@ -31,8 +31,6 @@ Three numbered skills. One architecture file. Zero PhD required.
 
 The onboarding is: copy the folder, run init, start coding. If you can count to 3, you can run it.
 
-Curious what actually happens inside those three steps — every question you'll be asked, every commit that gets made? [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) walks through one full cycle.
-
 It was kept stupid simple because **the goal is to ship features, not to master a workflow**. The workflow should disappear into the background, not become a project of its own.
 
 ## Getting Started
