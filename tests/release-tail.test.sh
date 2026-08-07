@@ -27,7 +27,11 @@
 # remote, is refused rather than skipped, since skipping would let a tag laid
 # from a stale checkout survive the re-run that exists to recover the release.
 #
-# The release notes are the changelog entry's body: everything under the
+# The release notes come from CHANGELOG.md as it stands *in the release
+# commit's tree*, never the working tree: the two differ exactly when it
+# matters, and the notes must be present in the code being tagged.
+#
+# They are the changelog entry's body: everything under the
 # `## <version> ...` heading up to the next `## ` heading, with the heading
 # line itself omitted (the release carries the version as its title) and
 # surrounding blank lines trimmed. Taking the text from the changelog rather
@@ -329,11 +333,37 @@ assert_eq "" "$(git -C "$work/noentry" ls-remote --tags origin)" \
 assert_eq "" "$(cat "$work/noentry-state/gh.log")" \
   "and reaches no external service at all"
 
+# The entry is read from the release commit's tree, not the working tree. A
+# --commit predating the release therefore fails even while the checked-out
+# tree carries the entry — otherwise the release would be published against
+# code that does not contain its own notes.
+setup untracked
+before_sha="$(git -C "$work/untracked" rev-parse HEAD)"
+printf '\n## v2.0.0 — 2026-09-01\n\n### Features\n\n- feat: later work\n' \
+  >>"$work/untracked/CHANGELOG.md"
+git -C "$work/untracked" commit -qam "chore(release): v2.0.0"
+status=0
+out="$(run_tail untracked --commit "$before_sha" v2.0.0 2>&1)" || status=$?
+assert_eq 1 "$status" "an entry absent from the release commit exits 1"
+assert_eq "" "$(git -C "$work/untracked" tag -l)" "and lays no tag"
+assert_eq "" "$(cat "$work/untracked-state/gh.log")" "and publishes nothing"
+
+# An uncommitted entry is the same failure: the working tree is never the
+# source of the notes.
+setup dirty
+printf '\n## v3.0.0 — 2026-09-01\n\n### Features\n\n- feat: uncommitted\n' \
+  >>"$work/dirty/CHANGELOG.md"
+status=0
+run_tail dirty v3.0.0 >/dev/null 2>&1 || status=$?
+assert_eq 1 "$status" "an uncommitted changelog entry exits 1"
+assert_eq "" "$(git -C "$work/dirty" tag -l)" "and lays no tag"
+
 # A bare version (no v prefix) is matched as written, since the tag namespace
 # is whatever the repo's last tag established.
 setup bare
 sed 's/## v1\.2\.0/## 1.2.0/' "$work/bare/CHANGELOG.md" >"$work/bare/CHANGELOG.tmp"
 mv "$work/bare/CHANGELOG.tmp" "$work/bare/CHANGELOG.md"
+git -C "$work/bare" commit -qam "chore(release): 1.2.0"
 run_tail bare 1.2.0 >/dev/null
 assert_eq "$EXPECTED_NOTES" "$(cat "$work/bare-state/notes-1.2.0")" \
   "a bare version matches a bare changelog heading"

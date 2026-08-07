@@ -73,9 +73,11 @@ lives inside `skills/` rather than at the repo root.
   since skipping it would cement a tag laid from a stale checkout. `--commit`
   names the release PR's merge commit and callers should always pass it; HEAD
   is a default that goes wrong the moment another PR merges in between.
-  The release notes are the changelog entry's body, read from the file rather
-  than re-derived, which is what keeps the published release and the committed
-  changelog the same words — and the entry lookup is what catches a version
+  The release notes are the changelog entry's body, read rather than
+  re-derived — which is what keeps the published release and the committed
+  changelog the same words — and read from the *target commit's* tree rather
+  than the working tree, so a release can never be published against code that
+  does not contain its own notes. That lookup is also what catches a version
   argument disagreeing with the one the release PR committed.
 
 - `docs/` — living-document probes, shared because the release runs them as its

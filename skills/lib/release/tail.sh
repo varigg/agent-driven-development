@@ -23,9 +23,10 @@
 # refused rather than skipped, since skipping would cement a tag laid from a
 # stale checkout and publish notes against the wrong code.
 #
-# Exit 0 when every step succeeded or skipped; 1 when CHANGELOG.md has no
-# entry for the version; 2 on usage errors, outside a git work tree, on an
-# unresolvable --commit, or on a tag that exists but points elsewhere.
+# Exit 0 when every step succeeded or skipped; 1 when the release commit's
+# CHANGELOG.md has no entry for the version; 2 on usage errors, outside a git
+# work tree, on an unresolvable --commit, or on a tag that exists but points
+# elsewhere.
 set -euo pipefail
 
 usage() {
@@ -92,12 +93,24 @@ fi
 
 # The notes are the changelog entry's body, read rather than re-derived:
 # deriving twice could disagree, and the published release and the committed
-# changelog have to be the same words. Reading it here also catches a version
-# that disagrees with the one the release PR committed — before any tag.
+# changelog have to be the same words.
+#
+# Read from the target commit's tree, never the working tree. The two differ
+# exactly when it matters — a --commit that predates the release, or an
+# uncommitted local edit — and reading the working tree would let either
+# publish a release whose notes are absent from the code being tagged. Binding
+# them here is also what catches a version disagreeing with the one the
+# release PR committed, before any tag exists.
 notes_file="$(mktemp)"
 trap 'rm -f "$notes_file"' EXIT
 
-if ! awk -v wanted="$version" '
+if ! changelog_at_target="$(git show "$target:$changelog" 2>/dev/null)"; then
+  printf 'tail.sh: no %s at the release commit %s\n' \
+    "$changelog" "$(git rev-parse --short "$target")" >&2
+  exit 1
+fi
+
+if ! printf '%s\n' "$changelog_at_target" | awk -v wanted="$version" '
   function is_h2(line) {
     return substr(line, 1, 3) == "## "
   }
@@ -131,8 +144,9 @@ if ! awk -v wanted="$version" '
       print lines[i]
     }
   }
-' "$changelog" >"$notes_file" 2>/dev/null; then
-  printf 'tail.sh: no %s entry for %s\n' "$changelog" "$version" >&2
+' >"$notes_file"; then
+  printf 'tail.sh: no %s entry for %s at the release commit %s\n' \
+    "$changelog" "$version" "$(git rev-parse --short "$target")" >&2
   exit 1
 fi
 
