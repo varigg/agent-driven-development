@@ -31,6 +31,9 @@ if [ ! -r "$config" ]; then
   printf 'gate.sh: cannot read config: %s\n' "$config" >&2
   exit 2
 fi
+# Recipes come from the config alone — an exported ADDW_RECIPE_* must not
+# stand in for a key the config doesn't set.
+unset ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED
 # shellcheck disable=SC1090
 . "$config"
 

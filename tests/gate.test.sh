@@ -53,6 +53,14 @@ assert_eq \
 assert_exit 0 "skip: an all-skipped gate exits zero" \
   bash "$GATE" --config "$FIX/no-keys.env"
 
+# added at codex round 1: recipes come from the config alone — inherited
+# environment values must not stand in for keys the config doesn't set
+out="$(ADDW_RECIPE_LINT="echo env-leak" ADDW_RECIPE_TESTS_AFFECTED="echo env-leak" \
+  bash "$GATE" --config "$FIX/no-keys.env" 2>/dev/null)"
+assert_eq \
+  "gate: lint skipped (no recipe) | typecheck skipped (no recipe) | tests skipped (no recipe)" \
+  "$out" "skip: exported ADDW_RECIPE_* never substitutes for missing keys"
+
 # --- {paths} substitution ---
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
