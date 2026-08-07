@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Assertion helpers sourced by *.test.sh files. A test file passes iff it exits 0.
 
 fail() {
