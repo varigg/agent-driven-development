@@ -314,8 +314,12 @@ fi
 # has since been removed. Both files are internal shapes, so every extraction
 # is forgiving: one that stops matching drops through to the wider answer
 # rather than to no answer.
+# A tier is skipped when an earlier one ANSWERED — not when an earlier one
+# returned nothing. "Every plugin is disabled" is a real answer, and widening
+# the search on it would hand back the very plugins the tier just excluded.
 claude_config_dir="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}"
 plugin_roots=()
+roots_known=0
 
 collect_roots() { # reads paths on stdin, keeps the ones that are directories
     local path
@@ -325,21 +329,37 @@ collect_roots() { # reads paths on stdin, keeps the ones that are directories
 }
 
 if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    collect_roots < <(
-        claude plugin list --json 2>/dev/null |
-            jq -r '.[] | select(.enabled) | .installPath' 2>/dev/null
-    )
+    listing="$(claude plugin list --json 2>/dev/null || true)"
+    if printf '%s' "$listing" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        roots_known=1
+        collect_roots < <(
+            printf '%s' "$listing" | jq -r '.[] | select(.enabled) | .installPath'
+        )
+    fi
 fi
 
 install_record="$claude_config_dir/plugins/installed_plugins.json"
-if [ "${#plugin_roots[@]}" -eq 0 ] && [ -r "$install_record" ]; then
-    collect_roots < <(
-        grep -o '"installPath"[[:space:]]*:[[:space:]]*"[^"]*"' "$install_record" 2>/dev/null |
-            sed 's|.*"installPath"[[:space:]]*:[[:space:]]*"||; s|"$||'
-    )
+if [ "$roots_known" -eq 0 ] && [ -r "$install_record" ]; then
+    if command -v jq >/dev/null 2>&1 &&
+        jq -e 'type == "object"' "$install_record" >/dev/null 2>&1; then
+        roots_known=1
+        collect_roots < <(
+            jq -r '.. | objects | select(has("installPath")) | .installPath' \
+                "$install_record" 2>/dev/null
+        )
+    else
+        # No jq, or a shape jq will not accept: extract what we can and treat
+        # a blank result as "could not read this", since grep cannot tell an
+        # empty record from a reshaped one.
+        collect_roots < <(
+            grep -o '"installPath"[[:space:]]*:[[:space:]]*"[^"]*"' "$install_record" 2>/dev/null |
+                sed 's|.*"installPath"[[:space:]]*:[[:space:]]*"||; s|"$||'
+        )
+        [ "${#plugin_roots[@]}" -gt 0 ] && roots_known=1
+    fi
 fi
 
-if [ "${#plugin_roots[@]}" -eq 0 ] && [ -d "$claude_config_dir/plugins/cache" ]; then
+if [ "$roots_known" -eq 0 ] && [ -d "$claude_config_dir/plugins/cache" ]; then
     plugin_roots+=("$claude_config_dir/plugins/cache")
 fi
 

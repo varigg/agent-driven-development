@@ -67,13 +67,15 @@ chmod +x "$work/bin/gh"
 
 # The stub CLI whose listing drives the plugin probe's first tier. It must
 # exist even when a case does not care, because the real binary is on PATH
-# here and would answer with this machine's plugins instead of the fixture's.
-# The default empty listing yields no roots, so every other case falls through
-# to the tiers below exactly as it would on a machine without the CLI.
+# here and would otherwise answer with this machine's plugins instead of the
+# fixture's. Its default is to FAIL rather than to return an empty listing:
+# those two are deliberately different to the probe, and only a case that sets
+# STUB_CLAUDE_PLUGINS exercises the first tier at all.
 cat > "$work/bin/claude" <<'SH'
 #!/usr/bin/env bash
 [ "$1 $2" = "plugin list" ] || exit 90
-printf '%s\n' "${STUB_CLAUDE_PLUGINS:-[]}"
+[ -n "${STUB_CLAUDE_PLUGINS:-}" ] || exit 1
+printf '%s\n' "$STUB_CLAUDE_PLUGINS"
 SH
 chmod +x "$work/bin/claude"
 
@@ -398,6 +400,17 @@ run "$d" STUB_CLAUDE_PLUGINS="[
 assert_eq 1 "$RUN_STATUS" "disabled: a disabled plugin's skills are unhealthy"
 assert_contains "$RUN_OUT" "code-review" "disabled: the hard-fail pair is named"
 assert_contains "$RUN_OUT" "tdd" "disabled: the hard-fail pair is named"
+
+# added at codex round 4: "every plugin is disabled" is an answer, not a
+# failure to answer. Widening the search on an empty-but-valid listing would
+# hand back exactly the plugins the enabled filter just excluded.
+d="$(case_dir all-disabled)"
+run "$d" STUB_CLAUDE_PLUGINS="[
+  {\"enabled\": false, \"installPath\": \"$d/home/.claude/plugins/cache/vendor/pack/1.0.0\"}
+]"
+assert_eq 1 "$RUN_STATUS" \
+  "all-disabled: an empty enabled listing does not fall back to the cache"
+assert_contains "$RUN_OUT" "tdd" "all-disabled: the hard-fail pair is named"
 
 # added at codex round 2: when the install record is readable it names the
 # installed plugins exactly, so a skill sitting in cache residue from a plugin
