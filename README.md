@@ -6,7 +6,7 @@
 
 End to end: **spec → tickets → per-ticket PR → release** — with a second model reviewing every spec and every diff before you see it, and small scripts (not agent judgment) verifying everything that can be verified mechanically.
 
-> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The numbered skills still in `skills/` (`addw-1-plan`, `addw-2-implement`, `addw-3-release`) are the previous generation and retire as the migration lands — [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) narrates that earlier cycle until its own rework catches up.
+> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The numbered skills still in `skills/` (`addw-1-plan`, `addw-3-release`, `addw-4-maintain`) are the previous generation and retire as the migration lands — [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) narrates that earlier cycle, including phases whose skills have already been rewritten, until its own rework catches up.
 
 ## Origins & inspirations
 
@@ -55,13 +55,13 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | --- | --- |
 | `/addw-init` | Bootstraps a project: verifies Matt's setup ran, generates the living docs and config, gates on doctor. *(rewrite in progress, [#9](https://github.com/varigg/agent-driven-development/issues/9))* |
 | `/codex-spec-review` | Cross-model review loop over a spec issue, before ticketing. |
-| `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. *(rewrite in progress, [#10](https://github.com/varigg/agent-driven-development/issues/10))* |
+| `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. Bare invocation lists the frontier. |
 | `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. *(rewrite in progress, [#11](https://github.com/varigg/agent-driven-development/issues/11))* |
 | `/addw-4-maintain` | Periodic audit with three skippable sweeps: living-docs drift, coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
 | `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Direct push to main is documented solely as the escape hatch for when GitHub itself is the obstacle. |
 | `/addw-compact` | Shrinks `ARCHITECTURE.md` through summarization and restructuring when it outgrows its token budget (rule of thumb: ~10% of the context window). |
 | `/codex-implement` | Implementation delegated to Codex CLI in a workspace-write sandbox, with a persistent thread per target for resumable context. |
-| `/codex-code-review` | The code-review loop adapter: read-only sandbox, checklist-driven, multi-round with verdict tags. |
+| `/codex-code-review` | The code-review loop adapter: reviews a ticket's whole branch diff against the ticket and its spec — read-only sandbox, checklist-driven, multi-round with verdict tags. |
 | `/codex-ask` | A grounded second opinion on anything — architecture calls, debugging hypotheses. Advisory only: no verdicts, nothing gated. |
 | `skills/lib/` | Not a skill: the shared script layer — the tracker seam (every `gh` tracker call routes through it) and the deterministic gate. |
 
