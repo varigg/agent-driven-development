@@ -49,9 +49,45 @@ lives inside `skills/` rather than at the repo root.
   (`!` → major, else `feat` → minor, else patch) and the next version
   (applied to the last tag, prefix preserved; base v0.0.0 when untagged);
   `changelog` prints the Markdown entry — versioned, dated header, then
-  Breaking / Features / Fixes / Other sections of verbatim subjects. A range
-  with no qualifying commit exits 1: stop and ask the human, never release
-  silently.
+  Breaking / Features / Fixes / Other sections of verbatim subjects; `prepend`
+  writes that same entry into `CHANGELOG.md` above the newest existing one
+  (creating the file with a title when absent) and skips an entry already
+  present. The write lives here rather than in skill prose because the
+  changelog is write-only for the workflow and an agent's edit tool must read
+  a file before modifying it — an instruction not to look is not a mechanism.
+  A range with no qualifying commit exits 1: stop and ask the human, never
+  release silently.
+
+- `release/tail.sh` — the re-runnable post-merge tail: lay the version tag on
+  HEAD, push it, publish the GitHub Release, and for a spec release close the
+  spec issue as completed — through `tracker/tracker.sh`, never the tracker
+  CLI directly, since closing an issue is a tracker operation while creating a
+  GitHub Release is not.
+  Each step skips what is already done and prints one `done:`/`skip:` line, so
+  running the tail twice is harmless and an interrupted run completes on the
+  next invocation — the property that makes a half-finished release
+  recoverable by re-running rather than by hand. Everything is validated
+  before anything is mutated, since a published tag is awkward to retract, and
+  skipping tests for the step's *result*, not its name: a tag that exists but
+  points away from the release commit — locally or on the remote — is refused,
+  since skipping it would cement a tag laid from a stale checkout. `--commit`
+  names the release PR's merge commit and callers should always pass it; HEAD
+  is a default that goes wrong the moment another PR merges in between.
+  The release notes are the changelog entry's body, read rather than
+  re-derived — which is what keeps the published release and the committed
+  changelog the same words — and read from the *target commit's* tree rather
+  than the working tree, so a release can never be published against code that
+  does not contain its own notes. That lookup is also what catches a version
+  argument disagreeing with the one the release PR committed.
+
+- `docs/` — living-document probes, shared because the release runs them as its
+  backstop sweep and the maintenance audit runs them deliberately.
+  - `check-doc-accretion.sh` — counts a document's version references against
+    its copy at the previous tag. A count climbing release over release means
+    the document is narrating its own history, the failure a size threshold
+    cannot see. Advisory, never a gate.
+  - `audit-nudge.sh` — counts release tags since the newest maintenance report
+    against `ADDW_AUDIT_NUDGE_N` and prints `NUDGE` or `OK`.
 
 Tested from the repo root via `tests/run.sh` against fixtures in
 `tests/fixtures/`.

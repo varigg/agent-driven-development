@@ -11,6 +11,7 @@
 #   tracker.sh view <n>                          issue JSON (snapshot shape + url)
 #   tracker.sh body <n>                          issue body markdown
 #   tracker.sh title <n>                         issue title
+#   tracker.sh state <n>                         OPEN | CLOSED
 #   tracker.sh edit-body <n> <file>              replace the body from a file
 #   tracker.sh label <n> <label>                 add a label
 #   tracker.sh unlabel <n> <label>               remove a label
@@ -59,6 +60,13 @@ case "$cmd" in
   title)
     [ "$#" -eq 1 ] || usage
     gh issue view "$1" --json title --jq .title
+    ;;
+  state)
+    # Callers that only need open-vs-closed get it here rather than parsing
+    # the snapshot shape themselves — that parsing is what the seam exists to
+    # keep in one place.
+    [ "$#" -eq 1 ] || usage
+    gh issue view "$1" --json state --jq .state
     ;;
   edit-body)
     [ "$#" -eq 2 ] || usage

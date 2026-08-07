@@ -54,7 +54,9 @@ Its one-line summary is what the PR body carries verbatim.
   `addw-maintain`, for one — ride a schema boundary and get an `UPGRADING.md`
   entry; they are never free cosmetics.
 - **Shared scripts live in `skills/lib/`**, a non-skill directory that rides the
-  wholesale `skills/` copy: `tracker/`, `gate/`, `release/`.
+  wholesale `skills/` copy: `tracker/`, `gate/`, `release/`, `docs/`. A script
+  two skills call belongs here, not in whichever skill happened to own it
+  first — `skills/lib/README.md` is the layer's contract.
 
 ## Pointers
 
