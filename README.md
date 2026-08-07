@@ -1,162 +1,85 @@
 # Agent-Driven Development
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) ![Works with](https://img.shields.io/badge/Works_with-grey) [![Claude Code](https://img.shields.io/badge/Claude_Code-E5582B)](https://docs.anthropic.com/en/docs/claude-code) [![Codex CLI](https://img.shields.io/badge/Codex_CLI-10A37F)](https://developers.openai.com/codex/cli/) [![OpenCode](https://img.shields.io/badge/OpenCode-1a3a5c)](https://github.com/sst/opencode) [![Mistral Vibe](https://img.shields.io/badge/Mistral_Vibe-F7D046)](https://github.com/mistralai/mistral-vibe)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) ![Works with](https://img.shields.io/badge/Works_with-grey) [![Claude Code](https://img.shields.io/badge/Claude_Code-E5582B)](https://docs.anthropic.com/en/docs/claude-code) [![Codex CLI](https://img.shields.io/badge/Codex_CLI-10A37F)](https://developers.openai.com/codex/cli/)
 
-## What is Agent-Driven Development?
+**ADDW** — the **a**gent-**d**riven **d**evelopment **w**orkflow — is a shipping discipline for AI coding agents, built as an overlay on [Matt Pocock's skills](https://github.com/mattpocock/skills). His skills handle the front of the flow: alignment, specification, and decomposition into tickets. ADDW adds what gets a change safely onto `main`: cross-model review loops, a deterministic testing gate, a pull request per ticket with human review, and a fully mechanical release.
 
-A structured development workflow for AI coding agents that brings **memory**, **consistency**, and **reduced hallucination** (only humans should) to AI-assisted development.
-**ADDW** — the **a**gent-**d**riven **d**evelopment **w**orkflow — is the prefix every skill shares. The flow is **Plan → Implement → Release**, with review and testing living *inside* Implement as a testing gate and an automatic Codex review loop.
+End to end: **spec → tickets → per-ticket PR → release** — with a second model reviewing every spec and every diff before you see it, and small scripts (not agent judgment) verifying everything that can be verified mechanically.
 
-ADDW was initially designed for Claude Code using the [Agent Skills](https://agentskills.io/home) open standard (`SKILL.md`). Also compatible with OpenCode, Codex CLI, Mistral Vibe and more.
+> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The numbered skills still in `skills/` (`addw-1-plan`, `addw-2-implement`, `addw-3-release`) are the previous generation and retire as the migration lands — [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) narrates that earlier cycle until its own rework catches up.
 
-## Why ADDW?
+## Origins & inspirations
 
-There are tons of AI coding workflows out there like [Superpowers](https://github.com/obra/superpowers), [BMAD](https://github.com/bmad-code-org/BMAD-METHOD), [Gastown](https://github.com/steveyegge/gastown) and countless others. They might be powerful, but overwhelming for many of us dumb asses.
+- ADDW began as a fork of [TRIP](https://github.com/PiLastDigit/TRIP-workflow), the deliberately minimal three-step workflow this repo grew out of. The plan → implement → release core, the living `ARCHITECTURE.md`, and the init interview all trace back there.
+- [mattpocock/skills](https://github.com/mattpocock/skills) supplies the overlay's foundation: `grill-with-docs` for alignment, `to-spec` for specification, `to-tickets` for decomposition into tracer-bullet GitHub issues with blocking edges, and `tdd` / `code-review` for implementation discipline. ADDW builds on these rather than competing with them.
+- [ShopDevX/adeptlydev](https://github.com/ShopDevX/adeptlydev) inspired the determinism posture: wherever a check can be a small verifiable script instead of an agent's judgment, it is one.
 
-Even the "simple" ones come with:
+## What ADDW adds
 
-- 47 different commands & skills to memorize
-- Sub-agents swarm for God-knows-what
-- Mutlti-chapters courses (sometimes paid lol)
+**The adversary.** Cross-model review loops with real convergence semantics. A fresh Codex thread reviews the spec (`codex-spec-review`) before ticketing and the code (`codex-code-review`) before each PR opens, ending every round with a verdict tag: `REQUEST_CHANGES → fix → resume → APPROVED`. The writing model and the reviewing model are never the same — a model is unlikely to catch the flaws in its own reasoning, and a fresh thread of the same model is only marginally better.
 
-**ADDW is different.** It's deliberately minimal:
+**The gate.** Contract tests are written and frozen before implementation starts, and a deterministic gate (`skills/lib/gate/gate.sh`) runs the project's lint, typecheck, and test recipes from `docs/addw.env`, emitting exactly one summary line — the line every PR body carries. Choosing which tests are affected stays a judgment call; running them and reporting the result is mechanical.
 
-| That's it           | Just these                                             |
-| ------------------- | ------------------------------------------------------ |
-| `/addw-1-plan`      | Think before you code (Codex reviews the plan)         |
-| `/addw-2-implement` | Codex writes, you review, tests gate, Codex re-reviews |
-| `/addw-3-release`   | Version, changelog, docs, commit, tag, merge, push     |
+**The ship discipline.** Every commit on `main` is a reviewed, squash-merged PR whose title parses as a conventional commit. The version bump and changelog are derived from those commit subjects and published identically as a GitHub Release — no agent-authored release prose to drift from history. Living docs are updated in the same PR as the change that touches them, so docs are reviewed alongside code.
 
-Three numbered skills. One architecture file. Zero PhD required.
+## The flow
 
-The onboarding is: copy the folder, run init, start coding. If you can count to 3, you can run it.
+1. **Align & specify** — `grill-with-docs` interviews you toward a shared understanding; `to-spec` publishes the result as a spec issue on GitHub.
+2. **Spec review** — `codex-spec-review` runs its review loop over the spec issue; fixes land in the issue body, and only the final verdict is posted as a comment.
+3. **Ticket** — `to-tickets` decomposes the spec into tracer-bullet issues with blocking edges. The *frontier* — tickets whose blockers are all merged — is queryable at any time, and stacked PRs are deliberately impossible.
+4. **Implement, one ticket per session** — `addw-implement` wraps the loop: frozen contract tests → implementation (delegated to `codex-implement`, or driven inline with `tdd`) → deterministic gate → `codex-code-review` convergence → open the PR and stop. You review and merge on GitHub.
+5. **Release** — when a spec's last ticket merges (or on demand), `addw-release` opens a release PR carrying the derived version bump and the mechanical changelog. Your merge is the confirmation; the tag and GitHub Release follow automatically.
 
-Curious what actually happens inside those three steps — every question you'll be asked, every commit that gets made? [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) walks through one full cycle.
+Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencies), `codex-ask` (second opinions), and `addw-compact` (doc size control) — see the reference below.
 
-It was kept stupid simple because **the goal is to ship features, not to master a workflow**. The workflow should disappear into the background, not become a project of its own.
+## The living docs
 
-## Getting Started
+`ARCHITECTURE.md` is the agent's long-term memory of your codebase: an always-current, as-built snapshot read at the start of each task, so the agent doesn't re-derive your structure from scratch every session — or worse, guess it. It is flanked by `docs/charter.md`, which holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and a set of write-once, dated ADRs — `active` until superseded, including guardrail ADRs that record what you deliberately do *not* build so no future change reintroduces it.
 
-1. Copy the `skills/` folder contents to your repo's `.claude/skills/` or whatever
-2. Run `/addw-init [YourProjectName]`
-3. Follow the interactive prompts
-4. Review and approve the generated ARCHITECTURE.md
+## One config file, zero skill edits
 
-### Additional For Mistral users (if they exist)
+Skills are byte-identical in every project — pure process, never edited per install. Everything project-specific lives in `docs/addw.env` (main branch, agent role keys, testing-gate recipes) and in the living docs the skills point at. Upgrading ADDW means replacing your `.claude/skills/` contents wholesale with this repo's `skills/`; `UPGRADING.md` lists any structural steps for the schema boundary you're crossing.
 
-Also copy `AskUserQuestion/` to your agent `/skills/` — it emulates the `AskUserQuestion` tool the ADDW skills rely on. It deliberately lives outside `skills/`: agents with a native `AskUserQuestion` tool (like Claude Code) don't need the shim, so it isn't part of the wholesale copy.  
+## Getting started
 
-Et voila ! Start using the skills like `/addw-1-plan auth for this webapp`, `/addw-2-implement @auth-plan.md`, etc.
+You'll need Claude Code, Codex CLI (for the default review/implement roles), an authenticated `gh`, and a GitHub repo with issues enabled — the overlay's tracker is GitHub, by design. Skills use the `SKILL.md` format ([Agent Skills](https://agentskills.io/home)).
 
-## The Heart of ADDW: ARCHITECTURE.md
+1. Install [Matt Pocock's skills](https://github.com/mattpocock/skills) and run his setup skill (it configures the tracker, labels, and domain layout).
+2. Copy this repo's `skills/` contents into your project's `.claude/skills/`.
+3. Run `/addw-init` — it verifies the setup, interviews you for the charter, generates `ARCHITECTURE.md`, `TESTING.md`, and `docs/addw.env`, and finishes with a doctor check of the whole install.
+4. Bring a feature: `grill-with-docs` → `to-spec` → `/codex-spec-review` → `to-tickets` → `/addw-implement` per ticket → merge PRs → `/addw-release`.
 
-The `ARCHITECTURE.md` file is the **central nervous system** of this workflow. It serves as the AI agent's **long-term memory** of your codebase.
+## Skills reference
 
-It is flanked by two companions: `docs/charter.md` holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and `docs/adr/` holds dated, write-once Architecture Decision Records — written whenever a plan or design session changes documented intent, `active` until a later ADR supersedes them, with guardrail ADRs recording what you deliberately do *not* build so no future plan reintroduces it.
+| Skill | What it does |
+| --- | --- |
+| `/addw-init` | Bootstraps a project: verifies Matt's setup ran, generates the living docs and config, gates on doctor. *(rewrite in progress, [#9](https://github.com/varigg/agent-driven-development/issues/9))* |
+| `/codex-spec-review` | Cross-model review loop over a spec issue, before ticketing. |
+| `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. *(rewrite in progress, [#10](https://github.com/varigg/agent-driven-development/issues/10))* |
+| `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. *(rewrite in progress, [#11](https://github.com/varigg/agent-driven-development/issues/11))* |
+| `/addw-4-maintain` | Periodic audit with three skippable sweeps: living-docs drift, coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
+| `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Direct push to main is documented solely as the escape hatch for when GitHub itself is the obstacle. |
+| `/addw-compact` | Shrinks `ARCHITECTURE.md` through summarization and restructuring when it outgrows its token budget (rule of thumb: ~10% of the context window). |
+| `/codex-implement` | Implementation delegated to Codex CLI in a workspace-write sandbox, with a persistent thread per target for resumable context. |
+| `/codex-code-review` | The code-review loop adapter: read-only sandbox, checklist-driven, multi-round with verdict tags. |
+| `/codex-ask` | A grounded second opinion on anything — architecture calls, debugging hypotheses. Advisory only: no verdicts, nothing gated. |
+| `skills/lib/` | Not a skill: the shared script layer — the tracker seam (every `gh` tracker call routes through it) and the deterministic gate. |
 
-### Why ARCHITECTURE.md Matters
+Retired into Matt's skills: planning (`grill-with-docs` + `to-spec` replace `addw-1-plan`) and research (`research` + `wayfinder` replace `addw-research`).
 
-**1. Persistent Context Across Sessions**
+## Swapping agents
 
-AI agents have no memory between sessions. Every new conversation starts from zero. ARCHITECTURE.md solves this by providing a comprehensive, always-up-to-date snapshot of your architecture that the agent reads at the start of each task. Unlike tool-specific files like `CLAUDE.md` or `AGENTS.md`, ARCHITECTURE.md is purely about architecture. It's tool-agnostic, so it works with any agent. You can still reference it from your `CLAUDE.md` to include it in all conversations.
-
-**2. Token Savings & Reduced Hallucination**
-
-Without ARCHITECTURE.md, your agent must glob, grep, and read multiple files to piece together the architecture from scratch for every single session. This wastes tokens and leads to guessing: _"There's probably a utils folder..."_, _"This project likely uses Redux..."_. ARCHITECTURE.md eliminates both problems. The agent gets the full picture in one read for minimal exploration & hallucination.
-
-**3. Balanced Detail vs Token Usage**
-
-ARCHITECTURE.md is designed to be:
-
-- **Detailed enough** to provide meaningful context, **concise enough** to not waste tokens
-- **Structured** for quick navigation
-- **Updated** after every architectural change
-
-It's not a dump of your entire codebase, rather a curated architectural guide.
-
-## The Init Process
-
-The `addw-init` skill is a **script written in human language** that programmatically bootstraps the ADDW workflow in any repository.
-
-### What Init Does
-
-1. **Creates the docs structure** - Folders for plans, tests, memos, maintenance reports, and ADRs, plus a root `CHANGELOG.md` (written at release time, never read by skills — human-consumable history only)
-2. **Explores your codebase** - Identifies languages, frameworks, patterns, conventions
-3. **Classifies your project** - Web frontend? CLI tool? Embedded firmware? Library?
-4. **Generates the living docs** - ARCHITECTURE.md (as-built, tailored to your project type), charter.md (stable intent, from a short interview), TESTING.md (with your actual verification commands), and the ADR template
-5. **Writes `docs/addw.env`** - Process-owned values only
-
-### The Config File
-
-Skills are **never edited** — they are byte-identical in every project. The handful of process-owned values (project name, version file location, main branch, audit cadence, tutorial flag, optional Codex model overrides) live in `docs/addw.env`, which init writes and the skills read at runtime. Everything else init discovers about your codebase — commands, conventions, review concerns — lands in the living docs (ARCHITECTURE.md, TESTING.md), which the skills point at. Skills stay pure process: neither a design change nor a config change ever requires a skill edit, and upgrading ADDW means replacing the skills folder wholesale.
-
-## More Skills
-
-### `/codex-implement`
-
-Implementation delegated to Codex CLI in a **workspace-write sandbox**: it reads the approved plan, edits the working tree, runs your lint/build, and reports back with a completion tag. Your main agent then self-reviews the diff and fixes issues directly. Persistent thread per plan, so multi-phase plans resume with full context. Integrated into addw-2-implement as the default implementation path.
-
-### `/codex-plan-review` & `/codex-code-review`
-
-Iterative review loops powered by Codex CLI. Plans get a second-opinion review before the user sees them. Code gets reviewed against the plan and a shared checklist (`codex-code-review/checklist.md` — also the criteria for any manual review) after implementation. Both use persistent thread state for multi-round convergence (`start → REQUEST_CHANGES → fix → resume → APPROVED`). Integrated directly into addw-1-plan and addw-2-implement (after the testing gate). The review outcome lands as one line in the release's changelog entry — no separate review archive.
-
-Per-flow model defaults (implementation vs reviews) live in `codex-plan-review/scripts/_common.sh`, overridable per project via `docs/addw.env` or per run via `CODEX_MODEL` / `CODEX_EFFORT` env vars.
-
-### `/addw-test`
-
-The former step 4, reborn as an on-demand support skill: the deep test-authoring reference with a seam ladder and a coverage-debt ledger for hard-to-test code.
-
-### `/addw-4-maintain`
-
-Periodic maintenance audit with three independently skippable sweeps: living-docs drift, coverage-debt triage, and dependencies. Writes a dated findings report to `docs/7-maintenance/`, applies only trivial mechanical fixes, files a tracker issue per substantive theme, and ships the audit itself as a PR. Code health and tracker hygiene belong to Matt Pocock's `improve-codebase-architecture` and `triage`, not to this sweep. `addw-3-release` nudges you to run it after N releases without an audit.
-
-### Upgrading an install
-
-Not a skill. Skills carry no project state, so upgrading means replacing the project's `.claude/skills/` contents wholesale with this repo's `skills/` and keeping `docs/addw.env` untouched — plus any structural docs-contract steps `UPGRADING.md` lists for the version boundary you're crossing (each ends by bumping `ADDW_SCHEMA`). The one-time `addw-upgrade` skill that migrated pre-config (v2) installs was retired on 2026-07-28 with the last v2 migration.
-
-### `/codex-ask`
-
-A grounded second opinion on **anything** — architecture calls, debugging hypotheses, research conclusions. Codex answers from inside the repo (read-only), threaded per topic for multi-round discussion. Advisory only: no verdict tags, nothing gated. addw-research uses it to red-team decision-grade findings before presenting them.
-
-### `/addw-hotfix`
-
-Streamlined workflow for production emergencies: a gate-verified fix shipped as an expedited PR with a conventional-commit title, merged immediately. Direct push to main is documented only as the escape hatch for when GitHub itself is the obstacle.
-
-### `/addw-research`
-
-Exploratory investigation with defined compute level. For feasibility studies and technology evaluation. Produces documented findings, not production code.
-
-### `/addw-compact`
-
-Run this skill to compact ARCHITECTURE.md size while preserving relevance, accuracy, and coverage through summarization and restructuring. Token calculator script included.
-As a rule of thumb, ARCHITECTURE.md should not exceed ~10% of context window.
-
-## Multi-Agent: Using Different LLMs at Different Steps
-
-Just like you wouldn't smell your own fart, an LLM is unlikely to catch bugs in its own implementation. Some people conduct adversarial review with a different session but still the same model, which is..._meh_. The best approach is to introduce a different model in the same reasoning ballpark as the first one, that will most likely catch what the other missed.
-
-As of v2.0.0, this multi-agent approach is **the default workflow**.  
-Considering Claude as your main and Codex as the copilot:  
-Fable writes the plan, 5.6 Sol reviews it, Luna implements, back to Fable who reviews and fixes the diff, runs the testing gate, then a new Sol thread reviews again the code. All in one claude code session. Writer and reviewer are never the same thread.  
-As of mid july 2026, this Fable + GPT5.6 harness combo is absolute peak.
-
-### Swapping agents
-
-The process skills don't hard-code Codex — they call **roles**, resolved from `docs/addw.env`: `ADDW_PLAN_REVIEW_SKILL`, `ADDW_IMPLEMENT_SKILL`, `ADDW_CODE_REVIEW_SKILL`, and `ADDW_ASK_SKILL` (defaulting to the four `codex-*` skills). To plug in a different agent CLI, write one adapter skill per role you want to replace and point the role key at it. The adapter contract is small:
+The process skills don't hard-code Codex — they call **roles**, resolved from `docs/addw.env` (`ADDW_IMPLEMENT_SKILL`, `ADDW_CODE_REVIEW_SKILL`, `ADDW_ASK_SKILL`, …). To plug in a different agent CLI, write one adapter skill per role and point the key at it. The contract is small:
 
 - `scripts/start.sh <target> [instructions…]` — start a fresh session for the target; prompts and state are the adapter's own business.
 - `scripts/resume.sh [--notes "…"] <target> [instructions…]` — continue the same session with context retained (exit code 2 when no session exists).
 - Review roles end their output with a trailing verdict tag (`APPROVED` / `REQUEST_CHANGES` / `NEEDS_REWORK`); the implement role ends with `IMPLEMENTATION_COMPLETE` / `IMPLEMENTATION_PARTIAL`.
 - Reviews run read-only; implementation may write to the working tree but never commits.
 
-**Caveat**: this contract currently has exactly one implementation and inherits Codex CLI's semantics (resumable threads, exit codes, sandbox modes). Expect it to be revised the first time a real second adapter is written (`docs/backlog.md`).
-
-## MCP Servers: Less Is More
-
-Last piece of advise before your new coding quest: Every MCP server you add is extra context, extra latency, and extra confusion. Keep it minimal. The one use case where MCP genuinely shines is **up-to-date documentation**, so your agent stops hallucinating deprecated APIs/whatever. Two servers cover it: [Context7](https://github.com/upstash/context7) for current library & framework docs, and [Exa](https://github.com/exa-labs/exa-mcp-server) for web search when the answer isn't in any doc. No bloat beyond that.
+**Caveat**: this contract currently has exactly one implementation and inherits Codex CLI's semantics (resumable threads, exit codes, sandbox modes). Expect it to be revised the first time a real second adapter is written.
 
 ## Contributing
 
-PRs & forks are welcome
+PRs, forks, and issues are welcome.
 
-Happy shipping ! 🚀
+Happy shipping! 🚀
