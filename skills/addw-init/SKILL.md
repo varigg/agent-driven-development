@@ -53,19 +53,28 @@ assumption.
 
 4. **The skills ADDW depends on are installed.** Read your own skill roster —
    it is the authority here, and no filesystem check is a substitute for it,
-   since the roster carries the plugin qualifier that tells two skills of the
-   same name apart.
+   since only the roster carries the plugin qualifier that tells two skills of
+   the same name apart.
+
+   The question is never "does a skill by this name exist" but "**is Matt's
+   here**". Name collision is not hypothetical — other plugins publish a
+   `code-review` — and a lone namesake is the more dangerous case than a
+   duplicated one, because nothing prompts you to look twice. So identify each
+   dependency as **his** every time, by its plugin qualifier when his skills
+   are installed as a plugin, otherwise by what the entry actually is. A
+   same-named skill from any other source does not satisfy the dependency. If
+   you cannot tell whose an entry is, stop and ask rather than assume.
 
    `code-review` and `tdd` are the two ADDW **invokes programmatically**. If
-   either is missing, stop: the flow will break at the point of use, and
-   finding out then costs a ticket's work. If either name appears more than
-   once, note which entry is Matt's — that qualified name is what the flow
-   must invoke.
+   either is absent — or present only as somebody else's — stop: the flow
+   breaks at the point of use, and finding out then costs a ticket's work.
+   Record the qualified names; that is what the flow must invoke.
 
    `setup-matt-pocock-skills`, `grill-with-docs`, `grilling`,
    `domain-modeling`, `to-spec`, and `to-tickets` are ones the **human**
-   invokes. ADDW never calls them, so their absence is not a stop — say which
-   are missing, note that the flow has a gap without them, and carry on.
+   invokes. ADDW never calls them, so their absence is not a stop — but judge
+   them the same way, and say which of *his* are missing rather than which
+   names are unclaimed.
 
 5. **Resolve the ADR location.** `docs/agents/domain.md` is a prose contract;
    read it and resolve the directory it declares for ADRs. Do not hardcode a

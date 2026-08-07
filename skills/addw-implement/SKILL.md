@@ -147,9 +147,9 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
 
 - The reserved value **`inline`** means no adapter — you drive the `tdd` skill yourself in
   this session. Never invoke Matt's `implement` skill; `tdd` is the programmatic primitive.
-  Take `tdd` from your roster by its plugin-qualified name when more than one skill answers
-  to it — a namesake from another plugin is a different skill, and nothing outside the roster
-  can tell them apart.
+  Confirm the `tdd` in your roster is **Matt's** before invoking it — by its plugin qualifier,
+  every time, not only when the name is duplicated. A lone namesake from another plugin is a
+  different skill that will answer to the bare name just as readily.
 - **Any other value** names an adapter skill, invoked through the adapter contract. The issue
   number is the target, so the thread keys per ticket; the **instruction block carries the
   scope**, because the adapter cannot read the tracker:
@@ -175,8 +175,9 @@ subject.
 ### Step 7: Cold Pre-Filter Review
 
 Run Matt's `code-review` skill over the branch diff before spending codex rounds — **his**,
-identified by its plugin qualifier in your roster, since other plugins ship a `code-review`
-too and the bare name may not resolve to the one this step means. It breaks
+confirmed by its plugin qualifier in your roster every time, not only when the name is
+duplicated. Other plugins ship a `code-review`, so the bare name resolving to something is no
+evidence it resolved to the one this step means. It breaks
 ownership bias: you are reviewing your own work, and a cold read catches what a warm one
 cannot.
 
