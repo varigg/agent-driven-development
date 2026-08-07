@@ -108,7 +108,7 @@ The former step 4, reborn as an on-demand support skill: the deep test-authoring
 
 ### `/addw-4-maintain`
 
-Periodic maintenance audit with four independently skippable sweeps: code health, test health, docs drift, and dependencies. Writes a dated findings report to `docs/7-maintenance/`, applies only trivial mechanical fixes, and routes anything substantive through the normal plan → implement → release cycle. `addw-3-release` nudges you to run it after N releases without an audit.
+Periodic maintenance audit with three independently skippable sweeps: living-docs drift, coverage-debt triage, and dependencies. Writes a dated findings report to `docs/7-maintenance/`, applies only trivial mechanical fixes, files a tracker issue per substantive theme, and ships the audit itself as a PR. Code health and tracker hygiene belong to Matt Pocock's `improve-codebase-architecture` and `triage`, not to this sweep. `addw-3-release` nudges you to run it after N releases without an audit.
 
 ### Upgrading an install
 
@@ -120,7 +120,7 @@ A grounded second opinion on **anything** — architecture calls, debugging hypo
 
 ### `/addw-hotfix`
 
-Streamlined workflow for production emergencies. Bypasses the full cycle for genuine crises (or lazy debugging).
+Streamlined workflow for production emergencies: a gate-verified fix shipped as an expedited PR with a conventional-commit title, merged immediately. Direct push to main is documented only as the escape hatch for when GitHub itself is the obstacle.
 
 ### `/addw-research`
 

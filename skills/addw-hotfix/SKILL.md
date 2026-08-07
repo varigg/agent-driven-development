@@ -1,6 +1,6 @@
 ---
 name: addw-hotfix
-description: Urgent fix bypassing full ADDW workflow
+description: Urgent fix bypassing the normal ticket flow - expedited PR merged immediately
 disable-model-invocation: true
 argument-hint: "what is broken in production?"
 ---
@@ -9,7 +9,7 @@ argument-hint: "what is broken in production?"
 
 You are now in **hotfix mode** - a streamlined workflow for urgent production fixes.
 
-> **Warning**: Only use this for genuine emergencies. For regular bugs, use the full ADDW workflow (`addw-1-plan` → `addw-2-implement`).
+> **Warning**: Only use this for genuine emergencies. For regular bugs, file a tracker issue and work it through `addw-implement`.
 
 ## Your Task
 
@@ -23,10 +23,10 @@ Before proceeding, confirm this is a genuine hotfix:
 
 **Use the `AskUserQuestion` tool** to confirm urgency:
 
-- **Question**: "Is this a production-critical issue that cannot wait for the normal ADDW workflow?"
-- **Options**: "Yes — critical issue" (security vulnerability, data corruption, service outage, or critical user-facing bug), "No — regular bug" (redirect to `addw-1-plan` for proper workflow)
+- **Question**: "Is this a production-critical issue that cannot wait for the normal ticket flow?"
+- **Options**: "Yes — critical issue" (security vulnerability, data corruption, service outage, or critical user-facing bug), "No — regular bug" (file a tracker issue and work it as a normal ticket)
 
-**If "No"**: Redirect to `addw-1-plan` for proper workflow.
+**If "No"**: file the tracker issue and stop — the fix arrives through `addw-implement`.
 
 **If "Yes"**: Proceed with hotfix.
 
@@ -44,7 +44,7 @@ git checkout -b hotfix/[short-description]
 
 ## Step 3: Minimal Investigation
 
-First, read `docs/ARCHITECTURE.md`'s Core Architecture Principles section plus the section(s) covering the affected layer — pick them via the change-type table in `docs/ARCHITECTURE-rules.md`. (Scoped read is deliberate: this is the urgent path; the full ARCHI read belongs to planning.) Then explore the codebase and read the files relevant to the issue.
+First, read `docs/ARCHITECTURE.md`'s Core Architecture Principles section plus the section(s) covering the affected layer — pick them via the change-type table in `docs/ARCHITECTURE-rules.md`. (Scoped read is deliberate: this is the urgent path; the full ARCHI read belongs to the normal ticket flow.) Then explore the codebase and read the files relevant to the issue.
 
 Quickly identify:
 
@@ -52,7 +52,7 @@ Quickly identify:
 2. **Affected files** (list)
 3. **Fix approach** (brief)
 
-No formal plan document needed.
+No ticket needed.
 
 ---
 
@@ -64,68 +64,43 @@ No formal plan document needed.
 
 ---
 
-## Step 5: Quick Verification
+## Step 5: Verify Through the Gate
 
-- Manually test the fix
-- Run relevant tests only, via the affected-tests recipe in `docs/4-unit-tests/TESTING.md` (Verification Recipes)
-- Confirm the issue is resolved
-
----
-
-## Step 6: Version & Changelog
-
-Increment **patch** version only (x.y.Z+1) in `$ADDW_VERSION_FILE`.
-
-Prepend a minimal entry to `CHANGELOG.md` via the release skill's prepender (the changelog is write-only — never open the file):
+- Manually confirm the issue is resolved
+- Run the deterministic testing gate, passing the affected test paths:
 
 ```bash
-bash .claude/skills/addw-3-release/scripts/prepend-changelog.sh <<'EOF'
-[the entry — format below]
-EOF
+bash .claude/skills/lib/gate/gate.sh [affected-test paths]
 ```
 
-```markdown
-## vx.y.z — DD-MM-YYYY (hotfix)
-
-hotfix: [brief description]
-
-- Issue: [what was broken] · Fix: [what was done] · Root cause: [brief explanation]
-```
+Keep the summary line it prints — the PR body carries it. The gate must be green: a hotfix that breaks lint or unrelated tests is not expedited, it is a second incident.
 
 ---
 
-## Step 7: Commit
+## Step 6: Open the Expedited PR
 
-Review `git status`, then stage the fix's files **explicitly** (never `git add -A`):
+Review `git status`, stage the fix's files **explicitly** (never `git add -A`), commit, push the branch, and open the PR:
 
-```bash
-git status
-git add <fixed files> "$ADDW_VERSION_FILE" CHANGELOG.md
-git commit -m "hotfix: [brief description]"
-```
+- **Title**: must parse as a conventional-commit subject — normally `fix: [brief description]`. It becomes the squash subject on main, which is all the mechanical changelog projects.
+- **Body**: what was broken, the root cause, what the fix does, and the gate summary line — and say it is a hotfix requesting immediate merge.
 
----
-
-## Step 8: Merge & Tag
-
-```bash
-git checkout "$ADDW_MAIN_BRANCH"
-git merge --ff-only hotfix/[short-description]
-git tag vx.y.z
-git push && git push --tags
-git branch -d hotfix/[short-description]
-```
-
-If `--ff-only` fails, rebase the hotfix branch onto the main branch and retry. Never create a merge commit.
+The human merges it immediately (squash). Seconds of ceremony, and main's every-commit-is-a-reviewed-PR invariant holds.
 
 ---
 
-## Step 9: Post-Hotfix
+## Escape Hatch: Direct Push
 
-Once the crisis is resolved: write a brief incident report in `docs/6-memo/` if it was significant, and open a proper `addw-1-plan` if the real fix is deeper than the patch.
+Direct push to `$ADDW_MAIN_BRANCH` exists for exactly one condition: **GitHub itself is the obstacle** — the platform is down, or the emergency lives in the PR/CI machinery. Commit with the same conventional subject and push; the mechanical changelog tolerates a stray direct commit because it derives from commit subjects, not PRs. Anything short of that condition goes through the expedited PR.
+
+---
+
+## Post-Hotfix
+
+- If the fix must ship as a tagged release now, invoke `addw-release` after the merge — a repository release tags what main has accumulated since the last tag.
+- The merged PR is the incident record. If the real fix is deeper than the patch, file a follow-up tracker issue.
 
 ---
 
 ## What This Workflow Skips
 
-No discovery questions, no plan document, no code review checklist, no tutorial, and no ARCHITECTURE.md/README update unless the fix actually changed the architecture. Acceptable trade-offs for a genuine emergency — and only for that.
+No ticket, no contract tests, no codex review loop, no pre-filter code review — the human's immediate PR review is the only gate — and no living-doc update unless the fix actually changed documented design. Acceptable trade-offs for a genuine emergency - and only for that.
