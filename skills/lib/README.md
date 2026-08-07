@@ -33,5 +33,19 @@ lives inside `skills/` rather than at the repo root.
   execution and reporting are mechanical), and a recipe without the
   placeholder runs as-is.
 
+- `release/derive.sh` — the mechanical release derivations, run from a
+  project's repo root. One commit-collection pass — every commit since the
+  last tag reachable from HEAD (whole history when no tag exists) whose
+  subject parses as a conventional commit, release commits (`release:` /
+  `chore(release):`) excluded, unclassifiable subjects warned and listed on
+  stderr — feeds two subcommands, so the changelog and the version can never
+  disagree about which commits count. `version` prints the proposed bump
+  (`!` → major, else `feat` → minor, else patch) and the next version
+  (applied to the last tag, prefix preserved; base v0.0.0 when untagged);
+  `changelog` prints the Markdown entry — versioned, dated header, then
+  Breaking / Features / Fixes / Other sections of verbatim subjects. A range
+  with no qualifying commit exits 1: stop and ask the human, never release
+  silently.
+
 Tested from the repo root via `tests/run.sh` against fixtures in
 `tests/fixtures/`.
