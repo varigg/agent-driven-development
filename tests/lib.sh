@@ -22,3 +22,9 @@ assert_contains() { # haystack needle label
     *) fail "$3: output does not contain $(printf '%q' "$2")" ;;
   esac
 }
+
+assert_not_contains() { # haystack needle label
+  case "$1" in
+    *"$2"*) fail "$3: output unexpectedly contains $(printf '%q' "$2")" ;;
+  esac
+}
