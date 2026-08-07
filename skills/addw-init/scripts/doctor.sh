@@ -304,24 +304,41 @@ fi
 # bare name too, so a namesake from another plugin shadows the intended one at
 # the call site exactly as it satisfies the probe here. Verifying provenance
 # would be pinning, and the design probes rather than pins.
-# Where to look, narrowest first. The install record names the exact directory
-# of each installed plugin, so it excludes both the marketplace clone (which
-# carries every skill of every plugin on offer, installed or not) and cache
-# residue left by a plugin that has since been removed. It is an internal file
-# in an undocumented shape, so extraction is deliberately forgiving: a format
-# that stops matching yields no paths and drops through to scanning the whole
-# cache, which is the wider answer rather than no answer.
+# Where to look, narrowest first, each tier falling through to the next when
+# it yields nothing. The question is whether a skill can actually be invoked,
+# so the best answer comes from the CLI's own listing: it is the documented
+# interface and the only one carrying `enabled`, and an installed-but-disabled
+# plugin is exactly as uninvocable as an absent one. Below that, the install
+# record still beats the raw cache — it excludes the marketplace clone, which
+# carries every skill of every plugin on offer, and residue from a plugin that
+# has since been removed. Both files are internal shapes, so every extraction
+# is forgiving: one that stops matching drops through to the wider answer
+# rather than to no answer.
 claude_config_dir="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}"
 plugin_roots=()
-install_record="$claude_config_dir/plugins/installed_plugins.json"
-if [ -r "$install_record" ]; then
+
+collect_roots() { # reads paths on stdin, keeps the ones that are directories
+    local path
     while IFS= read -r path; do
         [ -n "$path" ] && [ -d "$path" ] && plugin_roots+=("$path")
-    done < <(
+    done
+}
+
+if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    collect_roots < <(
+        claude plugin list --json 2>/dev/null |
+            jq -r '.[] | select(.enabled) | .installPath' 2>/dev/null
+    )
+fi
+
+install_record="$claude_config_dir/plugins/installed_plugins.json"
+if [ "${#plugin_roots[@]}" -eq 0 ] && [ -r "$install_record" ]; then
+    collect_roots < <(
         grep -o '"installPath"[[:space:]]*:[[:space:]]*"[^"]*"' "$install_record" 2>/dev/null |
             sed 's|.*"installPath"[[:space:]]*:[[:space:]]*"||; s|"$||'
     )
 fi
+
 if [ "${#plugin_roots[@]}" -eq 0 ] && [ -d "$claude_config_dir/plugins/cache" ]; then
     plugin_roots+=("$claude_config_dir/plugins/cache")
 fi

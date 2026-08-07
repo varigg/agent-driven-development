@@ -64,6 +64,19 @@ case "$1 $2" in
 esac
 SH
 chmod +x "$work/bin/gh"
+
+# The stub CLI whose listing drives the plugin probe's first tier. It must
+# exist even when a case does not care, because the real binary is on PATH
+# here and would answer with this machine's plugins instead of the fixture's.
+# The default empty listing yields no roots, so every other case falls through
+# to the tiers below exactly as it would on a machine without the CLI.
+cat > "$work/bin/claude" <<'SH'
+#!/usr/bin/env bash
+[ "$1 $2" = "plugin list" ] || exit 90
+printf '%s\n' "${STUB_CLAUDE_PLUGINS:-[]}"
+SH
+chmod +x "$work/bin/claude"
+
 PATH="$work/bin:$PATH"
 export PATH
 
@@ -371,6 +384,20 @@ assert_contains "$RUN_OUT" "WARN:" "plugin: its absence warns"
 assert_contains "$RUN_OUT" "to-spec" "plugin: the warning names the skill"
 assert_contains "$RUN_OUT" "HEALTHY: all checks passed (1 warning" \
   "plugin: the terminal line carries the warning count"
+
+# added at codex round 3: an installed-but-disabled plugin is exactly as
+# uninvocable as an absent one, and its skills sit in the cache under a live
+# installPath — so only the enabled listing answers the question the probe is
+# actually asking.
+d="$(case_dir disabled-plugin)"
+mkdir -p "$d/home/enabled-but-empty"
+run "$d" STUB_CLAUDE_PLUGINS="[
+  {\"enabled\": true,  \"installPath\": \"$d/home/enabled-but-empty\"},
+  {\"enabled\": false, \"installPath\": \"$d/home/.claude/plugins/cache/vendor/pack/1.0.0\"}
+]"
+assert_eq 1 "$RUN_STATUS" "disabled: a disabled plugin's skills are unhealthy"
+assert_contains "$RUN_OUT" "code-review" "disabled: the hard-fail pair is named"
+assert_contains "$RUN_OUT" "tdd" "disabled: the hard-fail pair is named"
 
 # added at codex round 2: when the install record is readable it names the
 # installed plugins exactly, so a skill sitting in cache residue from a plugin
