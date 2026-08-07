@@ -21,6 +21,11 @@ lives inside `skills/` rather than at the repo root.
     labels, comments, close-with-reason, self-assign) plus the live
     `frontier` and `spec-complete` queries, which fetch a snapshot and
     delegate all reasoning to `resolve.sh`. Dogfood-verified, not unit-tested.
+    The branch half of the frontier's in-progress annotation comes from
+    `git ls-remote --heads origin` — remote branches, never local ones — so a
+    ticket reads as in progress exactly while its branch is visible to
+    everybody, and deleting the branch on merge is what retires the
+    annotation.
 
 - `gate/gate.sh` — the deterministic testing gate. Sources the project config
   (default `docs/addw.env`) and runs the recipe ladder in fixed order — lint
