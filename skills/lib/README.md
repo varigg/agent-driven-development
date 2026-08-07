@@ -6,8 +6,9 @@ wholesale copy of `skills/` into a project's `.claude/skills/`, which is why it
 lives inside `skills/` rather than at the repo root.
 
 - `tracker/` — the tracker layer, the single seam through which every ADDW
-  tracker operation goes; nothing outside it invokes `gh` for tracker work
-  (enforced by `tests/tracker-seam.test.sh`), and it is the documented seam
+  tracker operation goes; nothing outside it invokes `gh` for tracker work —
+  scripts, prompts, and the SKILL.md instructions agents follow alike
+  (enforced by `tests/tracker-seam.test.sh`) — and it is the documented seam
   for any future tracker adapter. Three files, layered by purity:
   - `parse.sh` — pure text-in/conclusion-out parsers for the issue-body
     section encoding (`## Parent` / `## Blocked by`) and close-reason

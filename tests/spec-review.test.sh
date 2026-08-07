@@ -71,8 +71,8 @@ printf '{"type":"thread.started","thread_id":"t-stub"}\n'
 SH
 chmod +x "$INSTALL/skills/lib/tracker/tracker.sh" "$INSTALL/bin/codex"
 
-# The body as the tracker layer delivers it: `gh issue view --json body --jq`
-# ends its output with a newline the stored body does not carry.
+# The body as the tracker layer delivers it: the layer's `body` read ends its
+# output with a newline the stored body does not carry.
 BODY="$work/body.md"
 printf '## Parent\n\n- #2\n\n## What to build\n\nA spec body.\n' > "$BODY"
 

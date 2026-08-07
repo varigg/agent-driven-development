@@ -10,6 +10,7 @@
 # Usage:
 #   tracker.sh view <n>                          issue JSON (snapshot shape + url)
 #   tracker.sh body <n>                          issue body markdown
+#   tracker.sh title <n>                         issue title
 #   tracker.sh edit-body <n> <file>              replace the body from a file
 #   tracker.sh label <n> <label>                 add a label
 #   tracker.sh unlabel <n> <label>               remove a label
@@ -54,6 +55,10 @@ case "$cmd" in
   body)
     [ "$#" -eq 1 ] || usage
     gh issue view "$1" --json body --jq .body
+    ;;
+  title)
+    [ "$#" -eq 1 ] || usage
+    gh issue view "$1" --json title --jq .title
     ;;
   edit-body)
     [ "$#" -eq 2 ] || usage
