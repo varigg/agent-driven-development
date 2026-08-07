@@ -21,5 +21,17 @@ lives inside `skills/` rather than at the repo root.
     `frontier` and `spec-complete` queries, which fetch a snapshot and
     delegate all reasoning to `resolve.sh`. Dogfood-verified, not unit-tested.
 
+- `gate/gate.sh` — the deterministic testing gate. Sources the project config
+  (default `docs/addw.env`) and runs the recipe ladder in fixed order — lint
+  (`ADDW_RECIPE_LINT`), typecheck (`ADDW_RECIPE_TYPECHECK`), tests
+  (`ADDW_RECIPE_TESTS_AFFECTED`) — emitting exactly one summary line on
+  stdout, the line PR bodies carry verbatim; recipe output goes to stderr.
+  Every rung runs even after an earlier one fails; a missing or empty key
+  reports `skipped (no recipe)`, never silence. The tests recipe is a command
+  template: every `{paths}` occurrence is replaced by the shell-quoted test
+  paths passed on the gate's command line (selection stays agent judgment;
+  execution and reporting are mechanical), and a recipe without the
+  placeholder runs as-is.
+
 Tested from the repo root via `tests/run.sh` against fixtures in
-`tests/fixtures/tracker/`.
+`tests/fixtures/`.
