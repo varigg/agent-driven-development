@@ -379,7 +379,7 @@ Update: Technology Stack, and any affected architectural sections
 
 ### 4. `docs/charter.md` - Stable Intent
 
-The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `addw-3-release` flags apparent violations to the user and never edits it silently.
+The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `addw-release` flags apparent violations to the user and never edits it silently.
 
 **Use the `AskUserQuestion` tool** to interview the user (purpose, product principles, scope, non-goals, success criteria — one question per topic, offering options derived from the codebase exploration). Draft the charter from the answers, present it, and **get explicit user approval before writing the file**:
 
@@ -387,7 +387,7 @@ The charter holds intent that outlasts any single feature. It changes rarely and
 # [Project Name] Charter
 
 Stable intent only — this document changes rarely, via dedicated design commits.
-If a release appears to invalidate it, addw-3-release flags the user; the
+If a release appears to invalidate it, addw-release flags the user; the
 charter is never silently edited.
 
 ## Purpose
@@ -478,4 +478,4 @@ git commit -m "chore: initialize the ADDW workflow"
 git tag vX.Y.Z+1
 ```
 
-If the user declines, remind them the first `addw-3-release` will assume the tag baseline exists.
+If the user declines, remind them the first `addw-release` will assume the tag baseline exists.

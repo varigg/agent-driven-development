@@ -75,7 +75,7 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
   mechanism does. Delete the steps; keep only what they taught, as a lesson or
   a warning.
 - Accretion has a cheap measurement:
-  `bash .claude/skills/addw-3-release/scripts/check-doc-accretion.sh <file>...`
+  `bash .claude/skills/lib/docs/check-doc-accretion.sh <file>...`
   counts a document's version references against its copy at the previous tag.
   A count climbing release over release means the document is narrating its own
   history. Point it at ARCHITECTURE.md and at every runbook — the release step

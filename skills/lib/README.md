@@ -53,5 +53,26 @@ lives inside `skills/` rather than at the repo root.
   with no qualifying commit exits 1: stop and ask the human, never release
   silently.
 
+- `release/tail.sh` — the re-runnable post-merge tail: lay the version tag on
+  HEAD, push it, publish the GitHub Release, and for a spec release close the
+  spec issue as completed — through `tracker/tracker.sh`, never the tracker
+  CLI directly, since closing an issue is a tracker operation while creating a
+  GitHub Release is not.
+  Each step skips what is already done and prints one `done:`/`skip:` line, so
+  running the tail twice is harmless and an interrupted run completes on the
+  next invocation — the property that makes a half-finished release
+  recoverable by re-running rather than by hand. The release notes are the
+  changelog entry's body, read from the file rather than re-derived, which is
+  what keeps the published release and the committed changelog the same words.
+
+- `docs/` — living-document probes, shared because the release runs them as its
+  backstop sweep and the maintenance audit runs them deliberately.
+  - `check-doc-accretion.sh` — counts a document's version references against
+    its copy at the previous tag. A count climbing release over release means
+    the document is narrating its own history, the failure a size threshold
+    cannot see. Advisory, never a gate.
+  - `audit-nudge.sh` — counts release tags since the newest maintenance report
+    against `ADDW_AUDIT_NUDGE_N` and prints `NUDGE` or `OK`.
+
 Tested from the repo root via `tests/run.sh` against fixtures in
 `tests/fixtures/`.
