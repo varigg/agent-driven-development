@@ -74,9 +74,23 @@ section:
 
 - Exactly one → release it as a spec release, saying which.
 - More than one → ask which; never pick for the human.
-- None → **repository release**: it tags whatever the main branch has
-  accumulated since the last tag and **closes nothing**. Say that explicitly,
-  since it is the mode that silently does less.
+- None → before concluding, check for a spec that is complete **but for a
+  not-planned child**. Such a spec never appears in `release-ready-specs`, so
+  defaulting straight to a repository release would silently withhold the very
+  waiver the human is owed:
+
+  ```bash
+  bash .claude/skills/lib/tracker/tracker.sh snapshot \
+    | jq -r '.[] | select(.state == "OPEN")
+             | select(any(.labels[]; .name == "spec")) | .number'
+  ```
+
+  Run `spec-complete` on each. Any spec whose children are all closed, with at
+  least one not planned, is a release candidate: name it and its abandoned
+  tickets, and offer it. If none qualifies, it is a **repository release** —
+  it tags whatever the main branch has accumulated since the last tag and
+  **closes nothing**. Say that explicitly, since it is the mode that silently
+  does less.
 
 Carry two things out of this step: the **mode**, and for a spec release the
 **spec issue number**.
@@ -100,8 +114,9 @@ and the entry can never disagree about which commits count.
   source, and the commit is not in the entry. Releasing anyway is the human's
   call to make knowingly.
 
-Take the version and the entry **exactly as printed**. Editing either here is
-the drift this whole design exists to prevent.
+Both subcommands only read: this step decides the version and shows the entry
+the PR body will carry. Step 3 writes it. Take both **exactly as printed** —
+editing either is the drift this whole design exists to prevent.
 
 ---
 
@@ -113,8 +128,19 @@ git checkout -b "release/<version>"
 
 Two mechanical edits, and nothing else:
 
-1. **Prepend the entry** to `CHANGELOG.md`, above every existing entry, below
-   the file's title. Create the file with a `# Changelog` heading if absent.
+1. **Write the changelog entry** with the generator — never by hand:
+
+   ```bash
+   bash .claude/skills/lib/release/derive.sh prepend
+   ```
+
+   It places the entry above the newest existing one, creating `CHANGELOG.md`
+   with a title when absent, and skips an entry already present. Do not open
+   the changelog to do this yourself: your edit tool must read a file before
+   modifying it, and the changelog is **write-only for the workflow** — humans
+   read it, agents get history from git. A step you perform by hand is a step
+   that can drift from the commits it claims to describe.
+
 2. **Write the version** to `$ADDW_VERSION_FILE` if that key is set, changing
    nothing else in that file. Projects without a version file skip this.
 
@@ -179,7 +205,6 @@ so this step expects to find nothing; what it does find becomes a ticket, never
 an edit riding the release that already shipped.
 
 ```bash
-bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md
 bash .claude/skills/lib/docs/check-doc-accretion.sh docs/ARCHITECTURE.md
 ```
 

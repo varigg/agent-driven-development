@@ -49,9 +49,14 @@ lives inside `skills/` rather than at the repo root.
   (`!` → major, else `feat` → minor, else patch) and the next version
   (applied to the last tag, prefix preserved; base v0.0.0 when untagged);
   `changelog` prints the Markdown entry — versioned, dated header, then
-  Breaking / Features / Fixes / Other sections of verbatim subjects. A range
-  with no qualifying commit exits 1: stop and ask the human, never release
-  silently.
+  Breaking / Features / Fixes / Other sections of verbatim subjects; `prepend`
+  writes that same entry into `CHANGELOG.md` above the newest existing one
+  (creating the file with a title when absent) and skips an entry already
+  present. The write lives here rather than in skill prose because the
+  changelog is write-only for the workflow and an agent's edit tool must read
+  a file before modifying it — an instruction not to look is not a mechanism.
+  A range with no qualifying commit exits 1: stop and ask the human, never
+  release silently.
 
 - `release/tail.sh` — the re-runnable post-merge tail: lay the version tag on
   HEAD, push it, publish the GitHub Release, and for a spec release close the
@@ -61,9 +66,13 @@ lives inside `skills/` rather than at the repo root.
   Each step skips what is already done and prints one `done:`/`skip:` line, so
   running the tail twice is harmless and an interrupted run completes on the
   next invocation — the property that makes a half-finished release
-  recoverable by re-running rather than by hand. The release notes are the
-  changelog entry's body, read from the file rather than re-derived, which is
-  what keeps the published release and the committed changelog the same words.
+  recoverable by re-running rather than by hand. Skipping tests for the step's
+  *result*, not its name: a tag that exists but points away from HEAD is
+  refused, since skipping it would cement a tag laid from a stale checkout.
+  The release notes are the changelog entry's body, read from the file rather
+  than re-derived, which is what keeps the published release and the committed
+  changelog the same words — and the entry lookup is what catches a version
+  argument disagreeing with the one the release PR committed.
 
 - `docs/` — living-document probes, shared because the release runs them as its
   backstop sweep and the maintenance audit runs them deliberately.

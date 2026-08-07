@@ -3,7 +3,7 @@
 # directory. One commit-collection pass feeds both subcommands, so the
 # changelog and the version can never disagree about which commits count.
 #
-# Usage: derive.sh <changelog|version>
+# Usage: derive.sh <changelog|version|prepend>
 #
 # Range: every commit since the last tag reachable from HEAD (git describe
 # --tags --abbrev=0), or the whole history when no tag exists. A commit
@@ -21,6 +21,14 @@
 #              version), then Breaking / Features / Fixes / Other sections
 #              with one `- <subject verbatim>` bullet per qualifying commit
 #              in git-log order; empty sections are omitted.
+#   prepend    writes that same entry into CHANGELOG.md, above the newest
+#              existing entry (creating the file with a `# Changelog` title
+#              when absent), and prints one `done:`/`skip:` line. The
+#              changelog is write-only for the workflow — humans read it,
+#              agents get history from git — and doing the write here is what
+#              keeps that honest, since an agent's edit tool must read a file
+#              before modifying it. Re-running skips an entry already present,
+#              so a re-attempted release branch does not double-write.
 #
 # Exit 0 on success; 1 when no commit in the range qualifies (stop and ask
 # the human); 2 on usage errors, outside a git work tree, in a shallow clone
@@ -28,11 +36,16 @@
 # a last tag that is not X.Y.Z / vX.Y.Z.
 set -euo pipefail
 
+CHANGELOG=CHANGELOG.md
+
 sub="${1:-}"
-if [ "$sub" != "changelog" ] && [ "$sub" != "version" ]; then
-  printf 'derive.sh: usage: derive.sh <changelog|version>\n' >&2
-  exit 2
-fi
+case "$sub" in
+  changelog | version | prepend) ;;
+  *)
+    printf 'derive.sh: usage: derive.sh <changelog|version|prepend>\n' >&2
+    exit 2
+    ;;
+esac
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   printf 'derive.sh: not inside a git work tree\n' >&2
@@ -126,7 +139,6 @@ if [ "$sub" = "version" ]; then
   exit 0
 fi
 
-printf '## %s — %s\n' "$version" "$(date +%F)"
 section() { # name subjects...
   local name="$1"
   shift
@@ -134,7 +146,56 @@ section() { # name subjects...
   printf '\n### %s\n' "$name"
   printf -- '- %s\n' "$@"
 }
-section "Breaking" "${breaking[@]+"${breaking[@]}"}"
-section "Features" "${features[@]+"${features[@]}"}"
-section "Fixes" "${fixes[@]+"${fixes[@]}"}"
-section "Other" "${other[@]+"${other[@]}"}"
+
+render_entry() {
+  printf '## %s — %s\n' "$version" "$(date +%F)"
+  section "Breaking" "${breaking[@]+"${breaking[@]}"}"
+  section "Features" "${features[@]+"${features[@]}"}"
+  section "Fixes" "${fixes[@]+"${fixes[@]}"}"
+  section "Other" "${other[@]+"${other[@]}"}"
+}
+
+if [ "$sub" = "changelog" ]; then
+  render_entry
+  exit 0
+fi
+
+# prepend — the same entry, written instead of printed.
+
+# Heading match is the tail's rule, so the entry this writes is the one the
+# release tail later reads back as the GitHub Release notes.
+has_entry() { # file
+  awk -v wanted="$version" '
+    substr($0, 1, 3) == "## " {
+      heading = substr($0, 4)
+      if (heading == wanted ||
+        substr(heading, 1, length(wanted) + 1) == wanted " ") {
+        found = 1
+        exit
+      }
+    }
+    END { exit !found }
+  ' "$1"
+}
+
+if [ -f "$CHANGELOG" ] && has_entry "$CHANGELOG"; then
+  printf 'skip: %s already carries an entry for %s\n' "$CHANGELOG" "$version"
+  exit 0
+fi
+
+entry="$(render_entry)"
+
+if [ ! -f "$CHANGELOG" ]; then
+  printf '# Changelog\n\n%s\n' "$entry" >"$CHANGELOG"
+else
+  tmp="$CHANGELOG.tmp.$$"
+  # ENVIRON, not awk -v: -v reprocesses backslash escapes in the entry.
+  ENTRY="$entry" awk '
+    !inserted && /^## / { print ENVIRON["ENTRY"]; print ""; inserted = 1 }
+    { print }
+    END { if (!inserted) { print ""; print ENVIRON["ENTRY"] } }
+  ' "$CHANGELOG" >"$tmp"
+  mv "$tmp" "$CHANGELOG"
+fi
+
+printf 'done: prepended the %s entry to %s\n' "$version" "$CHANGELOG"

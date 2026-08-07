@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
 # The re-runnable post-merge tail of the ADDW release flow.
 #
-# Usage: tail.sh [--spec <n>] [--changelog <path>] [--remote <name>] <version>
+# Usage: tail.sh [--spec <n>] <version>
 #
-# Run from the repository root after a release PR has been merged. The tail
-# lays the version tag on HEAD, pushes it, publishes the GitHub Release using
-# the matching changelog entry, and optionally closes the spec issue. Each
-# stage skips work that is already complete, so an interrupted run can safely
-# be repeated.
+# Run from the repository root with the release PR's merge commit checked out.
+# The tail lays the version tag on HEAD, pushes it to origin, publishes the
+# GitHub Release from the changelog entry, and for a spec release closes the
+# spec issue. Each step skips work that is already complete, so an interrupted
+# run is finished by running it again rather than by hand.
 #
-# Exit 0 when every stage succeeds or skips; 1 when a release must be created
-# but the changelog has no entry for the version; 2 on usage errors or outside
-# a git work tree.
+# Skipping asks whether the step's *result* is present, not merely whether
+# something with the right name is: an existing tag pointing somewhere other
+# than HEAD is refused rather than skipped, since a tag laid from a stale
+# checkout would otherwise be cemented by the very re-run meant to recover the
+# release. The version argument is likewise checked against the changelog,
+# which is what catches a version that does not match the one the release PR
+# committed.
+#
+# Exit 0 when every step succeeded or skipped; 1 when a release must be created
+# but CHANGELOG.md has no entry for the version; 2 on usage errors, outside a
+# git work tree, or on a tag that already exists but points elsewhere.
 set -euo pipefail
 
 usage() {
@@ -19,6 +27,9 @@ usage() {
   exit 2
 }
 
+# The changelog path and the remote are fixed by the docs contract and by the
+# tracker layer's own `git ls-remote --heads origin`; a project that moved
+# either has bigger divergences than a flag would paper over.
 changelog=CHANGELOG.md
 remote=origin
 spec=""
@@ -30,18 +41,6 @@ while [ "$#" -gt 0 ]; do
       [ "$#" -ge 2 ] || usage
       spec=$2
       [[ "$spec" =~ ^[1-9][0-9]*$ ]] || usage
-      shift 2
-      ;;
-    --changelog)
-      [ "$#" -ge 2 ] || usage
-      changelog=$2
-      [ -n "$changelog" ] || usage
-      shift 2
-      ;;
-    --remote)
-      [ "$#" -ge 2 ] || usage
-      remote=$2
-      [ -n "$remote" ] || usage
       shift 2
       ;;
     --)
@@ -72,6 +71,15 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tracker="$here/../tracker/tracker.sh"
 
 if git rev-parse --verify --quiet "refs/tags/$version" >/dev/null 2>&1; then
+  tagged="$(git rev-parse "refs/tags/$version^{commit}")"
+  head="$(git rev-parse HEAD)"
+  if [ "$tagged" != "$head" ]; then
+    printf 'tail.sh: tag %s points at %s, not HEAD (%s)\n' \
+      "$version" "$(git rev-parse --short "$tagged")" \
+      "$(git rev-parse --short "$head")" >&2
+    printf '  check out the merge commit, or delete the tag if it is wrong\n' >&2
+    exit 2
+  fi
   printf 'skip: tag %s already exists\n' "$version"
 else
   git tag "$version"
@@ -94,6 +102,9 @@ else
   notes_file="$(mktemp)"
   trap 'rm -f "$notes_file"' EXIT
 
+  # The notes are the changelog entry's body, read rather than re-derived:
+  # deriving twice could disagree, and the published release and the committed
+  # changelog have to be the same words.
   if ! awk -v wanted="$version" '
     function is_h2(line) {
       return substr(line, 1, 3) == "## "
@@ -129,7 +140,7 @@ else
       }
     }
   ' "$changelog" >"$notes_file"; then
-    printf 'tail.sh: no changelog entry for %s\n' "$version" >&2
+    printf 'tail.sh: no %s entry for %s\n' "$changelog" "$version" >&2
     exit 1
   fi
 
@@ -139,9 +150,7 @@ else
 fi
 
 if [ -n "$spec" ]; then
-  issue_json="$(bash "$tracker" view "$spec")"
-  state="$(jq -r '.state' <<<"$issue_json")"
-  if [ "$state" = CLOSED ]; then
+  if [ "$(bash "$tracker" state "$spec")" = CLOSED ]; then
     printf 'skip: spec #%s already closed\n' "$spec"
   else
     bash "$tracker" close "$spec" completed >/dev/null

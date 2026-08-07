@@ -204,4 +204,67 @@ mkdir "$plain"
 assert_exit 2 "plain: outside a git work tree → exit 2" \
   bash -c "cd '$plain' && GIT_CEILING_DIRECTORIES='$work' bash '$DERIVE' changelog"
 
+# --- prepend: the same entry, written rather than printed ------------------
+
+# The changelog is write-only for the workflow, so the entry is placed by the
+# script. Nothing else may author it, and nothing has to read the file to
+# place it.
+#
+# An existing changelog: the entry lands above the newest entry and below the
+# title, leaving every older entry untouched.
+existing="$work/prepend-existing"
+new_repo "$existing"
+c "$existing" "chore: bootstrap"
+git -C "$existing" tag v1.2.3
+c "$existing" "feat(gate): add gate runner (#16)"
+printf '# Changelog\n\n## v1.2.3 — 2026-01-01\n\n### Other\n- chore: bootstrap\n' \
+  >"$existing/CHANGELOG.md"
+out="$(cd "$existing" && bash "$DERIVE" prepend)"
+assert_contains "$out" "done: prepended the v1.3.0 entry" "prepend reports the write"
+got="$(cat "$existing/CHANGELOG.md")"
+assert_eq "# Changelog
+
+## v1.3.0 — $TODAY
+
+### Features
+- feat(gate): add gate runner (#16)
+
+## v1.2.3 — 2026-01-01
+
+### Other
+- chore: bootstrap" "$got" "prepend: newest entry first, older entries intact"
+
+# Re-running is a skip, not a second copy: a release branch rebuilt after a
+# false start must not double-write.
+out="$(cd "$existing" && bash "$DERIVE" prepend)"
+assert_contains "$out" "skip: " "prepend: an entry already present is skipped"
+assert_eq 1 "$(grep -c '^## v1.3.0' "$existing/CHANGELOG.md")" \
+  "prepend: the entry is written exactly once"
+
+# No changelog yet: the file is created with a title.
+fresh="$work/prepend-fresh"
+new_repo "$fresh"
+c "$fresh" "chore: bootstrap"
+git -C "$fresh" tag v1.2.3
+c "$fresh" "fix: repair the thing"
+(cd "$fresh" && bash "$DERIVE" prepend >/dev/null)
+got="$(cat "$fresh/CHANGELOG.md")"
+assert_eq "# Changelog
+
+## v1.2.4 — $TODAY
+
+### Fixes
+- fix: repair the thing" "$got" "prepend: a missing changelog is created with a title"
+
+# The written entry and the printed one are the same text, so the release PR
+# body and the committed file can never disagree.
+assert_contains "$(cat "$fresh/CHANGELOG.md")" \
+  "$(cd "$fresh" && bash "$DERIVE" changelog)" \
+  "prepend writes exactly what changelog prints"
+
+# A range with nothing qualifying refuses before touching the file.
+assert_exit 1 "prepend: empty range → exit 1" \
+  bash -c "cd '$quiet' && bash '$DERIVE' prepend"
+[ -f "$quiet/CHANGELOG.md" ] && fail "prepend: refused run must not create the file"
+
 echo "release-derive: all assertions passed"
