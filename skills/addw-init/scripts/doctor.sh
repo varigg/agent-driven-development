@@ -7,6 +7,14 @@
 # human gets one actionable line for every part of the contract.
 set -uo pipefail
 
+# The schema generation THESE skills expect. Structural upgrade steps in
+# UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
+#
+# The docs contract this file checks has already moved past generation 3 —
+# ADDW_ADR_DIR and the recipe keys are required, ADDW_TUTORIALS is gone — but
+# the bump and its migration section belong to one ticket, so until that lands
+# a generation-3 install reads as schema-matched while failing the newer
+# checks. The FAIL lines say what to add; the schema line does not yet.
 EXPECTED_SCHEMA=3
 doctor_fail=0
 doctor_warnings=0
@@ -249,6 +257,11 @@ fi
 # global skills folder, and the project-local one — because the probe asks
 # the same question eight times and walking the tree eight times to answer it
 # would be the slow way to get the same set.
+#
+# The match is on the name alone, which is deliberate: a skill is invoked by
+# bare name too, so a namesake from another plugin shadows the intended one at
+# the call site exactly as it satisfies the probe here. Verifying provenance
+# would be pinning, and the design probes rather than pins.
 claude_config_dir="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}"
 find_roots=()
 for root in "$claude_config_dir/plugins" "$claude_config_dir/skills" ./.claude/skills; do

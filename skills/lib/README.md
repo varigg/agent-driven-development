@@ -18,12 +18,16 @@ lives inside `skills/` rather than at the repo root.
     bash ≥ 4 (associative arrays; guarded at startup). No network: fed a
     checked-in fixture in tests, a live snapshot in use.
   - `tracker.sh` — the thin `gh`-calling wrappers (issue reads, body edits,
-    labels, comments, close-with-reason, self-assign, authentication,
-    repository issue status, and label listing) plus the live `frontier` and
-    `spec-complete` queries, which fetch a snapshot and delegate all reasoning
-    to `resolve.sh`. The install doctor uses `auth`, `issues-enabled`, and
-    `labels` so tracker verification stays behind this seam. Dogfood-verified,
-    not unit-tested.
+    labels, comments, close-with-reason, self-assign) plus the live `frontier`
+    and `spec-complete` queries, which fetch a snapshot and delegate all
+    reasoning to `resolve.sh`. Four wrappers exist for install verification
+    rather than for issue work — `auth`, `issues-enabled`, `labels`, and
+    `create-label` — because "is the tracker usable, and do the labels the
+    frontier keys on exist" is a tracker question, and answering it outside
+    the layer would put the one thing a future adapter must reimplement in two
+    places. `addw-init` creates the `spec` and `backlog` labels through the
+    last of them; doctor re-checks all of it with the first three.
+    Dogfood-verified, not unit-tested.
     The branch half of the frontier's in-progress annotation comes from
     `git ls-remote --heads origin` — remote branches, never local ones — so a
     ticket reads as in progress exactly while its branch is visible to

@@ -68,7 +68,26 @@ Anything Matt's setup already produced is left alone. Init creates the two
 ADDW labels, the living docs, the project config, and the ADR contract, and
 nothing else — no plans directory, no tutorial machinery.
 
-### 2.1 The ADDW labels
+### 2.1 The docs contract
+
+Create the directories the skills expect to find, so the contract holds
+before anything writes into it:
+
+```
+docs/4-unit-tests/     # the testing guide and the coverage-debt ledger
+docs/6-memo/           # research memos
+docs/7-maintenance/    # dated maintenance reports (addw-maintain)
+<ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.4
+```
+
+There is no plans directory and no tutorial directory: work items live on the
+tracker now, and tutorials have no consumer left in the skill set. Historical
+installs may still carry `docs/1-plans/`, `docs/2-changelog/`,
+`docs/3-code-review/`, or `docs/5-tuto/` — leave them alone, and leave the
+numbering gaps; deleting them is the human's call, documented in
+`UPGRADING.md`.
+
+### 2.2 The ADDW labels
 
 For each of `spec` and `backlog` that Step 1's label listing did not show:
 
@@ -78,7 +97,7 @@ bash .claude/skills/lib/tracker/tracker.sh create-label <label>
 
 `ready-for-agent` is Matt's and is never recreated or modified.
 
-### 2.2 Explore and classify the codebase
+### 2.3 Explore and classify the codebase
 
 The living docs are written from evidence, not from the project's name. Read
 the root and the source tree: the build/package manifest identifies language
@@ -113,7 +132,7 @@ Note the primary type, any secondary aspects (a CLI that is also a library),
 and domain-specific concerns such as real-time or compliance constraints.
 These decide which architecture sections earn a place.
 
-### 2.3 `docs/ARCHITECTURE.md`
+### 2.4 `docs/ARCHITECTURE.md`
 
 Write it as an **as-built** description of the system as it currently is.
 Every project gets the universal sections: how to read the document,
@@ -142,7 +161,7 @@ Then **present it and ask the user to approve it** with `AskUserQuestion` —
 approve, request changes, or add sections. Revise and re-present until they
 approve explicitly; nothing further is written before that.
 
-### 2.4 `docs/charter.md`
+### 2.5 `docs/charter.md`
 
 The charter holds intent that outlasts any single feature. Interview the user
 with `AskUserQuestion`, **one topic at a time** — purpose, product
@@ -179,7 +198,7 @@ charter is never silently edited.
 
 **Get explicit approval before writing the file.**
 
-### 2.5 `docs/4-unit-tests/TESTING.md`
+### 2.6 `docs/4-unit-tests/TESTING.md`
 
 Adapted from what exploration found, never generic: the real framework and
 version, how tests are run and organized, the project's own writing
@@ -193,7 +212,7 @@ lint, type-check/build, all tests, affected tests, single test, coverage.
 Prefer task-runner targets (`make lint`, `npm run lint`) over raw commands,
 so there is one place to change them.
 
-### 2.6 `docs/addw.env`
+### 2.7 `docs/addw.env`
 
 The project config, and the reason skills stay byte-identical across
 installs. It must be shell-sourceable — scripts `source` it directly, so a
@@ -234,7 +253,7 @@ Fill every value (audit nudge 5 unless the user chooses otherwise). Do not
 invent a tutorial flag, and do not change `ADDW_SCHEMA` — the generation
 marker moves only at a structural boundary, which `UPGRADING.md` documents.
 
-### 2.7 The ADR contract
+### 2.8 The ADR contract
 
 Write the template to `<ADDW_ADR_DIR>/template.md` — the directory resolved
 in Step 1.4, never a literal path from this skill. It merges Matt's minimal
@@ -286,7 +305,7 @@ override is what makes the template the enforcing surface for every
 authoring path. Write the resolved path literally: doctor greps the
 instructions for it.
 
-### 2.8 `docs/ARCHITECTURE-rules.md` and `CHANGELOG.md`
+### 2.9 `docs/ARCHITECTURE-rules.md` and `CHANGELOG.md`
 
 `docs/ARCHITECTURE-rules.md` records how ARCHITECTURE.md is maintained,
 naming that document's actual sections: update after any change to project
@@ -337,10 +356,13 @@ it. A `FAIL` line is fixed in the artifact or config init owns, never by
 editing a skill or lowering a check, and doctor is re-run.
 
 Then offer — do not perform unasked — the initial commit and tag, at the
-version the `CHANGELOG.md` entry carries:
+version the `CHANGELOG.md` entry carries. Stage by **explicit paths**, and
+stage the paths this run actually wrote: the ADR directory may sit outside
+`docs/`, and the project-instructions file is whichever of `CLAUDE.md` or
+`AGENTS.md` Matt's setup chose — naming the other one aborts the whole `git
+add` on a pathspec error.
 
 ```bash
-git add docs/ CHANGELOG.md .claude/skills/ CLAUDE.md
 git commit -m "chore: initialize the ADDW workflow"
 git tag vX.Y.Z
 ```
