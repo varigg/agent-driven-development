@@ -54,8 +54,19 @@ Getting this backwards restarts finished work, so resolve it before reading anyt
 
 The human has reviewed and left feedback. Same skill, not a separate procedure.
 
-1. **Check out the PR's branch** and read the review comments in full
-   (`gh pr view <n> --comments`).
+1. **Check out the PR's branch** and read **all** the feedback. Two reads, not one — the
+   conversation timeline and the comments anchored to diff lines are different endpoints, and
+   inline comments are where most review feedback actually lands:
+
+   ```bash
+   gh pr view <n> --comments                                  # timeline + review summaries
+   gh api "repos/{owner}/{repo}/pulls/<n>/comments" --paginate \
+       --jq '.[] | "\(.path):\(.line // .original_line)\t\(.user.login): \(.body)"'
+   ```
+
+   No `gh pr` subcommand exposes inline comments (cli/cli#5788), so the API read is not
+   optional. Skipping it produces the worst failure this mode has: reporting feedback
+   addressed while never having seen it.
 
 2. **Address the feedback.** Push back in a PR reply where a comment is mistaken — agreement
    is not the goal, resolution is. Commit with explicit paths and a conventional subject.
@@ -68,7 +79,9 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    not. If you skip the loop, the PR body must say which commit the recorded verdict covers,
    so the gap between the verdict and HEAD is visible rather than implied.
 
-5. **Update the PR body** and stop. Do not merge.
+5. **Push, then update the PR body**, and stop. Do not merge. Push before touching the body:
+   a body advertising a gate summary and a verdict SHA for commits that exist only on your
+   machine is evidence for a PR the reviewer cannot see.
 
 ---
 
@@ -97,6 +110,7 @@ The branch and the assignment are the **in-progress marker** the frontier listin
 not a lock. Push before building, so a second session sees the work exists.
 
 ```bash
+source docs/addw.env
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b <type>/<issue-number>-<slug>       # feat/ fix/ docs/ — the type the work will carry
 git push -u origin <type>/<issue-number>-<slug>
@@ -228,6 +242,8 @@ another round or is disclosed as uncovered.
 Push the branch and open the PR against `$ADDW_MAIN_BRANCH`:
 
 ```bash
+source docs/addw.env
+git push
 gh pr create --base "$ADDW_MAIN_BRANCH" --title "<conventional subject>" --body-file <file>
 ```
 
