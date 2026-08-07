@@ -5,6 +5,16 @@
 #
 # Deliberately no set -e: a doctor keeps checking after a failure so the
 # human gets one actionable line for every part of the contract.
+#
+# Deliberately NOT checked here: whether the skills ADDW depends on are
+# installed. The authority on that is the agent's own skill roster, which
+# carries the plugin qualifier a filesystem scan cannot see — two plugins can
+# ship a `code-review`, and only the roster distinguishes them. A scan would
+# also have to tell an install from a marketplace clone, from cache residue,
+# and from an installed-but-disabled plugin, and would still be answering a
+# question one look at the roster answers exactly. So the skills that need a
+# dependency check do it in prose, at the point of use: addw-init before it
+# writes anything, addw-implement before it invokes one.
 set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
@@ -17,16 +27,11 @@ set -uo pipefail
 # checks. The FAIL lines say what to add; the schema line does not yet.
 EXPECTED_SCHEMA=3
 doctor_fail=0
-doctor_warnings=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
 bad() {
     printf 'FAIL: %s\n' "$1"
     doctor_fail=1
-}
-warn() {
-    printf 'WARN: %s\n' "$1"
-    doctor_warnings=$((doctor_warnings + 1))
 }
 
 # Config values come from docs/addw.env alone. In particular, an exported
@@ -292,125 +297,8 @@ else
     bad "tracker layer missing: $tracker"
 fi
 
-# --- graded plugin probes -------------------------------------------------
-# A skill is installed when some directory named after it holds a SKILL.md.
-# One find pass covers every root — the plugin cache (which nests skills
-# several levels down, under a vendor, pack, version, and category), the
-# global skills folder, and the project-local one — because the probe asks
-# the same question eight times and walking the tree eight times to answer it
-# would be the slow way to get the same set.
-#
-# The match is on the name alone, which is deliberate: a skill is invoked by
-# bare name too, so a namesake from another plugin shadows the intended one at
-# the call site exactly as it satisfies the probe here. Verifying provenance
-# would be pinning, and the design probes rather than pins.
-# Where to look, narrowest first, each tier falling through to the next when
-# it yields nothing. The question is whether a skill can actually be invoked,
-# so the best answer comes from the CLI's own listing: it is the documented
-# interface and the only one carrying `enabled`, and an installed-but-disabled
-# plugin is exactly as uninvocable as an absent one. Below that, the install
-# record still beats the raw cache — it excludes the marketplace clone, which
-# carries every skill of every plugin on offer, and residue from a plugin that
-# has since been removed. Both files are internal shapes, so every extraction
-# is forgiving: one that stops matching drops through to the wider answer
-# rather than to no answer.
-# A tier is skipped when an earlier one ANSWERED — not when an earlier one
-# returned nothing. "Every plugin is disabled" is a real answer, and widening
-# the search on it would hand back the very plugins the tier just excluded.
-claude_config_dir="${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}"
-plugin_roots=()
-roots_known=0
-
-collect_roots() { # reads paths on stdin, keeps the ones that are directories
-    local path
-    while IFS= read -r path; do
-        [ -n "$path" ] && [ -d "$path" ] && plugin_roots+=("$path")
-    done
-}
-
-if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    listing="$(claude plugin list --json 2>/dev/null || true)"
-    if printf '%s' "$listing" | jq -e 'type == "array"' >/dev/null 2>&1; then
-        roots_known=1
-        collect_roots < <(
-            printf '%s' "$listing" | jq -r '.[] | select(.enabled) | .installPath'
-        )
-    fi
-fi
-
-install_record="$claude_config_dir/plugins/installed_plugins.json"
-if [ "$roots_known" -eq 0 ] && [ -r "$install_record" ]; then
-    if command -v jq >/dev/null 2>&1 &&
-        jq -e 'type == "object"' "$install_record" >/dev/null 2>&1; then
-        roots_known=1
-        collect_roots < <(
-            jq -r '.. | objects | select(has("installPath")) | .installPath' \
-                "$install_record" 2>/dev/null
-        )
-    else
-        # No jq, or a shape jq will not accept: extract what we can and treat
-        # a blank result as "could not read this", since grep cannot tell an
-        # empty record from a reshaped one.
-        collect_roots < <(
-            grep -o '"installPath"[[:space:]]*:[[:space:]]*"[^"]*"' "$install_record" 2>/dev/null |
-                sed 's|.*"installPath"[[:space:]]*:[[:space:]]*"||; s|"$||'
-        )
-        [ "${#plugin_roots[@]}" -gt 0 ] && roots_known=1
-    fi
-fi
-
-if [ "$roots_known" -eq 0 ] && [ -d "$claude_config_dir/plugins/cache" ]; then
-    plugin_roots+=("$claude_config_dir/plugins/cache")
-fi
-
-find_roots=()
-[ "${#plugin_roots[@]}" -gt 0 ] && find_roots+=("${plugin_roots[@]}")
-for root in "$claude_config_dir/skills" ./.claude/skills; do
-    [ -d "$root" ] && find_roots+=("$root")
-done
-
-installed_skills=""
-if [ "${#find_roots[@]}" -gt 0 ]; then
-    installed_skills="$(
-        find "${find_roots[@]}" \
-            \( -type d \( -name node_modules -o -name .git \) -prune \) \
-            -o \( -type f -name SKILL.md -print \) 2>/dev/null |
-            sed -e 's|/SKILL\.md$||' -e 's|.*/||' |
-            sort -u
-    )"
-fi
-
-skill_present() {
-    printf '%s\n' "$installed_skills" | grep -Fqx -- "$1"
-}
-
-# The programmatic pair: ADDW invokes these itself, so absence is fatal.
-for required_skill in code-review tdd; do
-    if skill_present "$required_skill"; then
-        ok "plugin skill '$required_skill' present"
-    else
-        bad "plugin skill '$required_skill' missing — ADDW invokes it programmatically"
-    fi
-done
-# The happy path: the flow needs these, ADDW never calls them, so the install
-# is sound without them and the human decides whether to install them.
-for optional_skill in setup-matt-pocock-skills grill-with-docs grilling \
-    domain-modeling to-spec to-tickets; do
-    if skill_present "$optional_skill"; then
-        ok "plugin skill '$optional_skill' present"
-    else
-        warn "plugin skill '$optional_skill' missing — the flow needs it, though ADDW never invokes it"
-    fi
-done
-
 if [ "$doctor_fail" -eq 0 ]; then
-    if [ "$doctor_warnings" -eq 0 ]; then
-        echo "HEALTHY: all checks passed"
-    elif [ "$doctor_warnings" -eq 1 ]; then
-        echo "HEALTHY: all checks passed (1 warning)"
-    else
-        echo "HEALTHY: all checks passed ($doctor_warnings warnings)"
-    fi
+    echo "HEALTHY: all checks passed"
 else
     echo "UNHEALTHY: fix the FAIL lines above"
 fi

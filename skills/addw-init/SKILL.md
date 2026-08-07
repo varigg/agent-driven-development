@@ -51,7 +51,23 @@ assumption.
    frontier rather than as an error. `spec` and `backlog` are ADDW's own and
    are created in Step 2.
 
-4. **Resolve the ADR location.** `docs/agents/domain.md` is a prose contract;
+4. **The skills ADDW depends on are installed.** Read your own skill roster —
+   it is the authority here, and no filesystem check is a substitute for it,
+   since the roster carries the plugin qualifier that tells two skills of the
+   same name apart.
+
+   `code-review` and `tdd` are the two ADDW **invokes programmatically**. If
+   either is missing, stop: the flow will break at the point of use, and
+   finding out then costs a ticket's work. If either name appears more than
+   once, note which entry is Matt's — that qualified name is what the flow
+   must invoke.
+
+   `setup-matt-pocock-skills`, `grill-with-docs`, `grilling`,
+   `domain-modeling`, `to-spec`, and `to-tickets` are ones the **human**
+   invokes. ADDW never calls them, so their absence is not a stop — say which
+   are missing, note that the flow has a gap without them, and carry on.
+
+5. **Resolve the ADR location.** `docs/agents/domain.md` is a prose contract;
    read it and resolve the directory it declares for ADRs. Do not hardcode a
    path and do not infer one from the layout Matt's seed template happens to
    ship — a project may have declared otherwise, and this indirection is the
@@ -77,7 +93,7 @@ before anything writes into it:
 docs/4-unit-tests/     # the testing guide and the coverage-debt ledger
 docs/6-memo/           # research memos
 docs/7-maintenance/    # dated maintenance reports (addw-maintain)
-<ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.4
+<ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.5
 ```
 
 There is no plans directory and no tutorial directory: work items live on the
@@ -232,7 +248,7 @@ ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, ...>"
 # falling back to `git branch --show-current` in a repo with no remote.
 ADDW_MAIN_BRANCH="<bare branch name>"
 ADDW_AUDIT_NUDGE_N=5
-# The ADR directory the domain-layout contract declares (Step 1.4):
+# The ADR directory the domain-layout contract declares (Step 1.5):
 ADDW_ADR_DIR="<resolved ADR directory>"
 # Testing-gate recipes, from TESTING.md's Verification Recipes. All three keys
 # are always present: an empty value is a step this project does not have, and
@@ -261,7 +277,7 @@ marker moves only at a structural boundary, which `UPGRADING.md` documents.
 ### 2.8 The ADR contract
 
 Write the template to `<ADDW_ADR_DIR>/template.md` — the directory resolved
-in Step 1.4, never a literal path from this skill. It merges Matt's minimal
+in Step 1.5, never a literal path from this skill. It merges Matt's minimal
 format with ADDW's decision-record rules:
 
 ```markdown
@@ -355,11 +371,10 @@ what init is judged by:
 bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
-It must report **HEALTHY**. A `WARN` line is not a failure: it means one of
-the happy-path plugin skills is absent — the flow needs it, but ADDW never
-invokes it, so the install is sound and the human decides whether to install
-it. A `FAIL` line is fixed in the artifact or config init owns, never by
-editing a skill or lowering a check, and doctor is re-run.
+It must report **HEALTHY**. A `FAIL` line is fixed in the artifact or config
+init owns, never by editing a skill or lowering a check, and doctor is re-run.
+Doctor does not check skill availability — that was Step 1.4, and the roster
+is the only place it can be answered.
 
 Then offer — do not perform unasked — the initial commit and tag, at the
 version the `CHANGELOG.md` entry carries. Stage by **explicit paths**, and

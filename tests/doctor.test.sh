@@ -3,10 +3,9 @@
 #
 # Doctor is the deterministic re-verification of everything init produced, and
 # the final gate of both init and an upgrade. It is read-only and never fixes
-# anything. Run from a project's repo root, it prints one OK/WARN/FAIL line per
-# check and one terminal line — "HEALTHY: all checks passed", the same with a
-# "(N warnings)" tail, or "UNHEALTHY: fix the FAIL lines above" — exiting 0 iff
-# no check failed. Warnings never fail the run.
+# anything. Run from a project's repo root, it prints one OK/FAIL line per
+# check and one terminal line — "HEALTHY: all checks passed" or "UNHEALTHY: fix
+# the FAIL lines above" — exiting 0 iff no check failed.
 #
 # What it verifies, in the ticket's terms (#9):
 #
@@ -22,14 +21,14 @@
 #      must be GitHub, the tracker CLI must be authenticated with issues
 #      enabled, and the three labels the frontier keys on must exist. A missing
 #      frontier label would otherwise fail silently as a forever-empty frontier.
-#   4. Plugin probes, graded. The two programmatic primitives (code-review,
-#      tdd) hard-fail when absent because ADDW invokes them; the six
-#      happy-path skills only warn, because the flow needs them but ADDW never
-#      calls them.
+# Deliberately absent: any check that Matt's skills are installed. The agent's
+# own skill roster is the authority on that — it carries the plugin qualifier a
+# filesystem scan cannot see — so the dependency check lives in skill prose at
+# the point of use, and there is nothing here for a script to freeze.
 #
-# Everything runs offline: the fixture project is a real git repo in a temp
-# dir, the tracker CLI is a stub on PATH, and the plugin probe searches a fake
-# HOME. No test reaches into doctor's internals.
+# Everything runs offline: the fixture project is a real git repo in a temp dir
+# and the tracker CLI is a stub on PATH. No test reaches into doctor's
+# internals.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 . ./lib.sh
@@ -65,44 +64,12 @@ esac
 SH
 chmod +x "$work/bin/gh"
 
-# The stub CLI whose listing drives the plugin probe's first tier. It must
-# exist even when a case does not care, because the real binary is on PATH
-# here and would otherwise answer with this machine's plugins instead of the
-# fixture's. Its default is to FAIL rather than to return an empty listing:
-# those two are deliberately different to the probe, and only a case that sets
-# STUB_CLAUDE_PLUGINS exercises the first tier at all.
-cat > "$work/bin/claude" <<'SH'
-#!/usr/bin/env bash
-[ "$1 $2" = "plugin list" ] || exit 90
-[ -n "${STUB_CLAUDE_PLUGINS:-}" ] || exit 1
-printf '%s\n' "$STUB_CLAUDE_PLUGINS"
-SH
-chmod +x "$work/bin/claude"
-
 PATH="$work/bin:$PATH"
 export PATH
-
-# --- the fake plugin install ----------------------------------------------
-# Skills live nested under a category directory inside a versioned plugin
-# cache, which is where a real plugin install puts them.
-plugin_skills() { # home-dir  skill-name...
-  local home=$1 root name
-  shift
-  root="$home/.claude/plugins/cache/vendor/pack/1.0.0/skills/engineering"
-  for name in "$@"; do
-    mkdir -p "$root/$name"
-    printf -- '---\nname: %s\ndescription: stub\n---\n' "$name" \
-      > "$root/$name/SKILL.md"
-  done
-}
-
-ALL_SKILLS=(code-review tdd setup-matt-pocock-skills grill-with-docs grilling
-            domain-modeling to-spec to-tickets)
 
 # --- the healthy project ---------------------------------------------------
 BASE="$work/base"
 mkdir -p "$BASE/project" "$BASE/home"
-plugin_skills "$BASE/home" "${ALL_SKILLS[@]}"
 
 (
   cd "$BASE/project"
@@ -192,7 +159,6 @@ assert_eq 0 "$RUN_STATUS" "healthy: a complete install exits zero"
 assert_contains "$RUN_OUT" "HEALTHY: all checks passed" \
   "healthy: terminal line reports health"
 assert_not_contains "$RUN_OUT" "FAIL:" "healthy: no check fails"
-assert_not_contains "$RUN_OUT" "WARN:" "healthy: no check warns"
 
 # --- config keys -----------------------------------------------------------
 
@@ -363,90 +329,5 @@ d="$(case_dir nolabel)"
 run "$d" STUB_GH_LABELS="ready-for-agent backlog"
 assert_eq 1 "$RUN_STATUS" "labels: a missing label is unhealthy"
 assert_contains "$RUN_OUT" "spec" "labels: the failing line names the label"
-
-# --- graded plugin probes --------------------------------------------------
-
-# The programmatic pair: ADDW invokes these itself, so absence is fatal.
-for required in code-review tdd; do
-  d="$(case_dir "no-$required")"
-  rm -r "$d/home/.claude/plugins/cache/vendor/pack/1.0.0/skills/engineering/$required"
-  run "$d"
-  assert_eq 1 "$RUN_STATUS" "plugin: a missing $required is unhealthy"
-  assert_contains "$RUN_OUT" "$required" \
-    "plugin: the failing line names $required"
-done
-
-# The happy-path six: the flow needs them, ADDW never calls them, so their
-# absence warns and the install stays healthy.
-d="$(case_dir no-to-spec)"
-rm -r "$d/home/.claude/plugins/cache/vendor/pack/1.0.0/skills/engineering/to-spec"
-run "$d"
-assert_eq 0 "$RUN_STATUS" "plugin: a missing happy-path skill still exits zero"
-assert_contains "$RUN_OUT" "WARN:" "plugin: its absence warns"
-assert_contains "$RUN_OUT" "to-spec" "plugin: the warning names the skill"
-assert_contains "$RUN_OUT" "HEALTHY: all checks passed (1 warning" \
-  "plugin: the terminal line carries the warning count"
-
-# added at codex round 3: an installed-but-disabled plugin is exactly as
-# uninvocable as an absent one, and its skills sit in the cache under a live
-# installPath — so only the enabled listing answers the question the probe is
-# actually asking.
-d="$(case_dir disabled-plugin)"
-mkdir -p "$d/home/enabled-but-empty"
-run "$d" STUB_CLAUDE_PLUGINS="[
-  {\"enabled\": true,  \"installPath\": \"$d/home/enabled-but-empty\"},
-  {\"enabled\": false, \"installPath\": \"$d/home/.claude/plugins/cache/vendor/pack/1.0.0\"}
-]"
-assert_eq 1 "$RUN_STATUS" "disabled: a disabled plugin's skills are unhealthy"
-assert_contains "$RUN_OUT" "code-review" "disabled: the hard-fail pair is named"
-assert_contains "$RUN_OUT" "tdd" "disabled: the hard-fail pair is named"
-
-# added at codex round 4: "every plugin is disabled" is an answer, not a
-# failure to answer. Widening the search on an empty-but-valid listing would
-# hand back exactly the plugins the enabled filter just excluded.
-d="$(case_dir all-disabled)"
-run "$d" STUB_CLAUDE_PLUGINS="[
-  {\"enabled\": false, \"installPath\": \"$d/home/.claude/plugins/cache/vendor/pack/1.0.0\"}
-]"
-assert_eq 1 "$RUN_STATUS" \
-  "all-disabled: an empty enabled listing does not fall back to the cache"
-assert_contains "$RUN_OUT" "tdd" "all-disabled: the hard-fail pair is named"
-
-# added at codex round 2: when the install record is readable it names the
-# installed plugins exactly, so a skill sitting in cache residue from a plugin
-# that is no longer installed must not read as available.
-d="$(case_dir stale-cache)"
-plugin_skills "$d/home-residue" to-spec   # a second, unrecorded cache tree
-mv "$d/home-residue/.claude/plugins/cache/vendor/pack" \
-   "$d/home/.claude/plugins/cache/vendor/removed-pack"
-rm -r "$d/home/.claude/plugins/cache/vendor/pack/1.0.0/skills/engineering/to-spec"
-cat > "$d/home/.claude/plugins/installed_plugins.json" <<JSON
-{ "version": 2, "plugins": { "pack@vendor": [ {
-  "installPath": "$d/home/.claude/plugins/cache/vendor/pack/1.0.0" } ] } }
-JSON
-run "$d"
-assert_eq 0 "$RUN_STATUS" "residue: the run still completes"
-assert_contains "$RUN_OUT" "WARN:" "residue: an uninstalled plugin's skill warns"
-assert_contains "$RUN_OUT" "to-spec" "residue: the warning names the skill"
-
-# An unreadable or reshaped install record must widen the search rather than
-# empty it: no paths extracted falls back to scanning the whole cache.
-d="$(case_dir unparsable-record)"
-printf 'not json at all\n' > "$d/home/.claude/plugins/installed_plugins.json"
-run "$d"
-assert_eq 0 "$RUN_STATUS" "fallback: an unreadable install record stays healthy"
-assert_not_contains "$RUN_OUT" "WARN:" \
-  "fallback: the cache scan still finds every installed skill"
-
-# A project-local skills folder is a search root too, so the same skill
-# installed there clears the probe.
-d="$(case_dir local-skill)"
-rm -r "$d/home/.claude/plugins/cache/vendor/pack/1.0.0/skills/engineering/to-spec"
-mkdir -p "$d/project/.claude/skills/to-spec"
-printf -- '---\nname: to-spec\n---\n' > "$d/project/.claude/skills/to-spec/SKILL.md"
-run "$d"
-assert_eq 0 "$RUN_STATUS" "plugin: a project-local skill exits zero"
-assert_not_contains "$RUN_OUT" "WARN:" \
-  "plugin: a project-local skill clears the probe"
 
 echo "doctor: all contract assertions passed"
