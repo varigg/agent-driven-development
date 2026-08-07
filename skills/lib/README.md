@@ -13,8 +13,9 @@ lives inside `skills/` rather than at the repo root.
     section encoding (`## Parent` / `## Blocked by`) and close-reason
     classification.
   - `resolve.sh` — pure frontier and spec-completion resolution over an issue
-    snapshot (the `gh --json` shape), building on `parse.sh`. Needs `jq`. No
-    network: fed a checked-in fixture in tests, a live snapshot in use.
+    snapshot (the `gh --json` shape), building on `parse.sh`. Needs `jq` and
+    bash ≥ 4 (associative arrays; guarded at startup). No network: fed a
+    checked-in fixture in tests, a live snapshot in use.
   - `tracker.sh` — the thin `gh`-calling wrappers (issue reads, body edits,
     labels, comments, close-with-reason, self-assign) plus the live
     `frontier` and `spec-complete` queries, which fetch a snapshot and

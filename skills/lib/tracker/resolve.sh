@@ -28,6 +28,12 @@
 # not a spec-labeled issue in the snapshot exits 2.
 set -euo pipefail
 
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  printf 'resolve.sh: requires bash >= 4 (associative arrays); this is %s\n' \
+    "$BASH_VERSION" >&2
+  exit 1
+fi
+
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PARSE="$here/parse.sh"
 
@@ -36,33 +42,38 @@ usage() {
   exit 2
 }
 
-declare -A STATE REASON TITLE LABELS ASSIGNEES
+declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS
 NUMBERS=()
-SNAPSHOT=""
 
 load_snapshot() { # issues.json
-  SNAPSHOT=$1
-  if [ ! -r "$SNAPSHOT" ]; then
-    printf 'resolve.sh: cannot read snapshot: %s\n' "$SNAPSHOT" >&2
+  local snapshot=$1 num state reason labels logins b64 title body
+  if [ ! -r "$snapshot" ]; then
+    printf 'resolve.sh: cannot read snapshot: %s\n' "$snapshot" >&2
     exit 1
   fi
-  if ! jq -e 'type == "array"' "$SNAPSHOT" >/dev/null 2>&1; then
-    printf 'resolve.sh: snapshot is not a JSON array: %s\n' "$SNAPSHOT" >&2
+  if ! jq -e 'type == "array"' "$snapshot" >/dev/null 2>&1; then
+    printf 'resolve.sh: snapshot is not a JSON array: %s\n' "$snapshot" >&2
     exit 1
   fi
-  # Unit separator, not @tsv: tab is IFS whitespace, so read would collapse
-  # the empty stateReason/assignees fields and shift every later field left.
-  while IFS=$'\x1f' read -r num state reason labels logins title; do
+  # One jq pass, one parse of each body: parent and blocker edges are indexed
+  # here so the queries never rescan the snapshot. The body travels base64'd
+  # to keep the record single-line; the separator is the ASCII unit separator,
+  # not @tsv, because tab is IFS whitespace and read would collapse the empty
+  # stateReason/assignees fields, shifting every later field left.
+  while IFS=$'\x1f' read -r num state reason labels logins b64 title; do
     NUMBERS+=("$num")
     STATE[$num]=$state
     REASON[$num]=$reason
     LABELS[$num]=",$labels,"
     ASSIGNEES[$num]=$logins
     TITLE[$num]=$title
+    body="$(printf '%s' "$b64" | base64 -d)"
+    PARENT[$num]="$(printf '%s' "$body" | bash "$PARSE" parent)"
+    BLOCKERS[$num]="$(printf '%s' "$body" | bash "$PARSE" blockers | tr '\n' ' ')"
   done < <(jq -r 'sort_by(.number)[] |
       [(.number | tostring), .state, (.stateReason // ""),
        ([.labels[].name] | join(",")), ([.assignees[].login] | join(",")),
-       .title] | join("\u001f")' "$SNAPSHOT")
+       (.body // "" | @base64), .title] | join("\u001f")' "$snapshot")
 }
 
 has_label() { # num label
@@ -70,10 +81,6 @@ has_label() { # num label
     *",$2,"*) return 0 ;;
     *) return 1 ;;
   esac
-}
-
-body_of() { # num
-  jq -r --argjson n "$1" '.[] | select(.number == $n) | .body' "$SNAPSHOT"
 }
 
 # classify prints completed | not-planned; parse.sh exits 2 on anything else.
@@ -87,10 +94,9 @@ classify() { # num
 # Callers capturing via command substitution must forward exit 2 themselves
 # (a subshell swallows the exit).
 spec_children() { # num
-  local spec=$1 n parent count=0 ready=0 status
+  local spec=$1 n count=0 ready=0 status
   for n in "${NUMBERS[@]}"; do
-    parent="$(body_of "$n" | bash "$PARSE" parent)"
-    [ "$parent" = "$spec" ] || continue
+    [ "${PARENT[$n]}" = "$spec" ] || continue
     count=$((count + 1))
     if [ "${STATE[$n]}" = "OPEN" ]; then
       status=open
@@ -132,7 +138,7 @@ frontier() { # issues.json [branches-file]
     if has_label "$n" backlog; then continue; fi
 
     local unknown_b="" notplanned_b="" open_seen="" class
-    for b in $(body_of "$n" | bash "$PARSE" blockers); do
+    for b in ${BLOCKERS[$n]}; do
       if [ -z "${STATE[$b]:-}" ]; then
         [ -n "$unknown_b" ] || unknown_b=$b
       elif [ "${STATE[$b]}" = "OPEN" ]; then

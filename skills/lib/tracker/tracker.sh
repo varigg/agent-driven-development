@@ -79,7 +79,10 @@ case "$cmd" in
       *) usage ;;
     esac
     if [ "$#" -eq 3 ]; then
-      gh issue close "$1" --reason "$reason" --comment "$(cat "$3")"
+      # Read before closing: a cat failure inside the gh argument list would
+      # not stop set -e, and the issue would close without its comment.
+      comment="$(cat "$3")"
+      gh issue close "$1" --reason "$reason" --comment "$comment"
     else
       gh issue close "$1" --reason "$reason"
     fi
