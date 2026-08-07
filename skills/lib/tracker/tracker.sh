@@ -18,6 +18,10 @@
 #   tracker.sh comment <n> <file>                comment from a file
 #   tracker.sh close <n> <completed|not-planned> [comment-file]
 #   tracker.sh assign <n>                        self-assign (@me)
+#   tracker.sh auth                              tracker CLI installed and authenticated
+#   tracker.sh issues-enabled                    repository issues are enabled
+#   tracker.sh labels                            label names, one per line
+#   tracker.sh create-label <label>              create an idempotent label
 #   tracker.sh snapshot                          all issues, resolver JSON, stdout
 #   tracker.sh branches                          remote branch names, one per line
 #   tracker.sh frontier                          live frontier listing
@@ -103,6 +107,22 @@ case "$cmd" in
   assign)
     [ "$#" -eq 1 ] || usage
     gh issue edit "$1" --add-assignee "@me"
+    ;;
+  auth)
+    [ "$#" -eq 0 ] || usage
+    gh auth status
+    ;;
+  issues-enabled)
+    [ "$#" -eq 0 ] || usage
+    [ "$(gh repo view --json hasIssuesEnabled --jq .hasIssuesEnabled)" = true ]
+    ;;
+  labels)
+    [ "$#" -eq 0 ] || usage
+    gh label list --limit 1000 --json name --jq '.[].name'
+    ;;
+  create-label)
+    [ "$#" -eq 1 ] || usage
+    gh label create "$1" --force
     ;;
   snapshot)
     [ "$#" -eq 0 ] || usage

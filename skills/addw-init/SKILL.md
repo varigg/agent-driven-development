@@ -1,225 +1,203 @@
 ---
 name: addw-init
-description: Initialize ADDW workflow in a new project (creates docs structure and generates ARCHITECTURE.md)
+description: Initialize the ADDW overlay in a project after Matt Pocock's setup has run
 disable-model-invocation: true
 argument-hint: "name of the project to initialize"
 ---
 
-# ADDW Initialization Mode
+# Initialization Mode
 
-You are now in **initialization mode** for setting up the ADDW workflow — Plan → Implement → Release, with review and testing gates living inside Implement.
+You are setting up the **ADDW half** of a project's configuration. The other
+half is not yours: Matt Pocock's `setup-matt-pocock-skills` skill owns the
+tracker choice, the triage labels, and the domain-document layout. It is
+user-invoked, and this skill **never invokes it** — init probes for the
+artifacts it leaves behind, and stops with instructions when they are absent.
+
+Work from the repository root. If no project name was supplied, ask for one.
+
+**No skill file is ever edited.** Everything project-specific lands in
+`docs/addw.env` or in the living docs the skills point at.
 
 ---
 
-## Your Task
+## Step 1: Verify — read-only
 
-Initialize the ADDW workflow for the project: **$ARGUMENTS**
+Nothing is written until the ground is confirmed. Every check here has a
+failure mode that is silent later, which is why it is a check and not an
+assumption.
 
-If no project name provided, ask the user for the project name before proceeding.
+1. **Matt's setup ran.** `docs/agents/issue-tracker.md` and
+   `docs/agents/domain.md` must both exist. If either is missing, stop and
+   tell the human to run `setup-matt-pocock-skills` first — do not invoke it
+   yourself, and do not write the files on its behalf.
+
+2. **The tracker is GitHub.** Read the `# Issue tracker: <name>` heading in
+   `docs/agents/issue-tracker.md`. ADDW's overlay is GitHub-only, so anything
+   else means stopping and saying so: the human either switches the repo's
+   tracker or does not use ADDW here.
+
+3. **The tracker is reachable.** Through the tracker layer at
+   `.claude/skills/lib/tracker/tracker.sh` — never the tracker CLI directly:
+
+   ```bash
+   bash .claude/skills/lib/tracker/tracker.sh auth            # authenticated?
+   bash .claude/skills/lib/tracker/tracker.sh issues-enabled  # issues on?
+   bash .claude/skills/lib/tracker/tracker.sh labels          # label inventory
+   ```
+
+   Stop if authentication fails or issues are disabled. In the label list,
+   `ready-for-agent` must already be there — it is Matt's, and the frontier
+   query keys on it, so a missing one fails silently as a forever-empty
+   frontier rather than as an error. `spec` and `backlog` are ADDW's own and
+   are created in Step 2.
+
+4. **Resolve the ADR location.** `docs/agents/domain.md` is a prose contract;
+   read it and resolve the directory it declares for ADRs. Do not hardcode a
+   path and do not infer one from the layout Matt's seed template happens to
+   ship — a project may have declared otherwise, and this indirection is the
+   reason ADDW skills carry no glossary or ADR paths of their own. The
+   resolved path is recorded as `ADDW_ADR_DIR` in Step 2, which is what lets
+   doctor re-check the same decision mechanically. If the contract is
+   genuinely ambiguous, ask the human to settle it before writing anything.
 
 ---
 
-## Phase 1: Create Documentation Folder Structure
+## Step 2: Generate — ADDW's artifacts only
 
-Create the following folder structure if it doesn't exist:
+Anything Matt's setup already produced is left alone. Init creates the two
+ADDW labels, the living docs, the project config, and the ADR contract, and
+nothing else — no plans directory, no tutorial machinery.
 
+### 2.1 The ADDW labels
+
+For each of `spec` and `backlog` that Step 1's label listing did not show:
+
+```bash
+bash .claude/skills/lib/tracker/tracker.sh create-label <label>
 ```
-docs/
-├── 1-plans/              # Feature planning documents
-├── 4-unit-tests/         # Unit testing documentation
-├── 6-memo/               # Miscellaneous notes and memos
-├── 7-maintenance/        # Maintenance audit reports (addw-4-maintain)
-└── adr/                  # Architecture Decision Records
-```
 
-Note: `5-tuto/` folder is created conditionally in Phase 6 only if the user wants tutorial generation. (Historical installs may also have `2-changelog/` and `3-code-review/` directories — retired; the numbering gaps are deliberate. The release history lives in a root-level `CHANGELOG.md`.)
+`ready-for-agent` is Matt's and is never recreated or modified.
 
-Files (`addw.env`, `ARCHITECTURE.md`, `ARCHITECTURE-rules.md`, `charter.md`, `adr/template.md`, `TESTING.md`, root `CHANGELOG.md`) will be created in later phases after codebase analysis.
+### 2.2 Explore and classify the codebase
 
----
+The living docs are written from evidence, not from the project's name. Read
+the root and the source tree: the build/package manifest identifies language
+and toolchain, framework config files (`next.config.*`, `tauri.conf.*`,
+`platformio.ini`, `serverless.yml`, a linker script) identify the runtime
+shape, and the source layout identifies the architecture — `src/components/`,
+`src/hal/`, and `cmd/` are three different kinds of project. Also gather
+dependencies and their purposes, entry points, the configuration approach,
+and the test framework and conventions.
 
-## Phase 2: Codebase Exploration
+Record the current version and its format (SemVer, CalVer, custom) from
+`package.json`, `Cargo.toml`, `pyproject.toml`, `version.h`, `__version__`,
+or git tags. A project with no version mechanism gets the smallest
+appropriate one before `ADDW_VERSION_FILE` can name a file.
 
-Perform a **thorough exploration** of the codebase to gather information:
+Then classify:
 
-### 2.1 Project Indicators to Identify
+| Type | Typical signals | Concerns to capture |
+| --- | --- | --- |
+| Web frontend | React, Vue, Angular, Svelte, components, routing | components, state, styling, routing, API calls |
+| Web backend | Express, FastAPI, Gin, Spring, routes, middleware | endpoints, database, auth, middleware, errors |
+| Full-stack web | frontend and backend in one tree | both sides, plus the API contracts between them |
+| Desktop app | Electron, Tauri, Qt, GTK, WinForms | windows, native APIs, IPC, cross-platform behavior |
+| Mobile app | React Native, Flutter, Swift, Kotlin | screens, navigation, platform APIs, offline behavior |
+| CLI tool | entry point and argument parsing, no GUI | commands, configuration, I/O, exit codes |
+| Library/SDK | public exports, no application entry point | API surface, compatibility, versioning |
+| Embedded/firmware | HAL, interrupts, memory-mapped I/O | hardware, memory, real-time behavior, boot, peripherals |
+| Game | game loop, rendering, entities | loop, rendering, physics, input, assets |
+| Data/ML pipeline | notebooks, processing, models | data flow, training, inference, pipelines |
 
-Read the repository root and the source tree for the usual signals: the build/package manifest identifies the language and toolchain, framework config files (`next.config.*`, `tauri.conf.*`, `platformio.ini`, `serverless.yml`, a linker script) identify the runtime shape, and the source layout identifies the architecture (`src/components/` vs `src/hal/` vs `cmd/` are three different kinds of project). Trust what the tree actually contains over what its name suggests.
+Note the primary type, any secondary aspects (a CLI that is also a library),
+and domain-specific concerns such as real-time or compliance constraints.
+These decide which architecture sections earn a place.
 
-### 2.2 Information to Gather
+### 2.3 `docs/ARCHITECTURE.md`
 
-- **Current version** - Check `package.json`, `Cargo.toml`, `version.h`, `__version__`, git tags, or any versioning mechanism. Note the format (SemVer, CalVer, custom). If no version exists, start at `0.1.0`.
-- **Languages used** and their versions
-- **Build system** and toolchain
-- **Dependencies** and their purposes
-- **Directory structure** and organization patterns
-- **Entry points** (main files, boot sequences)
-- **Configuration** approach (env vars, config files, compile-time)
-- **Testing** framework and conventions
+Write it as an **as-built** description of the system as it currently is.
+Every project gets the universal sections: how to read the document,
+overview, technology stack, project structure, core architecture principles,
+build system and toolchain, and configuration. It closes with the applicable
+ones: data-flow diagrams, error-handling strategy, testing strategy,
+performance, security, deployment, and a short conclusion.
 
----
+Between them go the sections **this** project needs, from the classification
+and from what exploration actually found. A frontend earns component
+organization, state, routing, and API integration; a backend earns API
+design, request lifecycle, database layer, and auth; firmware earns the HAL,
+memory map, interrupts, and boot sequence. Add a section whenever the
+codebase holds an aspect a newcomer would otherwise reverse-engineer — a
+caching strategy, a plugin system, multi-tenancy, offline sync, migrations,
+feature flags. Omit any section the project has no real answer for: an empty
+heading is worse than no heading.
 
-## Phase 3: Project Type Classification
+Use the domain's own vocabulary — firmware has *peripherals*, a CLI has
+*commands*, neither has "components". Document **per-layer conventions**:
+patterns, quality expectations, and common pitfalls per component type. These
+are what implementation and review derive from later, so a layer with no
+written conventions is a gap, not a blank.
 
-Based on Phase 2 findings, classify the project into one of these categories:
+Then **present it and ask the user to approve it** with `AskUserQuestion` —
+approve, request changes, or add sections. Revise and re-present until they
+approve explicitly; nothing further is written before that.
 
-### Project Type Profiles
+### 2.4 `docs/charter.md`
 
-| Type                  | Indicators                                         | Key Concerns                                          |
-| --------------------- | -------------------------------------------------- | ----------------------------------------------------- |
-| **Web Frontend**      | React/Vue/Angular/Svelte, components, routing, CSS | Components, State, Styling, Routing, API calls        |
-| **Web Backend**       | Express/FastAPI/Gin/Spring, routes, middleware     | Endpoints, Database, Auth, Middleware, Error handling |
-| **Full-Stack Web**    | Both frontend and backend in monorepo              | All of above, plus API contracts                      |
-| **Desktop App**       | Electron/Tauri/Qt/GTK/WinForms                     | Windows, Native APIs, IPC, Cross-platform             |
-| **Mobile App**        | React Native/Flutter/Swift/Kotlin                  | Screens, Navigation, Platform APIs, Offline           |
-| **CLI Tool**          | Main entry, arg parsing, no GUI                    | Commands, Config, I/O, Exit codes                     |
-| **Library/SDK**       | Public API, no main entry, exports                 | API surface, Versioning, Docs, Compatibility          |
-| **Embedded/Firmware** | HAL, interrupts, memory-mapped I/O                 | Hardware, Memory, Real-time, Peripherals, Boot        |
-| **Game**              | Game loop, rendering, entities                     | Loop, Rendering, Physics, Input, Assets               |
-| **Data/ML Pipeline**  | Notebooks, data processing, models                 | Data flow, Training, Inference, Pipelines             |
-
-### Classification Output
-
-After classification, note:
-
-1. **Primary type** (the main category)
-2. **Secondary aspects** (e.g., a CLI tool that's also a library)
-3. **Domain-specific concerns** (e.g., real-time constraints, security requirements)
-
----
-
-## Phase 4: Generate ARCHITECTURE.md
-
-Based on the project type, generate `docs/ARCHITECTURE.md` using the appropriate sections.
-
-### Universal Sections (ALL projects)
+The charter holds intent that outlasts any single feature. Interview the user
+with `AskUserQuestion`, **one topic at a time** — purpose, product
+principles, scope, non-goals, success criteria — offering options drawn from
+the exploration. Draft from their answers:
 
 ```markdown
-# [Project Name] Architecture Documentation
+# <Project Name> Charter
 
-## 1. How to Read This Document
+Stable intent only — this document changes rarely, via dedicated design
+commits. If a release appears to invalidate it, addw-release flags it; the
+charter is never silently edited.
 
-[Document structure and intended audience]
+## Purpose
 
-## 2. Overview
+<Why this project exists — one paragraph.>
 
-[Project purpose, main functionality, high-level architecture]
+## Product Principles
 
-## 3. Technology Stack
+<Three to six principles that outlast any single feature.>
 
-[Languages, frameworks, tools with versions]
+## Scope
 
-## 4. Project Structure
+<What this project does.>
 
-[Directory tree with explanations]
+## Non-Goals
 
-## 5. Core Architecture Principles
+<What it deliberately does not do — pair lasting ones with guardrail ADRs.>
 
-[Design principles guiding the codebase]
+## Success Criteria
 
-## 6. Build System & Toolchain
-
-[How to build, compile flags, build targets]
-
-## 7. Configuration
-
-[Environment variables, config files, compile-time options]
+<How we know it is working.>
 ```
 
-### Type-Specific Sections
+**Get explicit approval before writing the file.**
 
-Between the universal opening and closing sections, add the sections this project type actually needs — derived from the Phase 3 classification and what Phase 2 found in the codebase, not from a fixed menu. A web frontend earns component organization, state management, routing, styling, and API integration; a backend earns API design, request lifecycle, database layer, and auth; embedded firmware earns HAL, memory map, interrupts, boot sequence, power, and real-time constraints; a library earns its public API surface and versioning policy. Use the domain's own vocabulary — firmware has *peripherals*, a CLI has *commands*, neither has "components".
+### 2.5 `docs/4-unit-tests/TESTING.md`
 
-Add a section whenever the codebase holds an architectural aspect a newcomer would otherwise have to reverse-engineer — a caching strategy, a plugin system, multi-tenancy, offline sync, a migration mechanism, feature flags. Omit any section the project has no real answer for: an empty heading is worse than no heading.
+Adapted from what exploration found, never generic: the real framework and
+version, how tests are run and organized, the project's own writing
+conventions, coverage expectations, and **Integration / E2E Impact Rules**
+(when the heavier suite must run — a changed selector, a changed API
+contract; docs-only changes skip it).
 
-### Closing Universal Sections (ALL projects)
+Its **Verification Recipes** section is the single source of truth for
+verification commands — the skills point here and carry none themselves:
+lint, type-check/build, all tests, affected tests, single test, coverage.
+Prefer task-runner targets (`make lint`, `npm run lint`) over raw commands,
+so there is one place to change them.
 
-```markdown
-## Data Flow Diagrams
+### 2.6 `docs/addw.env`
 
-[Mermaid diagrams showing key interactions]
-
-## Error Handling Strategy
-
-[How errors are handled, logged, and reported]
-
-## Testing Strategy
-
-[Test types, frameworks, coverage expectations]
-
-## Performance Considerations
-
-[Optimization strategies, profiling, benchmarks]
-
-## Security Considerations
-
-[If applicable - threat model, mitigations]
-
-## Deployment
-
-[How the project is deployed/distributed/flashed]
-
-## Conclusion
-
-[Summary and key architectural decisions]
-```
-
----
-
-## Phase 5: User Review & Validation
-
-After generating ARCHITECTURE.md, **stop and request user review**.
-
-### Present to User
-
-Summarize what was generated:
-
-1. **Project classification** - What type was detected and why
-2. **Sections included** - List the sections added to ARCHITECTURE.md
-3. **Custom sections** - Highlight any sections added beyond the standard templates
-4. **Key architectural decisions** documented
-
-### Ask for Feedback
-
-**Use the `AskUserQuestion` tool** to present the user with a structured choice:
-
-- **Question**: "Please review the generated ARCHITECTURE.md. How would you like to proceed?"
-- **Options**:
-  1. **"Approved"** — ARCHITECTURE.md looks good, proceed to Phase 6
-  2. **"Request changes"** — I have corrections or modifications
-  3. **"Add sections"** — I'd like additional sections added
-
-### Handle Feedback
-
-- **If "Approved"**: Proceed to Phase 6
-- **If "Request changes"**: Make the requested modifications, then re-present for validation using `AskUserQuestion` again
-- **If "Add sections"**: Add them, then re-present for validation using `AskUserQuestion` again
-- **If "Other" (custom input)**: Handle accordingly
-
-**Do NOT proceed to Phase 6 until the user explicitly approves the ARCHITECTURE.md.**
-
----
-
-## Phase 6: Write the Project Config
-
-**Skills are never edited** — they are identical in every project. All project state lives in `docs/addw.env` (written here) or the living docs (Phase 7). Everything discovered about the codebase — commands, conventions, priorities, review concerns — lands in ARCHITECTURE.md and TESTING.md, which the skills point at. Commands specifically go into TESTING.md's **Verification Recipes** (Phase 7.2), preferring single-source task-runner targets (`make lint`, `npm run lint`) over raw commands.
-
-### 6.1 Tutorial Preference
-
-**Use the `AskUserQuestion` tool** to ask:
-
-- **Question**: "Do you want the release step to generate tutorials after each implementation (learn by doing)?"
-- **Options**: **"Yes"** / **"No"**
-
-**If "Yes"**: create the `docs/5-tuto/` folder, then **use the `AskUserQuestion` tool** with multiple questions to capture the audience:
-
-- **Question 1** (header: "Level"): "What is your current programming level?" — "Beginner" / "Intermediate" / "Advanced"
-- **Question 2** (header: "Focus", multiSelect: true): "What do you want to learn from these tutorials?" — "Language fundamentals" / "Framework specifics" / "Architecture & patterns" / "Performance & optimization"
-- **Question 3** (header: "Style"): "What tutorial style do you prefer?" — "Concise" / "Balanced" / "Verbose"
-
-Write the answers into the **project's CLAUDE.md** — create or append a `## Tutorial audience` section (level, learning focus, style). The release skill's tutorial step reads it from there; the on/off flag goes into `addw.env` below.
-
-### 6.2 Write `docs/addw.env`
+The project config, and the reason skills stay byte-identical across
+installs. It must be shell-sourceable — scripts `source` it directly, so a
+syntax error here breaks skills far from the edit.
 
 ```bash
 # docs/addw.env — ADDW project configuration. Created by addw-init.
@@ -227,255 +205,145 @@ Write the answers into the **project's CLAUDE.md** — create or append a `## Tu
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
 ADDW_SCHEMA=3
 ADDW_PROJECT_NAME="<project name>"
-ADDW_VERSION_FILE="<from Phase 2: package.json, Cargo.toml, pyproject.toml, version.h, ...>"
-ADDW_MAIN_BRANCH="<git symbolic-ref --short refs/remotes/origin/HEAD, or git branch --show-current for local-only repos>"
+ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, ...>"
+ADDW_MAIN_BRANCH="<git symbolic-ref --short refs/remotes/origin/HEAD, or the current branch>"
 ADDW_AUDIT_NUDGE_N=5
-ADDW_TUTORIALS=<true|false>
-# Optional codex model overrides (defaults live in codex-plan-review/scripts/_common.sh):
+# The ADR directory the domain-layout contract declares (Step 1.4):
+ADDW_ADR_DIR="<resolved ADR directory>"
+# Testing-gate recipes, from TESTING.md's Verification Recipes. All three keys
+# are always present: an empty value is a step this project does not have, and
+# the gate reports it as a visible skip.
+ADDW_RECIPE_LINT="<command or empty>"
+ADDW_RECIPE_TYPECHECK="<command or empty>"
+# {paths} is replaced by the affected test paths; a recipe without it runs as-is:
+ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
+# Optional codex model overrides (defaults live in the shared codex runner):
 # ADDW_CODEX_MODEL_IMPL="..."
 # ADDW_CODEX_MODEL_REVIEW="..."
 # ADDW_CODEX_EFFORT="..."
-# Optional agent role adapters — each names a skill folder under .claude/skills/
-# providing scripts/start.sh and scripts/resume.sh (see README "Swapping agents"):
-# ADDW_PLAN_REVIEW_SKILL=codex-plan-review
+# Optional agent role adapters — each names a skill folder under
+# .claude/skills/ providing scripts/start.sh and scripts/resume.sh. The
+# reserved value `inline` on the implement key means no adapter: the main
+# agent drives `tdd` itself.
 # ADDW_IMPLEMENT_SKILL=codex-implement
 # ADDW_CODE_REVIEW_SKILL=codex-code-review
 # ADDW_ASK_SKILL=codex-ask
 ```
 
-Fill every value (audit nudge 5 unless the user chooses otherwise). The file must be shell-sourceable — the release skill and the codex scripts `source` it.
-
-### 6.3 Verify Layer Conventions
-
-The planning skill's Technical Considerations pull per-layer conventions from ARCHITECTURE.md at planning time. Verify ARCHITECTURE.md (Phase 4) documents them — patterns, quality expectations, common pitfalls per component type. If a layer's conventions aren't written down, add them to ARCHITECTURE.md now.
-
----
-
-## Phase 7: Create Supporting Files
-
-Now that ARCHITECTURE.md is validated, create the supporting documentation files adapted to the project.
-
-### 1. `CHANGELOG.md` (repo root) - Human Release History
-
-Write-only for the workflow: release and hotfix skills prepend entries; **no skill reads it as context** (agents get history from git). Create it with a header and the init entry — patch-increment the version found in Phase 2 (`1.2.3` → `1.2.4`; `0.1.0` if none exists):
-
-```markdown
-# Changelog
-
-Release history, newest first. Maintained by the ADDW release skills; humans read it, agents don't.
-
-## vX.Y.Z+1 — DD-MM-YYYY
-
-chore: initialize the ADDW workflow
-
-- Initialized ADDW — docs structure, ARCHITECTURE.md ([project type] architecture), charter, TESTING.md, addw.env
-```
-
----
-
-### 2. `docs/4-unit-tests/TESTING.md` - Testing Guidelines
-
-**Adapt based on the validated ARCHITECTURE.md** - use the actual test framework, commands, and conventions discovered during codebase exploration:
-
-```markdown
-# Testing Guidelines
-
-## Test Framework
-
-[From ARCHITECTURE.md: actual framework name and version]
-
-## Running Tests
-
-\`\`\`bash
-[From ARCHITECTURE.md: actual test commands]
-\`\`\`
-
-## Test Organization
-
-[From ARCHITECTURE.md: actual test file locations and patterns]
-
-## Writing Tests
-
-[Project-specific conventions observed in the codebase]
-
-## Verification Recipes
-
-Single source of truth for verification commands — the ADDW skills point here and never carry commands themselves. Prefer single-source task-runner targets (make lint, npm run lint) when the project has them.
-
-\`\`\`bash
-# Lint:              [actual command, or "none"]
-# Type-check/build:  [actual command, or "none"]
-# All tests:         [actual command]
-# Affected tests:    [actual command] <pattern>
-# Single test:       [actual command]
-# Coverage:          [actual command]
-\`\`\`
-
-## Integration / E2E Impact Rules
-
-[When must the integration/E2E suite run — e.g. "if selectors changed, run the E2E suite" or "if an API contract changed, exercise it against the local server/emulator". Docs-only changes skip this.]
-
-## Coverage Requirements
-
-[From ARCHITECTURE.md: actual coverage thresholds if defined, or "Not defined" if none]
-```
-
----
-
-### 3. `docs/ARCHITECTURE-rules.md` - Architecture Maintenance Rules
-
-**Adapt based on the validated ARCHITECTURE.md** - reference the actual sections and terminology used:
-
-```markdown
-# Architecture Documentation Rules
-
-[ARCHITECTURE.md](ARCHITECTURE.md) documents the [Project Name] architecture **as
-built**: it describes the system as it currently is, never as a sequence of
-releases. After each task (new feature, refactor, bug fix), determine if
-ARCHITECTURE.md needs updating.
-
-## When to Update
-
-Update after ANY change that alters:
-
-- Project structure (new directories, moved files)
-- Technology stack (new dependencies, version changes)
-- [List actual section names from ARCHITECTURE.md that might need updates]
-- Data flow or component interactions
-- Build or deployment processes
-
-## How to Update by Change Type
-
-### Major Feature / Refactor
-
-Review: [List actual relevant section names from ARCHITECTURE.md]
-
-### Minor Feature / Enhancement
-
-Update: [List actual relevant section names from ARCHITECTURE.md]
-
-### Bug Fix
-
-Usually no update needed, unless it reveals/fixes an architectural flaw
-
-### Dependency Changes
-
-Update: Technology Stack, and any affected architectural sections
-
-## Guidelines
-
-- Rewrite, never append - restate the affected passage as the system now
-  stands, rather than adding a sentence about what the latest change did.
-  Delete descriptions of machinery that no longer exists. Version numbers
-  belong in CHANGELOG.md and earn a place here only when a version is a live
-  fact a reader must act on, such as a dependency pin
-- Be precise and factual - reflect the actual codebase
-- Be concise - enough detail to understand, not implementation specifics
-- Update diagrams when data flow changes
-- Reference actual file paths
-```
-
----
-
-### 4. `docs/charter.md` - Stable Intent
-
-The charter holds intent that outlasts any single feature. It changes rarely and only via user-approved **design commits**; `addw-release` flags apparent violations to the user and never edits it silently.
-
-**Use the `AskUserQuestion` tool** to interview the user (purpose, product principles, scope, non-goals, success criteria — one question per topic, offering options derived from the codebase exploration). Draft the charter from the answers, present it, and **get explicit user approval before writing the file**:
-
-```markdown
-# [Project Name] Charter
-
-Stable intent only — this document changes rarely, via dedicated design commits.
-If a release appears to invalidate it, addw-release flags the user; the
-charter is never silently edited.
-
-## Purpose
-
-[Why this project exists — one paragraph]
-
-## Product Principles
-
-[3-6 principles that outlast any single feature]
-
-## Scope
-
-[What this project does]
-
-## Non-Goals
-
-[What this project deliberately does not do — pair lasting ones with guardrail ADRs]
-
-## Success Criteria
-
-[How we know it's working]
-```
-
----
-
-### 5. `docs/adr/template.md` - ADR Template
-
-Create verbatim (no adaptation needed — it is process, not design):
+Fill every value (audit nudge 5 unless the user chooses otherwise). Do not
+invent a tutorial flag, and do not change `ADDW_SCHEMA` — the generation
+marker moves only at a structural boundary, which `UPGRADING.md` documents.
+
+### 2.7 The ADR contract
+
+Write the template to `<ADDW_ADR_DIR>/template.md` — the directory resolved
+in Step 1.4, never a literal path from this skill. It merges Matt's minimal
+format with ADDW's decision-record rules:
 
 ```markdown
 # ADR NNNN: <Title>
 
 - **Status**: active | superseded by ADR-NNNN
 - **Date**: <YYYY-MM-DD>
-- **Origin**: <plan path under docs/1-plans/, or "design session">
-- **Relations**: supersedes <ADR links, or "none">
+- **Origin**: <spec issue, ticket, PR, or "design session">
 
-ADRs are write-once: dated, immutable. A later decision supersedes this one
-via a new ADR; the status pointer above is the only edit ever made here.
+<One paragraph — one to three sentences carrying the context, the decision,
+and why. That is the whole ADR by default; the value is in recording that a
+decision was made and why, not in filling out sections.>
 
-## Context
+## Alternatives Considered (only when they earn their place)
 
-[Forces at play — technical, product, process. Written so a reader with no
-session memory understands why a decision was needed.]
+<Discarded options and why. This is where discarded ideas live, never the
+living docs.>
 
-## Decision
+## Consequences (only when they earn their place)
 
-[The decision, stated in full sentences, active voice. For guardrails: what we
-deliberately do NOT build, and why.]
+<What becomes easier, harder, or forbidden.>
 
-## Alternatives Considered (optional)
+## Gate (required for a guardrail decision)
 
-[Discarded options and why — this is where discarded ideas live, not in living docs]
-
-## Consequences
-
-[What becomes easier, harder, or forbidden]
-
-## Gate
-
-[What a planner or reviewer must check so future work doesn't violate this decision]
+<What a future reviewer must check so later work does not violate this.>
 ```
 
+Carry these rules into the template's own prose:
+
+- ADRs are **write-once**, sequence-numbered, and self-contained — evidence
+  restated in the ADR's own words, citing only living docs and other ADRs.
+  The `Status` pointer is the only edit ever made to an existing ADR.
+- The three bold fields are **mandatory and always present**. `Status` has
+  exactly two states, `active` and `superseded by ADR-NNNN`.
+- `Origin` is historical provenance: the **spec issue** for a decision made
+  during alignment or specification, the **ticket or PR** when implementation
+  forced it, or the literal `design session` when the decision predates any
+  tracker artifact. Origins are never backfilled and are exempt from
+  dead-link checking — they are expected to outlive what they cite.
+
+Then add one line to the project instructions — the `CLAUDE.md` or
+`AGENTS.md` that Matt's setup already edited, **never the other one** —
+declaring that `<ADDW_ADR_DIR>/template.md` is authoritative over any
+ADR format bundled with a skill, including `domain-modeling`'s. That
+override is what makes the template the enforcing surface for every
+authoring path. Write the resolved path literally: doctor greps the
+instructions for it.
+
+### 2.8 `docs/ARCHITECTURE-rules.md` and `CHANGELOG.md`
+
+`docs/ARCHITECTURE-rules.md` records how ARCHITECTURE.md is maintained,
+naming that document's actual sections: update after any change to project
+structure, technology stack, data flow, component interactions, or build and
+deployment; **rewrite, never append** — restate the affected passage as the
+system now stands and delete descriptions of machinery that no longer
+exists; be factual and concise; update diagrams when data flow changes;
+reference real paths. Version history belongs in `CHANGELOG.md`, not here — a
+version number earns a place only when it is a live fact a reader must act
+on, such as a dependency pin.
+
+The root `CHANGELOG.md` is write-only for the workflow: the release skills
+prepend entries and no skill reads it as context. Create it with the header
+and the initialization entry, patch-incrementing the version exploration
+found (`1.2.3` → `1.2.4`; `0.1.0` when there is none):
+
+```markdown
+# Changelog
+
+Release history, newest first. Maintained by the ADDW release skills; humans
+read it, agents don't.
+
+## v<next version> — <DD-MM-YYYY>
+
+chore: initialize the ADDW workflow
+
+- Initialized ADDW — architecture, charter, testing guide, ADR template, and
+  project config.
+```
+
+Author no release history beyond that entry.
+
 ---
 
-## Post-Initialization Checklist
+## Step 3: The Final Gate
 
-Verify before reporting completion:
+Doctor is the deterministic re-verification of everything above, and it is
+what init is judged by:
 
-- [ ] ARCHITECTURE.md documents **per-layer conventions** — plans and reviews derive from these, so a layer without written conventions is a gap
-- [ ] `docs/addw.env` written with every value filled and shell-sourceable (`bash -n docs/addw.env`)
-- [ ] **No skill file was edited** — all project state is in addw.env or the living docs
-- [ ] TESTING.md has **Verification Recipes** and **Integration/E2E Impact Rules** filled with the project's real commands
-- [ ] charter.md **user-approved** before writing; ARCHITECTURE.md **user-approved** at Phase 5
-- [ ] `docs/adr/template.md`, `ARCHITECTURE-rules.md`, and root `CHANGELOG.md` created
-- [ ] Tutorial preference resolved: `ADDW_TUTORIALS` set; if true, `docs/5-tuto/` exists and the audience is in the project's CLAUDE.md
-- [ ] Final gate: `bash .claude/skills/addw-init/scripts/doctor.sh` reports **HEALTHY** — it re-checks the whole contract deterministically
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
 
----
+It must report **HEALTHY**. A `WARN` line is not a failure: it means one of
+the happy-path plugin skills is absent — the flow needs it, but ADDW never
+invokes it, so the install is sound and the human decides whether to install
+it. A `FAIL` line is fixed in the artifact or config init owns, never by
+editing a skill or lowering a check, and doctor is re-run.
 
-## Initial Commit & Tag
-
-Offer to commit and tag the initialization as the first release (the version matching the CHANGELOG.md init entry from Phase 7):
+Then offer — do not perform unasked — the initial commit and tag, at the
+version the `CHANGELOG.md` entry carries:
 
 ```bash
 git add docs/ CHANGELOG.md .claude/skills/ CLAUDE.md
 git commit -m "chore: initialize the ADDW workflow"
-git tag vX.Y.Z+1
+git tag vX.Y.Z
 ```
 
-If the user declines, remind them the first `addw-release` will assume the tag baseline exists.
+If the user declines the tag, tell them the first `addw-release` will assume
+a tag baseline exists.
