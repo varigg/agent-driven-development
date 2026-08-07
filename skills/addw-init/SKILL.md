@@ -51,30 +51,28 @@ assumption.
    frontier rather than as an error. `spec` and `backlog` are ADDW's own and
    are created in Step 2.
 
-4. **The skills ADDW depends on are installed.** Read your own skill roster —
-   it is the authority here, and no filesystem check is a substitute for it,
-   since only the roster carries the plugin qualifier that tells two skills of
-   the same name apart.
+4. **Take stock of the skills the flow uses.** Read your own skill roster and
+   note which of Matt's are there: `code-review` and `tdd`, which ADDW's own
+   steps reach for, and `setup-matt-pocock-skills`, `grill-with-docs`,
+   `grilling`, `domain-modeling`, `to-spec`, and `to-tickets`, which the human
+   invokes around them.
 
-   The question is never "does a skill by this name exist" but "**is Matt's
-   here**". Name collision is not hypothetical — other plugins publish a
-   `code-review` — and a lone namesake is the more dangerous case than a
-   duplicated one, because nothing prompts you to look twice. So identify each
-   dependency as **his** every time, by its plugin qualifier when his skills
-   are installed as a plugin, otherwise by what the entry actually is. A
-   same-named skill from any other source does not satisfy the dependency. If
-   you cannot tell whose an entry is, stop and ask rather than assume.
+   **This is an inventory, not a gate.** Nothing here stops init, because
+   nothing here is load-bearing. The review ADDW cannot do without is its own
+   cross-model loop, named by `ADDW_CODE_REVIEW_SKILL` and checked by doctor;
+   Matt's `code-review` is the cold *pre-filter* in front of it, which
+   `addw-implement` already permits skipping by judgment — a step the flow may
+   skip is not a dependency that can block an install. `tdd` encodes a
+   discipline, and the discipline survives the skill's absence. There is no
+   evidence that any of these outperforms another cold-review skill, or a
+   plain instruction to review the diff; what matters is that a review step
+   happens, not whose prompt runs it.
 
-   `code-review` and `tdd` are the two ADDW **invokes programmatically**. If
-   either is absent — or present only as somebody else's — stop: the flow
-   breaks at the point of use, and finding out then costs a ticket's work.
-   Record the qualified names; that is what the flow must invoke.
-
-   `setup-matt-pocock-skills`, `grill-with-docs`, `grilling`,
-   `domain-modeling`, `to-spec`, and `to-tickets` are ones the **human**
-   invokes. ADDW never calls them, so their absence is not a stop — but judge
-   them the same way, and say which of *his* are missing rather than which
-   names are unclaimed.
+   So report rather than refuse: say which are present, which are missing, and
+   what the human loses in each case. Where a name is ambiguous — other
+   plugins publish a `code-review` too — say which entry you would actually
+   invoke, so that the PR disclosure can name what ran rather than implying
+   Matt's did.
 
 5. **Resolve the ADR location.** `docs/agents/domain.md` is a prose contract;
    read it and resolve the directory it declares for ADRs. Do not hardcode a

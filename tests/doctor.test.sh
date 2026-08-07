@@ -21,10 +21,12 @@
 #      must be GitHub, the tracker CLI must be authenticated with issues
 #      enabled, and the three labels the frontier keys on must exist. A missing
 #      frontier label would otherwise fail silently as a forever-empty frontier.
-# Deliberately absent: any check that Matt's skills are installed. The agent's
-# own skill roster is the authority on that — it carries the plugin qualifier a
-# filesystem scan cannot see — so the dependency check lives in skill prose at
-# the point of use, and there is nothing here for a script to freeze.
+# Deliberately absent: any check that Matt's skills are installed. Nothing
+# there is load-bearing — the review ADDW cannot proceed without is its
+# cross-model loop, whose adapter this file does check, while Matt's
+# code-review is a pre-filter addw-implement already permits skipping. init
+# takes an inventory of them in prose and reports it, so there is no gate here
+# for a script to freeze.
 #
 # Everything runs offline: the fixture project is a real git repo in a temp dir
 # and the tracker CLI is a stub on PATH. No test reaches into doctor's

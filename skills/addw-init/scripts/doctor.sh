@@ -6,15 +6,17 @@
 # Deliberately no set -e: a doctor keeps checking after a failure so the
 # human gets one actionable line for every part of the contract.
 #
-# Deliberately NOT checked here: whether the skills ADDW depends on are
-# installed. The authority on that is the agent's own skill roster, which
-# carries the plugin qualifier a filesystem scan cannot see — two plugins can
-# ship a `code-review`, and only the roster distinguishes them. A scan would
-# also have to tell an install from a marketplace clone, from cache residue,
-# and from an installed-but-disabled plugin, and would still be answering a
-# question one look at the roster answers exactly. So the skills that need a
-# dependency check do it in prose, at the point of use: addw-init before it
-# writes anything, addw-implement before it invokes one.
+# Deliberately NOT checked here: which of Matt Pocock's skills are installed.
+# Two reasons, and the second is the load-bearing one. A filesystem scan
+# cannot answer the question anyway — it would have to tell an install from a
+# marketplace clone, from cache residue, and from an installed-but-disabled
+# plugin, and even then could not tell two plugins' same-named skills apart,
+# which only the agent's own roster does. And there is nothing here to gate
+# on: the review ADDW cannot proceed without is its cross-model loop, whose
+# adapter IS checked below, while Matt's code-review is a pre-filter that
+# addw-implement already permits skipping. A step the flow may skip cannot be
+# a dependency that blocks an install. addw-init takes an inventory in prose
+# and reports it; nothing about it is a gate.
 set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
