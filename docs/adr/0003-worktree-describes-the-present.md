@@ -12,10 +12,14 @@ line carries the stale claim without the `**Status**` header that disclaims it
 four screens above, so the cost becomes a wrong premise paid silently, on every
 session, by every reader — including the codex adversary this repo deliberately
 points at the same tree. A document therefore leaves the worktree when it stops
-being true and lands as a closed, labeled tracker issue: proposals at spec
-publication, superseded ADRs at supersession, following the backlog's migration
-in #13. The commit preceding the deletion is the local archive, so nothing is
-destroyed — the retrieval cost simply moves from every read to on demand.
+being true and lands as a closed, labeled tracker issue, following the backlog's
+migration in #13. Detection and departure are deliberately separate steps: a
+proposal overtaken by a published spec, or an ADR overtaken by a newer one, is
+noticed wherever that happens and filed as a retirement ticket, while the
+deletion itself happens only at the Doc Impact step of an implementing ticket —
+the one place a reviewed diff can carry it. The commit preceding the deletion is
+the local archive, so nothing is destroyed — the retrieval cost simply moves from
+every read to on demand.
 
 ## Alternatives Considered
 
