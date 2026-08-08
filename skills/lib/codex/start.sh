@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Turn 1: start a fresh Codex review session for <target>, capture
-# the thread_id from the JSON event stream, and write the final review
-# to the per-target review file.
+# Shared runner for all Codex adapters. Turn 1: start a fresh Codex session
+# for <target>, capture the thread_id from the JSON event stream, and write
+# the final message to the per-target review file.
 #
-# Usage: start.sh [--prompt-file <tpl>] <target> [extra prompt text...]
-# --prompt-file defaults to this skill's prompts/start.tpl (adapter contract:
-# role skills expose start.sh <target> [instructions...] with templates internal).
+# Usage: start.sh --prompt-file <tpl> <target> [extra prompt text...]
+# Both --prompt-file and $STATE_DIR are required: the runner is shared and
+# owns neither prompts nor state — each adapter pins its own.
 # Exits 0 on success, 1 on Codex / thread_id capture failure,
 # 2 on an existing thread (use reset.sh first).
 
@@ -18,6 +18,10 @@ PROMPT_FILE=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --prompt-file)
+            if [ $# -lt 2 ]; then
+                echo "error: --prompt-file requires a value" >&2
+                exit 64
+            fi
             PROMPT_FILE="$2"; shift 2 ;;
         --prompt-file=*)
             PROMPT_FILE="${1#*=}"; shift ;;
@@ -28,7 +32,10 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-PROMPT_FILE="${PROMPT_FILE:-$SCRIPT_DIR/../prompts/start.tpl}"
+if [ -z "$PROMPT_FILE" ]; then
+    echo "error: --prompt-file is required" >&2
+    exit 64
+fi
 if [ $# -lt 1 ]; then
     echo "usage: start.sh [--prompt-file <tpl>] <target> [extra prompt text...]" >&2
     exit 64

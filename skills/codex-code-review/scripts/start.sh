@@ -25,6 +25,6 @@ BUFFER="$STATE_DIR/issue-$ISSUE.context.md"
 TITLE="$(bash "$TRACKER" title "$ISSUE")"
 build_context "$ISSUE" "$BUFFER"
 
-exec bash "$SCRIPT_DIR/../../codex-plan-review/scripts/start.sh" \
+exec bash "$SCRIPT_DIR/../../lib/codex/start.sh" \
     --prompt-file "$SCRIPT_DIR/../prompts/start.tpl" \
     "$BUFFER" "Ticket under review: GitHub issue #$ISSUE — $TITLE." "$@"

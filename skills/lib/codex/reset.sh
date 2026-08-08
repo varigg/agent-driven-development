@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Drop the per-plan thread id, review, and event log so the next
-# start.sh begins a fresh Codex session.
+# Shared runner for all Codex adapters. Drop the per-target thread id, review,
+# and event log so the next start.sh begins a fresh Codex session.
 #
-# Usage: reset.sh <plan-path>
+# Usage: reset.sh <target>
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_common.sh"
 
 if [ $# -ne 1 ]; then
-    echo "usage: reset.sh <plan-path>" >&2
+    echo "usage: reset.sh <target>" >&2
     exit 64
 fi
 

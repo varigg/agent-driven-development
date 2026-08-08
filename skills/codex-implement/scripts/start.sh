@@ -3,7 +3,7 @@
 # the thread_id from the JSON event stream, and write Codex's final report
 # to the per-target report file.
 #
-# Differs from codex-plan-review/scripts/start.sh in exactly one way:
+# Differs from the shared runner's start.sh in exactly one way:
 # --sandbox workspace-write, so Codex can edit the working tree and run
 # lint/build. `codex exec resume` inherits this sandbox, so follow-up
 # turns reuse the shared resume.sh unchanged.
@@ -15,17 +15,20 @@
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Default state to THIS skill's directory (shared _common.sh would
-# otherwise default to codex-plan-review's state).
+# Pin state to THIS skill's directory, as required by the shared runner.
 STATE_DIR="${STATE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)/state}"
 export STATE_DIR
-# shellcheck source=../../codex-plan-review/scripts/_common.sh
-source "$SCRIPT_DIR/../../codex-plan-review/scripts/_common.sh"
+# shellcheck source=../../lib/codex/_common.sh
+source "$SCRIPT_DIR/../../lib/codex/_common.sh"
 
 PROMPT_FILE=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --prompt-file)
+            if [ $# -lt 2 ]; then
+                echo "error: --prompt-file requires a value" >&2
+                exit 64
+            fi
             PROMPT_FILE="$2"; shift 2 ;;
         --prompt-file=*)
             PROMPT_FILE="${1#*=}"; shift ;;

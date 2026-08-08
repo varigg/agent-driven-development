@@ -96,5 +96,31 @@ lives inside `skills/` rather than at the repo root.
   - `audit-nudge.sh` — counts release tags since the newest maintenance report
     against `ADDW_AUDIT_NUDGE_N` and prints `NUDGE` or `OK`.
 
+- `codex/` — the shared Codex runner every `codex-*` adapter sits on. It owns
+  the mechanics of a resumable non-interactive Codex session — invoking
+  `codex exec`, capturing the `thread.started` id, writing the thread, review,
+  and event files under a per-target key — and, with one exception below,
+  nothing about *what* is being reviewed or implemented. `start.sh` opens a
+  thread (refusing one that already
+  exists, exit 2), `resume.sh` continues it, `reset.sh` drops its state, and
+  `show.sh` replays the last output without spending a call; `_common.sh` holds
+  the key derivation, the prompt-template substitution, and the model/effort
+  resolution (`ADDW_CODEX_MODEL_IMPL` / `ADDW_CODEX_MODEL_REVIEW` /
+  `ADDW_CODEX_EFFORT` from the project config, `CODEX_MODEL` / `CODEX_EFFORT`
+  as per-run overrides). It was previously hosted inside a skill until the
+  adapters outnumbered it.
+  The exception: model *class* is chosen by matching the caller's `STATE_DIR`
+  against `*codex-implement*`, so implementation gets the implementation-class
+  model and everything else the review-class one. That is the layer knowing one
+  thing about its callers, and it is a wart — the honest shape is a variable the
+  adapter sets. It survives relocation unchanged rather than being redesigned
+  in a sweep that was meant to move code, not alter it.
+  Two inputs are **required**, not defaulted: the caller pins `STATE_DIR` to
+  its own skill's `state/`, and passes `--prompt-file`. Both used to fall back
+  to the hosting skill's folders, which is precisely what a shared layer must
+  not do — a default here would merge every adapter's threads into one
+  namespace under `skills/lib/`. Absent either, the runner exits 64 rather than
+  guessing. The adapters are the thin half: pin state, pin prompt, hand off.
+
 Tested from the repo root via `tests/run.sh` against fixtures in
 `tests/fixtures/`.

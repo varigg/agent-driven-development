@@ -6,7 +6,7 @@
 
 End to end: **spec → tickets → per-ticket PR → release** — with a second model reviewing every spec and every diff before you see it, and small scripts (not agent judgment) verifying everything that can be verified mechanically.
 
-> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The numbered skills still in `skills/` (`addw-1-plan`, `addw-4-maintain`) are the previous generation and retire as the migration lands — [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) narrates that earlier cycle, including phases whose skills have already been rewritten, until its own rework catches up.
+> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The previous generation's skills have now retired, but [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) still narrates that earlier cycle and stays stale until its own rework catches up.
 
 ## Origins & inspirations
 
@@ -57,15 +57,15 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | `/codex-spec-review` | Cross-model review loop over a spec issue, before ticketing. |
 | `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. Bare invocation lists the frontier. |
 | `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. Refuses a spec whose tickets are not all closed as completed. |
-| `/addw-4-maintain` | Periodic audit with three skippable sweeps: living-docs drift, coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
+| `/addw-maintain` | Periodic audit with three skippable sweeps: living-docs drift, coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
 | `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Direct push to main is documented solely as the escape hatch for when GitHub itself is the obstacle. |
 | `/addw-compact` | Shrinks `ARCHITECTURE.md` through summarization and restructuring when it outgrows its token budget (rule of thumb: ~10% of the context window). |
 | `/codex-implement` | Implementation delegated to Codex CLI in a workspace-write sandbox, with a persistent thread per target for resumable context. |
 | `/codex-code-review` | The code-review loop adapter: reviews a ticket's whole branch diff against the ticket and its spec — read-only sandbox, checklist-driven, multi-round with verdict tags. |
 | `/codex-ask` | A grounded second opinion on anything — architecture calls, debugging hypotheses. Advisory only: no verdicts, nothing gated. |
-| `skills/lib/` | Not a skill: the shared script layer — the tracker seam (every `gh` tracker call routes through it) and the deterministic gate. |
+| `skills/lib/` | Not a skill: the shared script layer — the tracker seam (every `gh` tracker call routes through it), the deterministic gate, the release derivations, and the Codex runner every `codex-*` adapter sits on. |
 
-Retired into Matt's skills: planning (`grill-with-docs` + `to-spec` replace `addw-1-plan`) and research (`research` + `wayfinder` replace `addw-research`).
+Retired: planning and research moved to Matt's skills (`grill-with-docs` + `to-spec` replace `addw-1-plan`; `research` + `wayfinder` replace `addw-research`), and the standalone test skill's role now lives in the deterministic gate and `tdd`.
 
 ## Swapping agents
 

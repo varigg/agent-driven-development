@@ -48,15 +48,15 @@ Its one-line summary is what the PR body carries verbatim.
   enters a `SKILL.md`; per-project values live in `docs/addw.env` and the living
   docs a skill points at.
 - **`docs/addw.env` must stay shell-clean.** Scripts source it directly
-  (`codex-plan-review/scripts/_common.sh` does so whenever it exists), so a
-  syntax error there breaks skills far from the edit.
+  (`skills/lib/codex/_common.sh` does so whenever it exists), so a syntax error
+  there breaks skills far from the edit.
 - **Skill folder names are docs contract.** Renames — `addw-4-maintain` →
   `addw-maintain`, for one — ride a schema boundary and get an `UPGRADING.md`
   entry; they are never free cosmetics.
 - **Shared scripts live in `skills/lib/`**, a non-skill directory that rides the
-  wholesale `skills/` copy: `tracker/`, `gate/`, `release/`, `docs/`. A script
-  two skills call belongs here, not in whichever skill happened to own it
-  first — `skills/lib/README.md` is the layer's contract.
+  wholesale `skills/` copy: `tracker/`, `gate/`, `release/`, `docs/`, `codex/`.
+  A script two skills call belongs here, not in whichever skill happened to own
+  it first — `skills/lib/README.md` is the layer's contract.
 
 ## Pointers
 

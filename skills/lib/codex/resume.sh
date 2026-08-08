@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Turn 2+: resume the existing Codex review session for <target> with a
-# follow-up prompt. The thread id is read from the per-target state
-# file written by start.sh.
+# Shared runner for all Codex adapters. Turn 2+: resume the existing Codex
+# session for <target> with a follow-up prompt. The thread id is read from
+# the per-target state file written by start.sh.
 #
-# Usage: resume.sh [--prompt-file <tpl>] [--notes "..."] <target> [extra prompt text...]
-# --prompt-file defaults to this skill's prompts/resume.tpl (adapter contract:
-# role skills expose resume.sh [--notes ...] <target> [instructions...]).
+# Usage: resume.sh --prompt-file <tpl> [--notes "..."] <target> [extra prompt text...]
+# Both --prompt-file and $STATE_DIR are required: the runner is shared and
+# owns neither prompts nor state — each adapter pins its own.
 # Exits 0 on success, 1 on Codex failure, 2 if no prior session exists.
 
 set -euo pipefail
@@ -18,6 +18,10 @@ IMPLEMENTER_NOTES=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --prompt-file)
+            if [ $# -lt 2 ]; then
+                echo "error: --prompt-file requires a value" >&2
+                exit 64
+            fi
             PROMPT_FILE="$2"; shift 2 ;;
         --prompt-file=*)
             PROMPT_FILE="${1#*=}"; shift ;;
@@ -32,7 +36,10 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-PROMPT_FILE="${PROMPT_FILE:-$SCRIPT_DIR/../prompts/resume.tpl}"
+if [ -z "$PROMPT_FILE" ]; then
+    echo "error: --prompt-file is required" >&2
+    exit 64
+fi
 if [ $# -lt 1 ]; then
     echo "usage: resume.sh [--prompt-file <tpl>] [--notes '...'] <target> [extra prompt text...]" >&2
     exit 64

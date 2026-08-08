@@ -1,5 +1,5 @@
 ---
-name: addw-4-maintain
+name: addw-maintain
 description: Periodic maintenance audit - sweep living-docs drift, coverage debt, and dependency health; record findings, triage fixes
 disable-model-invocation: true
 argument-hint: "optional: which sweeps to run (default: all three)"

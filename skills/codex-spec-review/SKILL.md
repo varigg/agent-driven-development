@@ -6,14 +6,13 @@ argument-hint: "<issue-number> [extra context] | reset <issue-number> | show <is
 
 # Codex Spec Review
 
-Iterative review of a feature spec published as a GitHub issue, via Codex CLI. This is the
-tracker-first retarget of `codex-plan-review`: the reviewed artifact is an issue body, not a
-file in the repo. It runs after `/to-spec` publishes the spec and before `/to-tickets`
-decomposes it.
+Iterative review of a feature spec published as a GitHub issue, via Codex CLI. The reviewed
+artifact lives on the tracker rather than in the repo, which is why the buffer below exists
+at all. It runs after `/to-spec` publishes the spec and before `/to-tickets` decomposes it.
 
 State (thread ID, review text, event log) persists under
 `.claude/skills/codex-spec-review/state/`, keyed on the issue number. The scripts wrap the
-shared runner in `codex-plan-review/scripts/` with this skill's prompts and state — the same
+shared runner in `.claude/skills/lib/codex/` with this skill's prompts and state — the same
 pattern as `codex-code-review`. The per-issue file `state/issue-<N>.md` mirrors the issue
 body and doubles as the **edit buffer**: fixes are made there and pushed back with
 `tracker.sh edit-body`.

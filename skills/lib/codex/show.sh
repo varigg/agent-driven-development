@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Show the most recent review for <plan-path> without re-running Codex.
+# Shared runner for all Codex adapters. Show the most recent review for
+# <target> without re-running Codex.
 # Useful when the conversation has scrolled past the review output.
 #
-# Usage: show.sh <plan-path>
+# Usage: show.sh <target>
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_common.sh"
 
 if [ $# -ne 1 ]; then
-    echo "usage: show.sh <plan-path>" >&2
+    echo "usage: show.sh <target>" >&2
     exit 64
 fi
 

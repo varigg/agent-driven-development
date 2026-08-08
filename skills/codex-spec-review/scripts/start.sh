@@ -37,6 +37,6 @@ BUFFER="$STATE_DIR/issue-$ISSUE.md"
 TITLE="$(bash "$TRACKER" title "$ISSUE")"
 fetch_issue_body "$ISSUE" "$BUFFER" "$REFRESH"
 
-exec bash "$SCRIPT_DIR/../../codex-plan-review/scripts/start.sh" \
+exec bash "$SCRIPT_DIR/../../lib/codex/start.sh" \
     --prompt-file "$SCRIPT_DIR/../prompts/start.tpl" \
     "$BUFFER" "Spec under review: GitHub issue #$ISSUE — $TITLE." "$@"

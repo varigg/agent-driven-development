@@ -41,12 +41,11 @@ trap 'rm -rf "$work"' EXIT
 
 INSTALL="$work/install"
 mkdir -p "$INSTALL/skills/codex-spec-review" \
-         "$INSTALL/skills/codex-plan-review" \
          "$INSTALL/skills/lib/tracker" \
          "$INSTALL/bin" \
          "$INSTALL/state"
 cp -R "$SKILL/scripts" "$SKILL/prompts" "$INSTALL/skills/codex-spec-review/"
-cp -R "$REPO/skills/codex-plan-review/scripts" "$INSTALL/skills/codex-plan-review/"
+cp -R "$REPO/skills/lib/codex" "$INSTALL/skills/lib/"
 
 # Recording stand-in for the tracker layer: appends every call to
 # $TRACKER_LOG and serves the canned body/title the test wrote.

@@ -34,7 +34,7 @@ LABEL="since the last maintenance report"
 [ "$SINCE" -eq 0 ] && LABEL="since init (no maintenance report yet)"
 
 if [ "$COUNT" -ge "$THRESHOLD" ]; then
-    echo "NUDGE: $COUNT release tags $LABEL (threshold $THRESHOLD) — suggest running addw-4-maintain"
+    echo "NUDGE: $COUNT release tags $LABEL (threshold $THRESHOLD) — suggest running addw-maintain"
 else
     echo "OK: $COUNT release tags $LABEL (threshold $THRESHOLD)"
 fi
