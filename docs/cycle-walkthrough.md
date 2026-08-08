@@ -32,7 +32,11 @@ interviews you toward a shared understanding — uncapped and incremental, where
 retired plan skill was capped and batched — and `to-spec` publishes the result as a **spec
 issue** on GitHub.
 
-No code is written here, and nothing lands in the repo. The artifact is an issue.
+No implementation code is written here, and the phase's own artifact is an issue rather than
+a file. Documentation can still land, though: alignment is where `domain-modeling` sharpens
+the glossary, and a decision settled before any spec issue exists is recorded as an ADR with
+the `design session` origin — origins are never backfilled, so the spec issue published
+afterwards references those ADRs in the forward direction rather than the other way round.
 
 ---
 
@@ -202,7 +206,8 @@ Not part of the cycle, but reachable from it:
 | Tickets | GitHub issues with `## Parent` / `## Blocked by` | `to-tickets` |
 | Undesigned ideas | `backlog`-labeled issues, no parent | you, or `addw-maintain` |
 | Implementation | One squash-merged PR per ticket | `addw-implement` |
-| Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR` | the ticket's own PR |
+| Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR` | the ticket's own PR, or alignment (origin `design session`) |
+| Glossary / domain docs | The layout `docs/agents/domain.md` declares | `domain-modeling`, during alignment |
 | Version + changelog | A release PR, then a tag and GitHub Release | `addw-release` |
 | Audit reports | `docs/7-maintenance/MAINT_<date>.md`, via a PR | `addw-maintain` |
 
