@@ -18,6 +18,7 @@
 #   tracker.sh comment <n> <file>                comment from a file
 #   tracker.sh close <n> <completed|not-planned> [comment-file]
 #   tracker.sh assign <n>                        self-assign (@me)
+#   tracker.sh create <title> <body-file> [label...]  open an issue
 #   tracker.sh auth                              tracker CLI installed and authenticated
 #   tracker.sh issues-enabled                    repository issues are enabled
 #   tracker.sh labels                            label names, one per line
@@ -107,6 +108,30 @@ case "$cmd" in
   assign)
     [ "$#" -eq 1 ] || usage
     gh issue edit "$1" --add-assignee "@me"
+    ;;
+  create)
+    # The operation the happy path never reaches: to-spec and to-tickets author
+    # the issues ADDW works on. It is here for the paths that do originate one —
+    # addw-maintain routing a substantive finding to a `backlog` issue, and the
+    # schema-4 backlog migration.
+    [ "$#" -ge 2 ] || usage
+    title=$1
+    body_file=$2
+    shift 2
+    # Checked before the call, not by gh: a body-file failure mid-create leaves
+    # a titled, bodyless issue behind, and issues cannot be un-created.
+    if [ ! -f "$body_file" ]; then
+      printf 'tracker.sh: body file not found: %s\n' "$body_file" >&2
+      exit 1
+    fi
+    # One --label per label. A comma-joined string would be read as a single
+    # label name containing commas, which silently creates the wrong thing.
+    label_args=()
+    for label in "$@"; do
+      label_args+=(--label "$label")
+    done
+    gh issue create --title "$title" --body-file "$body_file" \
+      ${label_args[@]+"${label_args[@]}"}
     ;;
   auth)
     [ "$#" -eq 0 ] || usage
