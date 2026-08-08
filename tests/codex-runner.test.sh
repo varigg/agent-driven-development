@@ -43,10 +43,22 @@ for f in _common.sh start.sh resume.sh reset.sh show.sh; do
   [ -f "$RUNNER/$f" ] || fail "shared runner: missing skills/lib/codex/$f"
 done
 
-# Nothing under skills/ may still reach for the runner's old home. Scripts
-# break at runtime; prose sends the next reader to a folder that is gone.
-stale="$(grep -rl 'codex-plan-review' "$REPO/skills" 2>/dev/null || true)"
-[ -z "$stale" ] || fail "stale runner path under skills/: $(printf '%s ' $stale)"
+# Nothing under skills/ may still name a retired folder. For the runner a
+# stale path breaks at runtime; for the rest, prose sends the next reader to
+# a folder that is gone — and a shipped script can print a slash command
+# nobody can run. Every retired name is swept, not just the runner's: the one
+# name this guard originally covered was the one the sweep got right.
+# Tracked files only: what ships is what git carries. Each adapter's state/
+# holds gitignored session transcripts, and a Codex thread that discussed the
+# retirement quotes every name being retired.
+for gone in codex-plan-review addw-1-plan addw-research addw-test \
+            addw-4-maintain 'AskUserQuestion/'; do
+  stale="$(git -C "$REPO" grep -lF -- "$gone" -- skills 2>/dev/null || true)"
+  [ -z "$stale" ] || fail "retired name '$gone' still under skills/: $(printf '%s ' $stale)"
+done
+# Note the trailing slash on the shim: surviving skills correctly instruct
+# agents to "use the AskUserQuestion tool" — that is the native tool, and only
+# the folder retired. Sweeping the bare word would flag every one of them.
 
 # --- 2. the retired tree ---------------------------------------------------
 

@@ -25,6 +25,10 @@ PROMPT_FILE=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --prompt-file)
+            if [ $# -lt 2 ]; then
+                echo "error: --prompt-file requires a value" >&2
+                exit 64
+            fi
             PROMPT_FILE="$2"; shift 2 ;;
         --prompt-file=*)
             PROMPT_FILE="${1#*=}"; shift ;;
