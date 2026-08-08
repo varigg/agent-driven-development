@@ -5,10 +5,6 @@ shipped by copying that directory wholesale into another project's
 `.claude/skills/`. There is no application code here. Read `README.md` for what
 ADDW is and how the flow runs; this file covers working *on* it.
 
-ADDW is mid-rewrite onto the Pocock-overlay design. `docs/proposals/pocock-overlay.md`
-is that design; spec issue #2 is its authoritative statement and the parent of
-every open ticket.
-
 ## Where the work is
 
 Work state lives in GitHub issues, not in this tree. The **frontier** — tickets
@@ -65,6 +61,6 @@ Its one-line summary is what the PR body carries verbatim.
 | Where | What |
 | --- | --- |
 | `README.md` | What ADDW is, the flow, the skills reference |
-| `docs/proposals/pocock-overlay.md` | The rewrite design; issue #2 supersedes it where they differ |
+| `docs/proposals/pocock-overlay.md` | The design ADDW is built on; issue #2 supersedes it where they differ |
 | `UPGRADING.md` | Structural steps per schema boundary |
 | `docs/cycle-walkthrough.md` | The guided tour of one overlay cycle, pointing into the skills for every rule |
