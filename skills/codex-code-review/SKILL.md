@@ -15,7 +15,7 @@ source of truth for review sections, severity, and the approval gate.
 
 State (thread ID, review text, event log) persists under
 `.claude/skills/codex-code-review/state/`, keyed on the issue number. The scripts wrap the
-shared runner in `codex-plan-review/scripts/` with this skill's prompts and state — the same
+shared runner in `.claude/skills/lib/codex/` with this skill's prompts and state — the same
 pattern as `codex-spec-review`. The per-issue file `state/issue-<N>.context.md` holds the
 ticket body plus the parent spec's, and is the target handed to the runner.
 
@@ -46,9 +46,9 @@ the round count, and the commit SHA the verdict covers.
    - **Start**: `bash .claude/skills/codex-code-review/scripts/start.sh <issue-number> "$GATE_SUMMARY"`
    - **Resume**: `bash .claude/skills/codex-code-review/scripts/resume.sh --notes "…" <issue-number> "$GATE_SUMMARY"`
 
-3. **Reset**: `bash .claude/skills/codex-plan-review/scripts/reset.sh <buffer-path>`
+3. **Reset**: `bash .claude/skills/lib/codex/reset.sh <buffer-path>`
 
-4. **Show**: `bash .claude/skills/codex-plan-review/scripts/show.sh <buffer-path>`
+4. **Show**: `bash .claude/skills/lib/codex/show.sh <buffer-path>`
 
    `reset`/`show` are shared scripts with no adapter wrapper, so they take the buffer path
    (`.claude/skills/codex-code-review/state/issue-<N>.context.md`) and need `STATE_DIR`

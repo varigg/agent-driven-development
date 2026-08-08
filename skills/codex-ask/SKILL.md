@@ -8,9 +8,9 @@ argument-hint: "<topic-label> <question> | reset <topic-label> | show <topic-lab
 
 Free-form second opinion from Codex CLI on **any matter** — architecture decisions, debugging hypotheses, research conclusions, trade-off calls — not just plans and diffs. Codex answers from inside the repository (read-only sandbox), so its opinion is grounded in the actual code, not in whatever excerpt happened to be quoted.
 
-**Advisory, not authoritative.** Unlike `codex-plan-review` / `codex-code-review`, there are no verdict tags and nothing is gated on the answer: treat the response as one input to your judgment, exactly like a colleague's opinion. Agreement is weak evidence; *disagreement* is a strong signal that something deserves the user's attention.
+**Advisory, not authoritative.** Unlike the gated review skills, there are no verdict tags and nothing is gated on the answer: treat the response as one input to your judgment, exactly like a colleague's opinion. Agreement is weak evidence; *disagreement* is a strong signal that something deserves the user's attention.
 
-State persisted per topic label under `.claude/skills/codex-ask/state/` — follow-ups resume the same thread, enabling multi-round discussion. This skill's `scripts/start.sh` and `scripts/resume.sh` are thin adapters over the shared `codex-plan-review` runner; for `reset`/`show` (shared scripts, no adapter wrapper) export first:
+State persisted per topic label under `.claude/skills/codex-ask/state/` — follow-ups resume the same thread, enabling multi-round discussion. This skill's `scripts/start.sh` and `scripts/resume.sh` are thin adapters over the shared runner in `.claude/skills/lib/codex/`; for `reset`/`show` (shared scripts, no adapter wrapper) export first:
 
 ```bash
 export STATE_DIR=".claude/skills/codex-ask/state"
@@ -36,7 +36,7 @@ export STATE_DIR=".claude/skills/codex-ask/state"
        <topic-label> "<follow-up or counterpoint>"
    ```
 
-3. **Reset**: `bash .claude/skills/codex-plan-review/scripts/reset.sh <topic-label>` — **Show**: `show.sh <topic-label>`
+3. **Reset**: `bash .claude/skills/lib/codex/reset.sh <topic-label>` — **Show**: `bash .claude/skills/lib/codex/show.sh <topic-label>`
 
 ## When to use
 
@@ -53,5 +53,5 @@ export STATE_DIR=".claude/skills/codex-ask/state"
 ## Notes
 
 - Read-only sandbox — Codex can read the repo but change nothing.
-- Model/effort come from `codex-plan-review/scripts/_common.sh` (non-implement flows get the review-class model); override per run with `CODEX_MODEL` / `CODEX_EFFORT`.
+- Model/effort come from `.claude/skills/lib/codex/_common.sh` (non-implement flows get the review-class model); override per run with `CODEX_MODEL` / `CODEX_EFFORT`.
 - Surface Codex's answer to the user verbatim when it disagrees with your position — the disagreement itself is the valuable output.

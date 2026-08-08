@@ -18,5 +18,5 @@ if [ $# -ne 1 ]; then
 fi
 require_issue_number "$1"
 
-exec bash "$SCRIPT_DIR/../../codex-plan-review/scripts/reset.sh" \
+exec bash "$SCRIPT_DIR/../../lib/codex/reset.sh" \
     "$STATE_DIR/issue-$1.md"

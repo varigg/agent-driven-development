@@ -8,9 +8,8 @@ current tree as authoritative, and do not revert the requester's adjustments.
 
 {{EXTRA_PROMPT}}
 
-Same rules as before: stay within the stated scope, tick completed plan checkboxes, leave the
-project's lint and type-check/build green, no tests unless asked, no commit/version/changelog
-ceremony.
+Same rules as before: stay within the stated scope, leave the project's lint and
+type-check/build green, no tests unless asked, no commit/version/changelog ceremony.
 
 Same report format (files changed, deviations, leftovers, lint/build status), ending with
 exactly one tag on its own line:

@@ -33,7 +33,7 @@ require_issue_number "$ISSUE"
 BUFFER="$STATE_DIR/issue-$ISSUE.context.md"
 build_context "$ISSUE" "$BUFFER"
 
-exec bash "$SCRIPT_DIR/../../codex-plan-review/scripts/resume.sh" \
+exec bash "$SCRIPT_DIR/../../lib/codex/resume.sh" \
     --prompt-file "$SCRIPT_DIR/../prompts/resume.tpl" \
     ${NOTES_ARGS[@]+"${NOTES_ARGS[@]}"} \
     "$BUFFER" "$@"

@@ -9,5 +9,5 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE_DIR="${STATE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)/state}"
 export STATE_DIR
-exec bash "$SCRIPT_DIR/../../codex-plan-review/scripts/start.sh" \
+exec bash "$SCRIPT_DIR/../../lib/codex/start.sh" \
     --prompt-file "$SCRIPT_DIR/../prompts/ask.tpl" "$@"

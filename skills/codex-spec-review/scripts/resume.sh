@@ -35,7 +35,7 @@ mkdir -p "$STATE_DIR"
 BUFFER="$STATE_DIR/issue-$ISSUE.md"
 fetch_issue_body "$ISSUE" "$BUFFER" "$REFRESH"
 
-exec bash "$SCRIPT_DIR/../../codex-plan-review/scripts/resume.sh" \
+exec bash "$SCRIPT_DIR/../../lib/codex/resume.sh" \
     --prompt-file "$SCRIPT_DIR/../prompts/resume.tpl" \
     ${NOTES_ARGS[@]+"${NOTES_ARGS[@]}"} \
     "$BUFFER" "$@"

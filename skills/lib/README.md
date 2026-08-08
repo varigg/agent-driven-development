@@ -96,5 +96,24 @@ lives inside `skills/` rather than at the repo root.
   - `audit-nudge.sh` — counts release tags since the newest maintenance report
     against `ADDW_AUDIT_NUDGE_N` and prints `NUDGE` or `OK`.
 
+- `codex/` — the shared Codex runner every `codex-*` adapter sits on. It owns
+  the mechanics of a resumable non-interactive Codex session — invoking
+  `codex exec`, capturing the `thread.started` id, writing the thread, review,
+  and event files under a per-target key — and nothing about *what* is being
+  reviewed or implemented. `start.sh` opens a thread (refusing one that already
+  exists, exit 2), `resume.sh` continues it, `reset.sh` drops its state, and
+  `show.sh` replays the last output without spending a call; `_common.sh` holds
+  the key derivation, the prompt-template substitution, and the model/effort
+  resolution (`ADDW_CODEX_MODEL_IMPL` / `ADDW_CODEX_MODEL_REVIEW` /
+  `ADDW_CODEX_EFFORT` from the project config, `CODEX_MODEL` / `CODEX_EFFORT`
+  as per-run overrides). It was previously hosted inside a skill until the
+  adapters outnumbered it.
+  Two inputs are **required**, not defaulted: the caller pins `STATE_DIR` to
+  its own skill's `state/`, and passes `--prompt-file`. Both used to fall back
+  to the hosting skill's folders, which is precisely what a shared layer must
+  not do — a default here would merge every adapter's threads into one
+  namespace under `skills/lib/`. Absent either, the runner exits 64 rather than
+  guessing. The adapters are the thin half: pin state, pin prompt, hand off.
+
 Tested from the repo root via `tests/run.sh` against fixtures in
 `tests/fixtures/`.

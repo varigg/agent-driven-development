@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
-# Shared paths, key derivation, and prompt-loading helpers for the
-# codex-plan-review and codex-code-review skills. Source-only.
+# Shared paths, key derivation, and prompt-loading helpers for all Codex
+# adapters. Source-only.
 
 set -euo pipefail
 
-SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# STATE_DIR can be overridden by the caller (e.g., codex-code-review
-# exports its own state path before invoking the shared scripts).
-# Default falls back to the script's own skill directory.
-: "${STATE_DIR:=$SKILL_DIR/state}"
+if [ -z "${STATE_DIR:-}" ]; then
+    echo "error: STATE_DIR is required; caller must pin it" >&2
+    exit 64
+fi
 export STATE_DIR
 mkdir -p "$STATE_DIR"
 
 # Model/effort per flow (single source of truth for all codex skills):
-# implementation runs Luna, reviews (plan + code) run Sol, effort xhigh.
+# implementation runs Luna, reviews (spec + code) run Sol, effort xhigh.
 # Per-project overrides come from docs/addw.env (ADDW_CODEX_MODEL_IMPL /
 # ADDW_CODEX_MODEL_REVIEW / ADDW_CODEX_EFFORT); CODEX_MODEL / CODEX_EFFORT
 # env vars act as per-run overrides on top of both.
@@ -46,9 +45,6 @@ target_key() {
         printf '%s' "$target" | sed 's|^/||; s|/|__|g; s|[^A-Za-z0-9._-]|_|g'
     fi
 }
-
-# Backwards-compatible alias used by older script call sites.
-plan_key() { target_key "$@"; }
 
 thread_file() {
     printf '%s/%s.thread' "$STATE_DIR" "$(target_key "$1")"
