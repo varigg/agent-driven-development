@@ -189,7 +189,8 @@ human review). A skip is not free: it is **disclosed in the PR body**, with the 
 If this ticket changed documented design, update the affected living-doc passages **now** —
 ARCHITECTURE.md, the charter, an ADR — so the reviewed diff carries them and the docs are
 reviewed alongside the code that changed them. A new decision gets an ADR from the project's
-template, with the ticket or PR as its Origin.
+template, with the ticket or PR as its Origin; use `.claude/skills/lib/docs/next-adr-number.sh`
+to get its number.
 
 If nothing documented changed, say so; the PR body carries the note either way.
 

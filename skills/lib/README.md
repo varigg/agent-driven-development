@@ -108,6 +108,15 @@ lives inside `skills/` rather than at the repo root.
     cannot see. Advisory, never a gate.
   - `audit-nudge.sh` — counts release tags since the newest maintenance report
     against `ADDW_AUDIT_NUDGE_N` and prints `NUDGE` or `OK`.
+  - `next-adr-number.sh` — the next ADR number, read from the directory
+    `ADDW_ADR_DIR` names: max plus one, zero-padded, never the first gap.
+    Archival is what makes those two diverge, so the intuitive answer — the
+    first unused number in the listing — is one already spent, which is why
+    the rule is a script rather than prose the Doc Impact step points at. No
+    tracker call is needed, because every departed number sits below a present
+    one. It does not solve concurrent authorship: two branches each computing
+    max plus one land on the same number, which only merge order or a reviewer
+    catches.
 
 - `codex/` — the shared Codex runner every `codex-*` adapter sits on. It owns
   the mechanics of a resumable non-interactive Codex session — invoking
