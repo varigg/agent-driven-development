@@ -226,10 +226,23 @@ d="$(case_dir backlogfile)"
 printf '# Backlog\n\n- an idea nobody migrated\n' > "$d/project/docs/backlog.md"
 run "$d"
 assert_eq 1 "$RUN_STATUS" "backlog: a surviving backlog file is unhealthy"
-assert_contains "$RUN_OUT" "docs/backlog.md" \
+assert_contains "$RUN_OUT" "FAIL: docs/backlog.md" \
   "backlog: the failing line names the retired file"
-assert_contains "$RUN_OUT" "backlog" \
+assert_contains "$RUN_OUT" "backlog-labeled" \
   "backlog: the failing line points at the label the entries migrate to"
+
+# The plan-review role retired with the skill that filled it. Left in a config,
+# it names a folder the wholesale skills copy no longer ships, so the generic
+# adapter check would report it as a missing adapter — sending the human to
+# reinstall a skill that no longer exists instead of to delete a dead key.
+d="$(case_dir retiredrole)"
+printf 'ADDW_PLAN_REVIEW_SKILL=codex-plan-review\n' >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "role: a retired role key left in the config is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_PLAN_REVIEW_SKILL" \
+  "role: the failing line names the retired key"
+assert_contains "$RUN_OUT" "ADDW_PLAN_REVIEW_SKILL is retired" \
+  "role: the failing line says the key is retired, not that an adapter is missing"
 
 # The plans directory is the opposite case: transient, safe to delete, but the
 # human's call and never ADDW's. An install that kept it is fully migrated.
