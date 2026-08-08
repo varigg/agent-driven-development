@@ -147,6 +147,8 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
 
 - The reserved value **`inline`** means no adapter — you drive the `tdd` skill yourself in
   this session. Never invoke Matt's `implement` skill; `tdd` is the programmatic primitive.
+  If no `tdd` is installed, drive the discipline directly — failing test first, then the code
+  that passes it. The skill encodes the loop; it does not own it.
 - **Any other value** names an adapter skill, invoked through the adapter contract. The issue
   number is the target, so the thread keys per ticket; the **instruction block carries the
   scope**, because the adapter cannot read the tracker:
@@ -171,9 +173,13 @@ subject.
 
 ### Step 7: Cold Pre-Filter Review
 
-Run Matt's `code-review` skill over the branch diff before spending codex rounds. It breaks
+Run a cold `code-review` over the branch diff before spending codex rounds. It breaks
 ownership bias: you are reviewing your own work, and a cold read catches what a warm one
-cannot.
+cannot. Matt's is the one this step was written around, but nothing turns on whose prompt
+runs — any competent two-axis review earns the same thing, and a plain instruction to review
+the diff against the ticket is a fair substitute where no skill is installed. Name in the PR
+body which one ran, since more than one plugin publishes a `code-review` and "the pre-filter
+ran" should not imply a skill that did not.
 
 **Skippable by judgment** for a genuinely trivial diff — two nets remain (the codex loop and
 human review). A skip is not free: it is **disclosed in the PR body**, with the reason.

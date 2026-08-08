@@ -38,7 +38,7 @@ Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencie
 
 ## One config file, zero skill edits
 
-Skills are byte-identical in every project — pure process, never edited per install. Everything project-specific lives in `docs/addw.env` (main branch, agent role keys, testing-gate recipes) and in the living docs the skills point at. Upgrading ADDW means replacing your `.claude/skills/` contents wholesale with this repo's `skills/`; `UPGRADING.md` lists any structural steps for the schema boundary you're crossing.
+Skills are byte-identical in every project — pure process, never edited per install. Everything project-specific lives in `docs/addw.env` (main branch, agent role keys, testing-gate recipes, the ADR directory) and in the living docs the skills point at. Upgrading ADDW means replacing your `.claude/skills/` contents wholesale with this repo's `skills/`; `UPGRADING.md` lists any structural steps for the schema boundary you're crossing.
 
 ## Getting started
 
@@ -46,14 +46,14 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 
 1. Install [Matt Pocock's skills](https://github.com/mattpocock/skills) and run his setup skill (it configures the tracker, labels, and domain layout).
 2. Copy this repo's `skills/` contents into your project's `.claude/skills/`.
-3. Run `/addw-init` — it verifies the setup, interviews you for the charter, generates `ARCHITECTURE.md`, `TESTING.md`, and `docs/addw.env`, and finishes with a doctor check of the whole install.
+3. Run `/addw-init` — it verifies the setup (GitHub tracker, authenticated `gh`, the `ready-for-agent` label), interviews you for the charter, generates `ARCHITECTURE.md`, `TESTING.md`, `docs/addw.env`, and the ADR template, and finishes with a doctor check of the whole install.
 4. Bring a feature: `grill-with-docs` → `to-spec` → `/codex-spec-review` → `to-tickets` → `/addw-implement` per ticket → merge PRs → `/addw-release`.
 
 ## Skills reference
 
 | Skill | What it does |
 | --- | --- |
-| `/addw-init` | Bootstraps a project: verifies Matt's setup ran, generates the living docs and config, gates on doctor. *(rewrite in progress, [#9](https://github.com/varigg/agent-driven-development/issues/9))* |
+| `/addw-init` | Bootstraps a project: verifies Matt's setup ran and configured GitHub, generates the living docs, the config, and the ADR template, gates on doctor. |
 | `/codex-spec-review` | Cross-model review loop over a spec issue, before ticketing. |
 | `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. Bare invocation lists the frontier. |
 | `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. Refuses a spec whose tickets are not all closed as completed. |

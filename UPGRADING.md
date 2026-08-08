@@ -6,8 +6,8 @@ common upgrade is therefore:
 1. Replace the install's `.claude/skills/` contents wholesale with this repo's
    `skills/`.
 2. Keep `docs/addw.env` untouched, except: add any newly introduced keys (see
-   the template in `addw-init` Phase 6) and bump `ADDW_SCHEMA` if a structural
-   boundary below was crossed.
+   the config template in `addw-init`'s Generate step) and bump `ADDW_SCHEMA`
+   if a structural boundary below was crossed.
 3. Run `bash .claude/skills/addw-init/scripts/doctor.sh` from the repo root.
    It compares the install's `ADDW_SCHEMA` against the generation the new
    skills expect and verifies the docs contract — a FAIL means a structural
