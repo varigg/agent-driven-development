@@ -245,7 +245,7 @@ syntax error here breaks skills far from the edit.
 # docs/addw.env — ADDW project configuration. Created by addw-init.
 # Skills read this at runtime; never edit a skill to change these values.
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=3
+ADDW_SCHEMA=4
 ADDW_PROJECT_NAME="<project name>"
 ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, ...>"
 # A bare branch name — never remote-qualified. Consumers check it out and pass

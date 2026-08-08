@@ -105,7 +105,13 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
 ## Step 4: Triage & Apply
 
 - **Trivial mechanical fixes** (typo, dead import, stale doc line): apply directly and list them in the report.
-- **Substantive findings**: never fix here. File a tracker issue per theme — labeled `backlog` unless the human wants it worked now — and record the issue number in the report as the finding's disposition.
+- **Substantive findings**: never fix here. File a tracker issue per theme through the tracker layer — never the tracker CLI directly — and record the issue number in the report as the finding's disposition:
+
+  ```bash
+  bash .claude/skills/lib/tracker/tracker.sh create "<conventional subject>" <body-file> backlog
+  ```
+
+  `backlog` unless the human wants it worked now, in which case use `ready-for-agent`. A `backlog` issue is an undesigned idea: it carries no `## Parent`, and the frontier skips it until it graduates into a spec.
 - **Process findings** (a skill is wrong): file separately against the ADDW repo — skills change via dedicated process commits, never inside an audit fix.
 
 ## Step 5: Ship the Audit

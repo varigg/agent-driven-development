@@ -6,7 +6,7 @@
 
 End to end: **spec → tickets → per-ticket PR → release** — with a second model reviewing every spec and every diff before you see it, and small scripts (not agent judgment) verifying everything that can be verified mechanically.
 
-> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The previous generation's skills have now retired, but [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) still narrates that earlier cycle and stays stale until its own rework catches up.
+> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The previous generation's skills have retired, and [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) now walks through the overlay flow step by step — start there if you want the guided tour rather than the summary below.
 
 ## Origins & inspirations
 
@@ -65,7 +65,7 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | `/codex-ask` | A grounded second opinion on anything — architecture calls, debugging hypotheses. Advisory only: no verdicts, nothing gated. |
 | `skills/lib/` | Not a skill: the shared script layer — the tracker seam (every `gh` tracker call routes through it), the deterministic gate, the release derivations, and the Codex runner every `codex-*` adapter sits on. |
 
-Retired: planning and research moved to Matt's skills (`grill-with-docs` + `to-spec` replace `addw-1-plan`; `research` + `wayfinder` replace `addw-research`), and the standalone test skill's role now lives in the deterministic gate and `tdd`.
+Retired: planning and research moved to Matt's skills (`grill-with-docs` + `to-spec` for planning; `research` + `wayfinder` for research), and the standalone test skill's role now lives in the deterministic gate and `tdd`. In-repo plan documents and the backlog file went with them — work state lives on the tracker, where undesigned ideas are `backlog`-labeled issues the frontier skips. [`UPGRADING.md`](UPGRADING.md) has the full list and the migration steps.
 
 ## Swapping agents
 

@@ -28,6 +28,19 @@ lives inside `skills/` rather than at the repo root.
     places. `addw-init` creates the `spec` and `backlog` labels through the
     last of them; doctor re-checks all of it with the first three.
     Dogfood-verified, not unit-tested.
+    `create` is the one exception to that last sentence, and the layer's only
+    verb that brings a new issue into being. The happy path never reaches it —
+    `to-spec` publishes the spec issue and `to-tickets` publishes the tickets,
+    so the seam otherwise only reads, annotates, assigns, and closes what
+    Matt's skills authored. It is here for the two paths that do originate an
+    issue: `addw-maintain` routing a substantive audit finding to a `backlog`
+    issue, and the schema-4 backlog migration. It is unit-tested
+    (`tests/tracker-create.test.sh`) because it shapes an outbound write from
+    variadic arguments rather than passing one through — each label gets its
+    own `--label`, since a comma-joined string is read as one label name
+    containing commas, and the body file is checked before the call because a
+    body-file failure mid-create leaves a titled, bodyless issue that cannot
+    be un-created.
     The branch half of the frontier's in-progress annotation comes from
     `git ls-remote --heads origin` — remote branches, never local ones — so a
     ticket reads as in progress exactly while its branch is visible to

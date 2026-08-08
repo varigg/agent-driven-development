@@ -21,8 +21,9 @@ bash skills/lib/tracker/tracker.sh frontier
 That script is also the tracker **seam**: every `gh` call for tracker work
 routes through it, so reach for it rather than `gh issue` directly.
 
-`docs/backlog.md` is undesigned ideas, not tickets — nothing there is workable
-until it graduates into a proposal and a spec.
+Issues labeled **`backlog`** are undesigned ideas, not tickets — nothing there
+is workable until it graduates into a proposal and a spec, and the frontier
+skips them. They carry no `## Parent`.
 
 ## Working a ticket
 
@@ -50,9 +51,10 @@ Its one-line summary is what the PR body carries verbatim.
 - **`docs/addw.env` must stay shell-clean.** Scripts source it directly
   (`skills/lib/codex/_common.sh` does so whenever it exists), so a syntax error
   there breaks skills far from the edit.
-- **Skill folder names are docs contract.** Renames — `addw-4-maintain` →
-  `addw-maintain`, for one — ride a schema boundary and get an `UPGRADING.md`
-  entry; they are never free cosmetics.
+- **Skill folder names are docs contract.** Renames ride a schema boundary and
+  get an `UPGRADING.md` entry; they are never free cosmetics. The
+  `addw-4-maintain` → `addw-maintain` rename waited for one and rode the schema
+  3 → 4 boundary, which is what such a rename is supposed to do.
 - **Shared scripts live in `skills/lib/`**, a non-skill directory that rides the
   wholesale `skills/` copy: `tracker/`, `gate/`, `release/`, `docs/`, `codex/`.
   A script two skills call belongs here, not in whichever skill happened to own
@@ -65,4 +67,4 @@ Its one-line summary is what the PR body carries verbatim.
 | `README.md` | What ADDW is, the flow, the skills reference |
 | `docs/proposals/pocock-overlay.md` | The rewrite design; issue #2 supersedes it where they differ |
 | `UPGRADING.md` | Structural steps per schema boundary |
-| `docs/cycle-walkthrough.md` | Narrates the *previous* generation's cycle; stale until #13 reworks it |
+| `docs/cycle-walkthrough.md` | The guided tour of one overlay cycle, pointing into the skills for every rule |

@@ -17,6 +17,14 @@
 #      location ADDW_ADR_DIR names (never a hardcoded path — that is what the
 #      domain-layout contract decides), and the project-instructions line that
 #      declares that template authoritative over any skill-bundled ADR format.
+#   2b. The migrated state (#13). The generation marker must match the skills,
+#      and the retired artifacts must be gone — but only the ones ADDW's
+#      migration actually mandates removing. The backlog file is one: its
+#      entries move to backlog-labeled issues and then it goes, so a surviving
+#      file means either the migration never ran or open ideas are stranded in
+#      a file no skill reads. The plans directory is not: it is transient, its
+#      deletion is documented as safe and expected but stays the human's call,
+#      and ADDW never removes it — so doctor must stay silent about one.
 #   3. Tracker validation. Matt's setup must have run, its configured tracker
 #      must be GitHub, the tracker CLI must be authenticated with issues
 #      enabled, and the three labels the frontier keys on must exist. A missing
@@ -78,7 +86,7 @@ mkdir -p "$BASE/project" "$BASE/home"
   mkdir -p docs/agents docs/4-unit-tests docs/6-memo docs/7-maintenance docs/adr
 
   cat > docs/addw.env <<'ENV'
-ADDW_SCHEMA=3
+ADDW_SCHEMA=4
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
@@ -199,6 +207,52 @@ run "$d"
 assert_eq 1 "$RUN_STATUS" "config: a missing docs/addw.env is unhealthy"
 assert_contains "$RUN_OUT" "docs/addw.env" \
   "config: the failing line names the config file"
+
+# --- the generation marker and the migrated state (#13) --------------------
+
+# The marker is the whole point of the schema: an install left at the previous
+# generation must be told to apply the upgrade doc, not quietly accepted.
+d="$(case_dir oldschema)"
+sed -i 's|^ADDW_SCHEMA=.*|ADDW_SCHEMA=3|' "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "schema: an install left at the previous generation is unhealthy"
+assert_contains "$RUN_OUT" "UPGRADING.md" \
+  "schema: the failing line sends the human to the upgrade doc"
+
+# The backlog file's removal is the one deletion the migration mandates, and it
+# is ordered: every open entry becomes a backlog-labeled issue first. A
+# surviving file therefore means work is stranded somewhere no skill reads.
+d="$(case_dir backlogfile)"
+printf '# Backlog\n\n- an idea nobody migrated\n' > "$d/project/docs/backlog.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "backlog: a surviving backlog file is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: docs/backlog.md" \
+  "backlog: the failing line names the retired file"
+assert_contains "$RUN_OUT" "backlog-labeled" \
+  "backlog: the failing line points at the label the entries migrate to"
+
+# The plan-review role retired with the skill that filled it. Left in a config,
+# it names a folder the wholesale skills copy no longer ships, so the generic
+# adapter check would report it as a missing adapter — sending the human to
+# reinstall a skill that no longer exists instead of to delete a dead key.
+d="$(case_dir retiredrole)"
+printf 'ADDW_PLAN_REVIEW_SKILL=codex-plan-review\n' >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "role: a retired role key left in the config is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_PLAN_REVIEW_SKILL" \
+  "role: the failing line names the retired key"
+assert_contains "$RUN_OUT" "ADDW_PLAN_REVIEW_SKILL is retired" \
+  "role: the failing line says the key is retired, not that an adapter is missing"
+
+# The plans directory is the opposite case: transient, safe to delete, but the
+# human's call and never ADDW's. An install that kept it is fully migrated.
+d="$(case_dir plansdir)"
+mkdir -p "$d/project/docs/1-plans"
+printf '# F_1.0.0 old plan\n' > "$d/project/docs/1-plans/F_1.0.0_thing.plan.md"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "plans: a surviving plans directory is still healthy"
+assert_not_contains "$RUN_OUT" "1-plans" \
+  "plans: doctor says nothing about a directory whose deletion is the human's call"
 
 # --- docs contract ---------------------------------------------------------
 

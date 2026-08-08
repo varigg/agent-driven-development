@@ -21,13 +21,7 @@ set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
 # UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
-#
-# The docs contract this file checks has already moved past generation 3 —
-# ADDW_ADR_DIR and the recipe keys are required, ADDW_TUTORIALS is gone — but
-# the bump and its migration section belong to one ticket, so until that lands
-# a generation-3 install reads as schema-matched while failing the newer
-# checks. The FAIL lines say what to add; the schema line does not yet.
-EXPECTED_SCHEMA=3
+EXPECTED_SCHEMA=4
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
@@ -123,6 +117,34 @@ for file in "${doc_files[@]}"; do
         bad "$file missing"
     fi
 done
+
+# --- retired artifacts -----------------------------------------------------
+# Only the removal the migration actually mandates is checked. The backlog
+# file's is ordered — every open entry becomes a `backlog`-labeled issue, then
+# the file goes — so a surviving one means either the migration never ran or
+# open ideas are stranded where no skill will ever read them again.
+#
+# `docs/1-plans/` is deliberately NOT checked. Plans are transient, git history
+# is their archive, and UPGRADING.md documents deleting the directory as safe
+# and expected — but the deletion stays the human's call and ADDW never
+# performs it, so a doctor that failed on one would be demanding a change the
+# rest of the workflow refuses to make.
+if [ -f docs/backlog.md ]; then
+    bad "docs/backlog.md is retired — migrate each open entry to a backlog-labeled tracker issue, then delete the file (see UPGRADING.md)"
+else
+    ok "no retired docs/backlog.md"
+fi
+
+# The retired *key*, checked here beside the retired file rather than in the
+# adapter loop below, where it would sit in the list only to be branched out of
+# it. ADDW_TUTORIALS retired at the same boundary and is deliberately not
+# checked: a dead boolean nothing reads is inert, while a dead key naming a
+# skill folder gets read as a live adapter by the loop below.
+if [ -n "${ADDW_PLAN_REVIEW_SKILL:-}" ]; then
+    bad "ADDW_PLAN_REVIEW_SKILL is retired — the plan-review role no longer exists; delete the key from docs/addw.env (see UPGRADING.md)"
+else
+    ok "no retired ADDW_PLAN_REVIEW_SKILL"
+fi
 
 adr_template=""
 if [ -n "${ADDW_ADR_DIR:-}" ]; then
@@ -223,7 +245,9 @@ if [ -n "${ADDW_MAIN_BRANCH:-}" ]; then
 fi
 
 # --- role adapters (checked only when overridden in addw.env) -------------
-for key in ADDW_PLAN_REVIEW_SKILL ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_ASK_SKILL; do
+# Live roles only. The retired plan-review key is handled above, so a survivor
+# is never mistaken here for an adapter whose scripts went missing.
+for key in ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_ASK_SKILL; do
     value="${!key:-}"
     [ -z "$value" ] && continue
     # `inline` is the reserved non-adapter value: the main agent drives `tdd`
