@@ -57,8 +57,12 @@ state, and numbers are sequential and never reused, so a superseder always
 carries a higher number than what it supersedes and is `active`, hence in the
 tree. For every departed ADR there is therefore a present one numbered above
 it, and `max(directory) + 1` remains correct. Derive the next number as max
-plus one, never as the first gap; the ADR scaffolder backlogged in #31 stays a
-convenience rather than becoming a prerequisite.
+plus one, never as the first gap. Archival is what makes those two diverge, so
+this change is also what makes the intuitive answer wrong; the rule is
+therefore encoded in a script the authoring step points at, rather than left
+standing as prose in this consequence. The rest of the scaffolder backlogged in
+#31 — template copy, date stamp, supersede-pointer flip — stays a convenience,
+with nothing yet evidencing it.
 
 Archived bodies would otherwise enter the issue snapshot, since `tracker.sh
 snapshot` is `--state all` with bodies included. The seam therefore drops
