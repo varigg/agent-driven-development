@@ -1,7 +1,9 @@
 # Proposal: Rebuild ADDW as an Overlay on Matt Pocock's Skills
 
-**Status**: design complete (2026-08-05) — all forks decided, ready for
-implementation planning
+**Status**: implemented (2026-08-07) — built out as
+[spec issue #2](https://github.com/varigg/agent-driven-development/issues/2),
+which is the design's authoritative statement and supersedes this document
+wherever the two differ
 **Date**: 2026-08-05
 **Origin**: comparison of ADDW against
 [mattpocock/skills](https://github.com/mattpocock/skills) ("Main Flow":

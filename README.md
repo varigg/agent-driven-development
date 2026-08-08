@@ -6,7 +6,7 @@
 
 End to end: **spec → tickets → per-ticket PR → release** — with a second model reviewing every spec and every diff before you see it, and small scripts (not agent judgment) verifying everything that can be verified mechanically.
 
-> **Status**: ADDW is mid-rewrite onto this overlay design; [spec issue #2](https://github.com/varigg/agent-driven-development/issues/2) tracks the remaining tickets. The previous generation's skills have retired, and [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) now walks through the overlay flow step by step — start there if you want the guided tour rather than the summary below.
+> [docs/cycle-walkthrough.md](docs/cycle-walkthrough.md) walks through one full cycle step by step — start there if you want the guided tour rather than the summary below.
 
 ## Origins & inspirations
 
