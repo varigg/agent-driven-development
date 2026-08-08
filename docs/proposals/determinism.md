@@ -3,7 +3,9 @@
 **Status**: partly implemented (2026-08-07) — the deterministic testing gate and
 the release tail shipped during the overlay rewrite; the candidates still unbuilt
 are tracked in
-[issue #31](https://github.com/varigg/agent-driven-development/issues/31)
+[issue #31](https://github.com/varigg/agent-driven-development/issues/31).
+The tables below record the sweep as it stood on 2026-07-30; some script paths
+they name have since moved or been superseded.
 **Date**: 2026-07-30
 **Origin**: review of [ShopDevX/adeptlydev](https://github.com/ShopDevX/adeptlydev),
 whose plan checker (`lib/plans.ts` `detectDeclaredChanges`) validates declared
