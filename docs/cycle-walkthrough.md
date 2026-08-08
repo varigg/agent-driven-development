@@ -1,178 +1,219 @@
 # A Guided Tour of One ADDW Cycle
 
-This is the human-facing walkthrough of a full **Plan → Implement → Release** cycle: what
-happens at each step, what you will be asked, and what gets committed when. It narrates the
-shape of the process — the rules themselves live in the skill files, which remain the single
-source of truth. Every pointer below names a skill file and a section heading inside it; when
-you want the exact rule, follow the pointer. If a pointer no longer resolves, the skill
-changed — fix the pointer here, never copy rule text into this guide.
+This is the human-facing walkthrough of a full **spec → tickets → per-ticket PR → release**
+cycle: what happens at each step, what you will be asked, and what lands where. It narrates
+the shape of the process — the rules themselves live in the skill files, which remain the
+single source of truth. Every pointer below names a skill file and a section heading inside
+it; when you want the exact rule, follow the pointer. If a pointer no longer resolves, the
+skill changed — fix the pointer here, never copy rule text into this guide.
 
 Paths are given relative to this repo (`skills/...`). In an installed project the same files
 live under `.claude/skills/...`.
 
-**Before any cycle**: `addw-init` has already run once, generating the living docs
-(ARCHITECTURE.md, charter.md, TESTING.md) and the project config `docs/addw.env`. Skills are
-never edited per-project; everything project-specific lives in those files.
+**Before any cycle**: `addw-init` has run once, on top of Matt Pocock's
+`setup-matt-pocock-skills`. His setup configures the tracker (GitHub — the overlay is
+GitHub-only) and the domain layout; ADDW's init adds the living docs (ARCHITECTURE.md,
+charter.md, TESTING.md), the project config `docs/addw.env`, the `spec` and `backlog` labels,
+and the ADR template, then gates on doctor (`addw-init` § *Step 2: Generate — ADDW's
+artifacts only*). Skills are never edited per project; everything project-specific lives in
+those files.
+
+**Where the work lives**: on the tracker, as GitHub issues — not in this tree. There are no
+plan documents and no backlog file. A spec issue carries the `spec` label; its tickets cite
+it in a `## Parent` section and list their blocking issues under `## Blocked by`; undesigned
+ideas carry `backlog` and no parent.
 
 ---
 
-## Phase 1 — Plan (`/addw-1-plan`)
+## Phase 1 — Align & Specify (Matt's skills)
 
-You describe a feature; the agent produces a reviewed, approved plan document. No code is
-written in this phase — not even test code (§ *IMPORTANT: No Code Implementation*).
+ADDW owns none of this phase, and that is the point of the overlay: `grill-with-docs`
+interviews you toward a shared understanding — uncapped and incremental, where ADDW's
+retired plan skill was capped and batched — and `to-spec` publishes the result as a **spec
+issue** on GitHub.
 
-1. **Context load.** The agent reads ARCHITECTURE.md, charter.md, and the relevant ADRs
-   before anything else (§ *Prerequisites - Read First*).
-
-2. **Discovery interview.** Instead of planning immediately, the agent asks you structured
-   clarifying questions about scope, behavior, constraints, and priority — at most three
-   rounds, after which it proceeds and records its assumptions in the plan
-   (§ *Step 1: Discovery & Clarification*).
-
-3. **The plan document** lands in `docs/1-plans/F_<version>_<feature>.plan.md`
-   (§ *Step 2: Plan Document Creation*). Three of its sections feed later phases, so they
-   are worth reading closely when you review it:
-   - **Test Impact** — consumed by the implement phase's testing gate; also decides whether
-     tests are written *before* implementation (see Phase 2, step 2 below).
-   - **Doc Impact** — the list of living docs this change touches; consumed by the release
-     phase's reconciliation sweep.
-   - **Open Questions & Assumptions** — what the agent decided without you; surfaced again
-     at approval time.
-
-4. **Declared-files check.** A script verifies every path the plan claims to create or
-   modify against the real working tree, so the plan can't be written against a remembered
-   codebase (§ *Declared-Files Check*).
-
-5. **Codex second-opinion review** runs *before you see the plan* (§ *Step 3: Codex
-   Second-Opinion Review*). The reviewer returns a verdict tag (`APPROVED` /
-   `REQUEST_CHANGES` / `NEEDS_REWORK`); the agent fixes legitimate findings, pushes back on
-   incorrect ones with notes, and loops up to five rounds. The loop mechanics live in
-   `skills/codex-plan-review/SKILL.md` (§ *Loop Shape*).
-
-6. **Your review.** You get a summary (approach, files affected, complexity, Codex status,
-   open assumptions) and a question: **Approved / Request changes / Needs rework**
-   (§ *Step 4: User Review & Validation*).
-
-7. **On approval**, two things may happen before implementation starts:
-   - If the plan changes documented intent, the decision is recorded as a write-once ADR,
-     committed together with the plan (§ *ADR Writing (on approval)*). Routine conforming
-     work writes no ADR.
-   - You are asked whether to **start implementation now** or later.
+No code is written here, and nothing lands in the repo. The artifact is an issue.
 
 ---
 
-## Phase 2 — Implement (`/addw-2-implement`)
+## Phase 2 — Spec Review (`/codex-spec-review`)
 
-The main agent orchestrates; Codex writes the code; the main agent reviews, tests, and
-fixes. Writer and reviewer are never the same thread.
+A different model reviews the spec **before** you invest in decomposition, because a design
+flaw is cheapest to fix while the spec is still prose (§ *Execution*).
 
-1. **Branch.** A dedicated `feat/`- or `fix/`-branch is created without asking
-   (§ *Step 0: Create a Branch*). Everything up to the release merge happens on it.
+1. **The issue body becomes the working buffer.** The adapter dumps the spec into per-issue
+   state that doubles as the edit vehicle, and refuses to start or resume against a buffer
+   that has drifted from the remote body — unpushed edits are a real way to review the wrong
+   text (§ *Notes*).
 
-2. **Selective test-first.** Only if the plan's Test Impact touches the critical-path floor
-   (auth, deletion, persistence, cost, external request shape) are failing behavioral tests
-   written *now*, committed, and declared off-limits to Codex — it must make them pass
-   without editing them (§ *Step 0.5: Selective Test-First*). Everything else is tested
-   after implementation, in the gate.
+2. **Rounds converge on a verdict tag** — `APPROVED` / `REQUEST_CHANGES` / `NEEDS_REWORK`.
+   You fix legitimate findings, push back on incorrect ones with notes, and resume
+   (§ *Loop Shape*).
 
-3. **Delegation.** The agent re-runs the declared-files check (the tree may have drifted
-   since planning), then hands the plan — whole, or one phase at a time — to the
-   implementing agent, which reports back with `IMPLEMENTATION_COMPLETE` or
-   `IMPLEMENTATION_PARTIAL` (§ *Implementation Phase — Delegate to Codex*; adapter
-   mechanics in `skills/codex-implement/SKILL.md`).
+3. **Fixes land in the issue body in place; only the final verdict is posted as a comment.**
+   The spec stays readable — a reader sees the current spec, not an archaeology of rounds.
 
-4. **Self-review and checkpoint commit.** The main agent reads the full diff against the
-   plan and ARCHITECTURE.md conventions, fixes problems directly (no back-and-forth with
-   Codex over fixes), then commits the phase with explicit paths and a conventional
-   message — never `git add -A`, never "wip", because these commits survive into permanent
-   history (§ *Self-Review & Fix*). Multi-phase plans repeat delegate → self-review per
-   phase.
-
-5. **The testing gate** — after the last phase, before review; any failure blocks the
-   review loop from starting (§ *Testing Gate*). Five steps: lint/type-check/build,
-   affected unit tests (never the full suite by default), integration impact check, author
-   missing tests, and a one-line summary. The test-authoring step carries the interesting
-   policy — the mock-pain tripwire, the coverage-debt ledger, and the critical-path floor
-   that coverage debt may never defer (§ *Testing Gate* → *4. Author missing tests*). For
-   heavy authoring work it points to the deep reference, `skills/addw-test/SKILL.md`
-   (§ *Hard-to-Test Code* for the seam ladder).
-
-6. **Codex code review** runs automatically once the gate is green (§ *Codex Code Review*).
-   Same verdict-tag loop as the plan review, with two extra rules: the testing gate is
-   re-run before every resume, and each round's fixes get their own commit. Findings are
-   judged against the shared checklist in `skills/codex-code-review/checklist.md`. Capped
-   at five rounds; anything still open is surfaced to you. No review artifact is produced —
-   the verdict and round count become one line in the release changelog entry
-   (§ *Record the Outcome*).
-
-7. **Handoff.** You are asked: **"Is the implementation complete?"** Yes chains directly
-   into the release in the same session; No loops back through gate → review → question
-   (§ *Handoff to Release*).
+The skill also applies the `spec` label, since Matt's `to-spec` applies only the triage
+label.
 
 ---
 
-## Phase 3 — Release (`addw-3-release`)
+## Phase 3 — Ticket (Matt's skills)
 
-Normally chained from Phase 2; if invoked standalone in a fresh session, it first re-runs
-lint, build, and affected tests itself (§ *Standalone verification*).
+`to-tickets` decomposes the reviewed spec into tracer-bullet issues with blocking edges. Its
+template's section encoding **is** ADDW's tracker contract, so his skills produce
+contract-valid tickets unmodified — nothing is post-processed.
 
-1. **Version bump** in the file `addw.env` names (§ *Version Update*).
+From here on, the question "what can I work on?" has a deterministic answer, the **frontier**:
+open issues labeled `ready-for-agent`, not labeled `spec` or `backlog`, whose every blocker is
+closed **as completed**.
 
-2. **Changelog entry** prepended to the root `CHANGELOG.md` by script — the file is
-   write-only for the workflow; no skill ever reads it (§ *Changelog*). The entry carries
-   the plan path and the review line from Phase 2.
+```bash
+bash skills/lib/tracker/tracker.sh frontier
+```
 
-3. **Design reconciliation** — the release's most consequential docs step
-   (§ *Design Reconciliation*). Starting from the plan's Doc Impact list, every living doc
-   is swept so it describes only the current design; superseded text is deleted or rewritten
-   as an explicit lesson, never labeled "historic". Dated records (ADRs, changelog,
-   tutorials) are exempt — they are superseded, never retro-edited. Two things deliberately
-   escape the release commit: charter changes and skill changes are each flagged as
-   separate commits (§ *Design Reconciliation* points 4–5, and addw-1's
-   § *Process/Design Separation* under Technical Considerations).
-
-4. **Optional tutorial** if the project opted in at init (§ *Tutorial*), then a README
-   version bump (§ *README Update*).
-
-5. **Commit → tag → merge → push.** You are asked **"Ready to commit?"** first. A
-   version-sync script must pass, then the release commit stages only version + docs —
-   the implementation is already on the branch from Phase 2's checkpoints (§ *Commit*).
-   Then the version tag, a fast-forward-only merge into the main branch (never a merge
-   commit — § *Merge (fast-forward)*), and a final question: **"Push to remote?"**
-
-6. **Maintenance nudge.** A counter script may suggest running `addw-4-maintain` after N
-   releases without an audit — suggest only, never auto-run (§ *Maintenance Audit Nudge*).
+Close reasons carry consequences for dependents, which is why the distinction is enforced:
+*completed* means what dependents needed now exists — including a ticket made obsolete by an
+unrelated change and closed with an explanation — while *not planned* means it never will, so
+its dependents never unlock and the listing flags them for you to re-scope.
 
 ---
 
-## What gets committed, in order
+## Phase 4 — Implement, one ticket per session (`/addw-implement`)
 
-All on the feature branch until the final merge; every commit uses explicit paths.
+Invoked bare, it lists the frontier and stops (§ *Bare Invocation — the Frontier*). Invoked
+on a ticket, **mode detection comes first**: an open PR for that ticket means you are
+resuming to address review feedback, not rebuilding (§ *Step 1: Mode Detection*). Getting
+that backwards restarts finished work.
 
-| # | Commit | When | Pointer |
-|---|--------|------|---------|
-| 1 | Plan + ADR (if intent changed) | Plan approval | addw-1 § *ADR Writing (on approval)* |
-| 2 | `test:` failing contract tests | Critical-path work only, before delegation | addw-2 § *Step 0.5* |
-| 3 | `feat:`/`fix:` checkpoint, one per phase | After each self-review | addw-2 § *Self-Review & Fix* |
-| 4 | `fix:` review-round findings, one per round | Before each review resume | addw-2 § *Codex Code Review*, step 5 |
-| 5 | Release commit (version + docs only) | After "Ready to commit?" | addw-3 § *Commit* |
-| — | Charter changes, skill changes | Never in a release — separate design/process commits | addw-3 § *Commit* → *Commit taxonomy* |
+The fresh-build path (§ *Mode B: Fresh Build*):
+
+1. **Eligibility, read-only.** Open, `ready-for-agent`, not a spec or backlog issue, every
+   blocker closed as completed. Nothing is written until the ticket is confirmed workable
+   (§ *Step 2: Eligibility — read-only*).
+
+2. **Branch and self-assign, pushed before any build work.** Not a lock — the in-progress
+   marker the frontier listing shows, so a second session can see the work exists
+   (§ *Step 3: Branch and Self-Assign*).
+
+3. **Frozen contract tests**, if the ticket touches the critical-path floor (auth, deletion,
+   persistence, cost, external request shape). Written now, confirmed failing for the right
+   reason, committed, and **off-limits to the implementer** (§ *Step 5: Frozen Contract
+   Tests*). Work outside that floor is tested in the gate instead.
+
+4. **Implementation via a role key.** `ADDW_IMPLEMENT_SKILL` in `docs/addw.env` names the
+   adapter — `codex-implement` by default — or the reserved value `inline`, meaning the main
+   agent drives `tdd` itself (§ *Step 6: Implementation*). Either way the main agent reads
+   the full diff afterwards and fixes problems directly, never ping-ponging fixes back to the
+   adapter.
+
+5. **Cold pre-filter review** — a two-axis `code-review` over the branch diff, run before
+   spending codex rounds, to break the ownership bias of reviewing your own work
+   (§ *Step 7: Cold Pre-Filter Review*). Skippable by judgment for a trivial diff, but the
+   skip is **disclosed in the PR body**.
+
+6. **Doc impact now, not at release.** A ticket that changed documented design updates the
+   affected living-doc passages in its own PR, so docs are reviewed alongside the code that
+   changed them (§ *Step 8: Doc Impact*).
+
+7. **The deterministic gate**, green before cross-model review starts (§ *Step 9: Testing
+   Gate*). `skills/lib/gate/gate.sh` runs the lint / typecheck / affected-tests recipes from
+   `docs/addw.env` and emits **one summary line**, carried verbatim into the PR body.
+   Choosing which tests are affected stays judgment; running them and reporting the result is
+   mechanical. Coverage discipline — the mock-pain tripwire, the coverage-debt ledger, and
+   the critical-path floor that debt may never defer — lives in the same section.
+
+8. **The codex code-review loop**, over the full merge-base-to-working-tree diff with the
+   ticket and its parent spec as context, capped at five rounds (§ *Step 10: Codex Code
+   Review Loop*; adapter mechanics in `skills/codex-code-review/SKILL.md` § *Loop Shape*,
+   findings judged against `skills/codex-code-review/checklist.md`). **The final round runs
+   against a fully committed HEAD**, and that SHA is what the verdict covers.
+
+9. **Open the PR and stop** (§ *Step 11: Open the PR*). The agent does not merge and does not
+   start another ticket. The title must parse as a conventional-commit subject, because it
+   becomes the squash subject on `main` and the changelog projects exactly those subjects.
+
+**You review and merge on GitHub.** The PR body carries seven things so you can judge without
+archaeology: the `Closes #n` link, the gate summary verbatim, the codex verdict with round
+count and covered SHA, any skip disclosures, the doc-impact note, a prose summary, and a merge
+recommendation (§ *PR Body Contract*). Squash is the default; rebase-merge is recommended only
+when the branch's commits are each individually substantive *and* conventionally titled.
+
+If you leave feedback, invoking the skill on that ticket again resumes into
+§ *Mode A: Review-Comments Resume* — which reads both the timeline **and** the inline diff
+comments, since no `gh pr` subcommand exposes the latter.
+
+---
+
+## Phase 5 — Release (`/addw-release`)
+
+Readiness is detected when you invoke the skill, never by tracker automation; the frontier
+listing also surfaces release-ready specs so you notice at your next session
+(§ *Step 1: Mode and Readiness*).
+
+1. **Two modes.** A **spec release** names a release-ready spec — every issue citing it as
+   parent closed as completed, and at least one child existing, since a spec with no children
+   was never decomposed. Naming an incomplete spec is refused with its open tickets listed. A
+   **repository release** tags whatever `main` has accumulated since the last tag and closes
+   nothing. A child closed as *not planned* is surfaced by name and you decide whether to
+   proceed — your confirmation is the waiver.
+
+2. **Version and changelog, both derived** (§ *Step 2: Derive the Version and the Entry*).
+   `skills/lib/release/derive.sh` reads the conventional-commit subjects since the last tag —
+   feat → minor, fix → patch, breaking → major — and projects the entry from those same
+   subjects. Release commits are excluded; an unclassifiable subject is **warned and listed,
+   never silently dropped**. No agent-authored prose, so nothing can drift from history.
+
+3. **A release PR, and your merge is the confirmation** (§ *Step 3: The Release Branch*,
+   § *Step 4: Open the Release PR*). This is what keeps "every commit on `main` is a reviewed
+   PR" true with zero routine exceptions.
+
+4. **The post-merge tail** — tag, push, GitHub Release carrying the identical changelog text,
+   and for a spec release, closing the spec issue (§ *Step 5: The Post-Merge Tail*). It is
+   re-runnable: each step skips what is already done.
+
+5. **A verification sweep** over the living docs — vocabulary, accretion, charter fit — as a
+   backstop, not a bulk rewrite (§ *Step 6: Verification Sweep*). Reconciliation is small
+   here precisely because Phase 4 step 6 already did it per ticket.
+
+---
+
+## Around the cycle
+
+Not part of the cycle, but reachable from it:
+
+- **`addw-maintain`** — the periodic audit, on cadence rather than as a pipeline phase. Three
+  skippable sweeps (living-docs drift, coverage debt, dependencies); substantive findings are
+  never fixed in place but filed as tracker issues (§ *Step 4: Triage & Apply*), and the
+  audit itself ships as a PR (§ *Step 5: Ship the Audit*).
+- **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
+  immediately (§ *Step 6: Open the Expedited PR*). Direct push to `main` is documented solely
+  as the escape hatch for when GitHub itself is the obstacle (§ *Escape Hatch: Direct Push*).
+- **`addw-compact`** — shrinks ARCHITECTURE.md when it outgrows its token budget
+  (§ *Step 2: Compaction Strategies*).
+- **`codex-ask`** — a grounded second opinion on anything. Advisory only: no verdicts,
+  nothing gated.
+
+## What lands where
+
+| Artifact | Where it lives | Created by |
+|---|---|---|
+| Spec | A `spec`-labeled GitHub issue | `to-spec`, reviewed by `codex-spec-review` |
+| Tickets | GitHub issues with `## Parent` / `## Blocked by` | `to-tickets` |
+| Undesigned ideas | `backlog`-labeled issues, no parent | you, or `addw-maintain` |
+| Implementation | One squash-merged PR per ticket | `addw-implement` |
+| Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR` | the ticket's own PR |
+| Version + changelog | A release PR, then a tag and GitHub Release | `addw-release` |
+| Audit reports | `docs/7-maintenance/MAINT_<date>.md`, via a PR | `addw-maintain` |
 
 ## Every question you'll be asked
 
-The cycle is autonomous between these checkpoints; these are the only places it stops for you.
+The cycle is autonomous between these checkpoints. Two of them are merges rather than
+prompts, which is the design: a merge is a decision with a record.
 
-1. Plan clarifications — up to 3 rounds (addw-1 § *Step 1*)
-2. Plan verdict: Approved / Request changes / Needs rework (addw-1 § *Step 4*)
-3. Start implementation now? (addw-1 § *Step 4*, on approval)
-4. Is the implementation complete? (addw-2 § *Handoff to Release*)
-5. Ready to commit? (addw-3, before § *Commit*)
-6. Push to remote? (addw-3 § *Push*)
-
-## Off-ramps
-
-Not part of the cycle, but referenced from inside it: `addw-hotfix` bypasses the full cycle
-for genuine emergencies; `addw-test` runs standalone for coverage backfill; the coverage-debt
-ledger (`docs/4-unit-tests/COVERAGE-DEBT.md`) parks hard-to-test paths with an escape plan;
-`addw-compact` shrinks ARCHITECTURE.md when the release step warns about its token count;
-`addw-4-maintain` is the periodic audit the release step nudges you toward.
+1. Alignment interview — uncapped and incremental (`grill-with-docs`)
+2. Spec-review findings you adjudicate — per round, to convergence (`codex-spec-review`)
+3. **Your review and squash-merge of each ticket PR** (`addw-implement` § *Step 11: Open the PR*)
+4. Release mode, when readiness is ambiguous (`addw-release` § *Step 1: Mode and Readiness*)
+5. Whether to proceed past a child closed as *not planned* (`addw-release` § *Step 1: Mode and Readiness*)
+6. **Your merge of the release PR** — the version confirmation (`addw-release` § *Step 4: Open the Release PR*)
