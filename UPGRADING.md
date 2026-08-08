@@ -116,22 +116,7 @@ origins are historical provenance, exempt from liveness checking and expected
 to outlive their targets. Retro-editing a dated record to point somewhere
 tidier is precisely what the ADR rules forbid.
 
-### 4. Take the merged ADR template and declare it authoritative
-
-New installs get both from `addw-init`; an upgrade delivers them by hand.
-Replace the installed template at `<ADDW_ADR_DIR>/template.md` with the merged
-format in `addw-init`'s § *The ADR contract* — a one-paragraph body, a
-mandatory two-state `Status` (`active | superseded by ADR-NNNN`, no third
-state), `Date`, `Origin`, and a `Gate` section for guardrail decisions. Then add
-one line to `CLAUDE.md` or `AGENTS.md` naming that path and calling it
-**authoritative**, which is what overrides the ADR format bundled with Matt's
-`domain-modeling`. Doctor verifies both, and checks the `Status` states rather
-than the field's mere presence — a skill-bundled `proposed / accepted /
-deprecated` template has the field too.
-
-Existing ADRs are not reformatted. The template governs what gets written next.
-
-### 5. Reconcile `docs/addw.env`
+### 4. Reconcile `docs/addw.env`
 
 Add, filling the values from `TESTING.md`'s Verification Recipes and the ADR
 location the domain-layout contract declares:
@@ -147,6 +132,21 @@ Remove:
 - `ADDW_TUTORIALS` — tutorials have no consumer left in the skill set.
 - `ADDW_PLAN_REVIEW_SKILL` — the role retired with the plan skill. Doctor fails
   on a survivor by name, so it cannot be mistaken for a missing adapter.
+
+### 5. Take the merged ADR template and declare it authoritative
+
+New installs get both from `addw-init`; an upgrade delivers them by hand.
+Replace the installed template at `<ADDW_ADR_DIR>/template.md` with the merged
+format in `addw-init`'s § *2.8 The ADR contract* — a one-paragraph body, a
+mandatory two-state `Status` (`active | superseded by ADR-NNNN`, no third
+state), `Date`, `Origin`, and a `Gate` section for guardrail decisions. Then add
+one line to `CLAUDE.md` or `AGENTS.md` naming that path and calling it
+**authoritative**, which is what overrides the ADR format bundled with Matt's
+`domain-modeling`. Doctor verifies both, and checks the `Status` states rather
+than the field's mere presence — a skill-bundled `proposed / accepted /
+deprecated` template has the field too.
+
+Existing ADRs are not reformatted. The template governs what gets written next.
 
 ### 6. Update stale references
 

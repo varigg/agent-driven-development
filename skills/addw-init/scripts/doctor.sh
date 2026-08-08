@@ -135,6 +135,17 @@ else
     ok "no retired docs/backlog.md"
 fi
 
+# The retired *key*, checked here beside the retired file rather than in the
+# adapter loop below, where it would sit in the list only to be branched out of
+# it. ADDW_TUTORIALS retired at the same boundary and is deliberately not
+# checked: a dead boolean nothing reads is inert, while a dead key naming a
+# skill folder gets read as a live adapter by the loop below.
+if [ -n "${ADDW_PLAN_REVIEW_SKILL:-}" ]; then
+    bad "ADDW_PLAN_REVIEW_SKILL is retired — the plan-review role no longer exists; delete the key from docs/addw.env (see UPGRADING.md)"
+else
+    ok "no retired ADDW_PLAN_REVIEW_SKILL"
+fi
+
 adr_template=""
 if [ -n "${ADDW_ADR_DIR:-}" ]; then
     adr_template="$ADDW_ADR_DIR/template.md"
@@ -234,18 +245,11 @@ if [ -n "${ADDW_MAIN_BRANCH:-}" ]; then
 fi
 
 # --- role adapters (checked only when overridden in addw.env) -------------
-# ADDW_PLAN_REVIEW_SKILL is listed so a survivor is caught, not so it is
-# honoured: its role retired with the plan skill, and the folder it names is no
-# longer shipped. Without the special case the generic check below would call
-# it a missing adapter and send the human to reinstall a skill that no longer
-# exists, instead of to delete a dead key.
-for key in ADDW_PLAN_REVIEW_SKILL ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_ASK_SKILL; do
+# Live roles only. The retired plan-review key is handled above, so a survivor
+# is never mistaken here for an adapter whose scripts went missing.
+for key in ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_ASK_SKILL; do
     value="${!key:-}"
     [ -z "$value" ] && continue
-    if [ "$key" = ADDW_PLAN_REVIEW_SKILL ]; then
-        bad "ADDW_PLAN_REVIEW_SKILL is retired — the plan-review role no longer exists; delete the key from docs/addw.env (see UPGRADING.md)"
-        continue
-    fi
     # `inline` is the reserved non-adapter value: the main agent drives `tdd`
     # itself, so there is no skill folder to find.
     if [ "$key" = ADDW_IMPLEMENT_SKILL ] && [ "$value" = inline ]; then
