@@ -21,8 +21,9 @@ bash skills/lib/tracker/tracker.sh frontier
 That script is also the tracker **seam**: every `gh` call for tracker work
 routes through it, so reach for it rather than `gh issue` directly.
 
-`docs/backlog.md` is undesigned ideas, not tickets — nothing there is workable
-until it graduates into a proposal and a spec.
+Issues labeled **`backlog`** are undesigned ideas, not tickets — nothing there
+is workable until it graduates into a proposal and a spec, and the frontier
+skips them. They carry no `## Parent`.
 
 ## Working a ticket
 
