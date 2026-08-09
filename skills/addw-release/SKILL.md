@@ -230,7 +230,7 @@ bash .claude/skills/lib/docs/check-doc-accretion.sh docs/ARCHITECTURE.md
   release retired. A living doc describes only the current design; git history
   is the archive. Dated records (ADRs, `CHANGELOG.md` entries) are exempt —
   their date is part of their meaning, and once merged they are never
-  retro-edited beyond an ADR's `Status` pointer.
+  retro-edited.
 - **Accretion** — on `ACCRETION`, the document is narrating its own history one
   appended sentence at a time, a failure no size threshold can see. File it.
 - **Charter fit** — re-read the charter and verify the release did not

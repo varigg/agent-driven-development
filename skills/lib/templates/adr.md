@@ -28,8 +28,8 @@ living docs.>
 - ADRs are **write-once from the merge boundary**, sequence-numbered, and
   self-contained — evidence restated in the ADR's own words, citing only
   living docs and other ADRs. Until it merges an ADR is a draft under review
-  like any other file in its PR, so correct it there freely; once merged, the
-  `Status` pointer is the only edit ever made to it.
+  like any other file in its PR, so correct it there freely; once merged it is
+  never edited.
 - The three bold fields are **mandatory and always present**. `Status` has
   exactly two states, `active` and `superseded by ADR-NNNN`.
 - `Date` is the date the ADR was **written**, not the date it merged, so the
