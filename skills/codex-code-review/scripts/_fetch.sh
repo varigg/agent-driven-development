@@ -14,6 +14,9 @@
 # The parent spec is included when the ticket declares one. Spec membership
 # is optional by contract: a standalone ticket reviews fine against its own
 # acceptance criteria, and the buffer says so rather than going silent.
+# The buffer also names the configured ADR directory. The reviewer is read-only
+# and offline, so configuration needed to interpret checklist references must
+# travel with the context; an absent value is stated explicitly rather than guessed.
 
 set -euo pipefail
 
@@ -38,9 +41,23 @@ require_issue_number() {
 # build_context <issue-number> <buffer-file>
 # Writes the ticket and, when declared, its parent spec into the buffer.
 build_context() {
-    local issue="$1" file="$2" body parent
+    local issue="$1" file="$2" body parent adr_dir
     mkdir -p "$(dirname "$file")"
     body="$(bash "$TRACKER" body "$issue")"
+
+    # Command substitution is already a subshell, so the config's other keys
+    # never reach the caller. Unsetting first keeps an exported value from
+    # making an unconfigured project look configured, and the source's own
+    # stdout is discarded so only the key's value is captured.
+    adr_dir="$(
+        unset ADDW_ADR_DIR
+        if [ -r "docs/addw.env" ]; then
+            # shellcheck disable=SC1091
+            if . "docs/addw.env" >/dev/null; then
+                printf '%s' "${ADDW_ADR_DIR:-}"
+            fi
+        fi
+    )"
 
     {
         printf '# Ticket #%s — %s\n\n' "$issue" "$(bash "$TRACKER" title "$issue")"
@@ -57,6 +74,13 @@ build_context() {
         } >> "$file"
     else
         printf '\n---\n\nNo parent spec: this ticket stands alone. Review it against its own acceptance criteria.\n' \
+            >> "$file"
+    fi
+
+    if [ -n "$adr_dir" ]; then
+        printf '\n---\n\nADR directory for guardrail review: `%s`\n' "$adr_dir" >> "$file"
+    else
+        printf '\n---\n\nADR directory for guardrail review: not configured (`ADDW_ADR_DIR` is absent, empty, or unreadable).\n' \
             >> "$file"
     fi
 }

@@ -22,7 +22,7 @@ Formatting, import hygiene, unused imports, and naming casing are enforced deter
 ### 3. Architectural Compliance
 
 - [ ] For each layer the diff touches, code conforms to the conventions ARCHITECTURE.md documents for it (derived at review time)
-- [ ] Nothing reintroduces what the guardrail ADRs in `docs/adr/` rule out
+- [ ] Nothing reintroduces what the project's guardrail ADRs rule out — the ticket-context file names the directory they live in, and a manual review resolves it from `ADDW_ADR_DIR`
 
 ### 4. Error Handling
 
