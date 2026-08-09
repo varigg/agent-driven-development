@@ -34,8 +34,13 @@ if [ -f "docs/addw.env" ]; then
 
     # Read only the runner's keys in a subshell. The config's stdout is
     # discarded, and its status or an exit inside it cannot reach this shell.
-    config_values=()
-    mapfile -t config_values < <(
+    # One read per key, in the order printed, so no index has to be kept in
+    # step with the printf below.
+    {
+        IFS= read -r ADDW_CODEX_MODEL_IMPL || true
+        IFS= read -r ADDW_CODEX_MODEL_REVIEW || true
+        IFS= read -r ADDW_CODEX_EFFORT || true
+    } < <(
         # shellcheck disable=SC1091
         . "docs/addw.env" >/dev/null || true
         printf '%s\n' \
@@ -43,9 +48,6 @@ if [ -f "docs/addw.env" ]; then
             "${ADDW_CODEX_MODEL_REVIEW:-}" \
             "${ADDW_CODEX_EFFORT:-}"
     )
-    ADDW_CODEX_MODEL_IMPL="${config_values[0]:-}"
-    ADDW_CODEX_MODEL_REVIEW="${config_values[1]:-}"
-    ADDW_CODEX_EFFORT="${config_values[2]:-}"
 fi
 case "$STATE_DIR" in
     *codex-implement*) CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_IMPL:-gpt-5.6-luna}}" ;;
