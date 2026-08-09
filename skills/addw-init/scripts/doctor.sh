@@ -201,9 +201,15 @@ if [ -n "$adr_template" ]; then
     # `docs/adr/template.md.backup` is naming a different file than a config
     # reading `skills/lib/templates/adr.md` or `docs/adr/template.md`, and
     # those near-misses are exactly what this check exists to catch. So the
-    # match is flanked: anything that could extend a path on either side
-    # disqualifies it. The value is escaped first, since a path is data here
-    # and a `.` in one must not match any character.
+    # match must be flanked by something that ends a path in prose — quoting,
+    # brackets, sentence punctuation, whitespace, or the line's edge. Anything
+    # else continues the path, `+` `@` `:` `=` included, since those are legal
+    # in filenames and guessing a filename alphabet is what let `.backup`
+    # through. Whitespace is the one unavoidable concession: a filename
+    # containing a space cannot be told apart from a path followed by a word,
+    # and treating space as path-continuation would reject every declaration
+    # that does not quote its path. The value is escaped first, since a path is
+    # data here and a `.` in one must not match any character.
     # Backslashes first, so the ones added below are not escaped twice. `[` sits
     # last in the set deliberately: `[.` would open a POSIX collating symbol and
     # swallow the rest of the expression.
@@ -211,11 +217,11 @@ if [ -n "$adr_template" ]; then
         printf '%s' "$adr_template" |
             sed -e 's/\\/\\\\/g' -e 's/[]^$*+?(){}|.[]/\\&/g'
     )"
-    path_char='[^[:alnum:]_./~-]'
+    path_delim="[][:space:]\`\"'(),;<>[]"
     instructions_override=0
     for instructions in CLAUDE.md AGENTS.md; do
         if [ -f "$instructions" ] &&
-            grep -E -- "(^|$path_char)$template_re($path_char|\$)" "$instructions" |
+            grep -E -- "(^|$path_delim)$template_re($path_delim|\$)" "$instructions" |
             grep -qi authoritative; then
             instructions_override=1
         fi

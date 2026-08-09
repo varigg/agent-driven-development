@@ -393,6 +393,35 @@ run "$d"
 assert_eq 1 "$RUN_STATUS" \
   "override: a declaration naming a longer path starting with the configured one is unhealthy"
 
+# added at codex round 2: `.` is not the only character a filename may continue
+# with. Inferring a filename alphabet is what let `.backup` through in the first
+# place, so a `+`, `@`, `:` or `=` must extend the path too, not delimit it.
+d="$(case_dir extendedpathplus)"
+(
+  cd "$d/project"
+  cp "$SHIPPED_TEMPLATE" "$SHIPPED_TEMPLATE+old"
+  printf '# Project\n\n%s+old is the authoritative ADR format.\n' \
+    "$SHIPPED_TEMPLATE" > CLAUDE.md
+) >/dev/null
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "override: a longer path continuing with a non-dot filename character is unhealthy"
+
+# The other side of that line: an ordinary declaration must still be found,
+# quoted or bare, mid-sentence or at the line's end. A check this tight is
+# worthless if it fails the installs that got it right.
+for decl in '`%s` is the authoritative ADR format.' \
+  '%s is the authoritative ADR format.' \
+  'The authoritative ADR format is %s' \
+  '(%s), authoritative for this project.'; do
+  d="$(case_dir okdecl)"
+  # shellcheck disable=SC2059
+  printf "# Project\n\n$decl\n" "$SHIPPED_TEMPLATE" > "$d/project/CLAUDE.md"
+  run "$d"
+  assert_eq 0 "$RUN_STATUS" \
+    "override: a plain declaration is recognised — $decl"
+done
+
 # The key is the customization seam: an install keeping its own template says
 # so in the config and stays healthy — and its format is still verified, which
 # is what makes the seam an override rather than an escape hatch.
