@@ -245,7 +245,7 @@ syntax error here breaks skills far from the edit.
 # docs/addw.env — ADDW project configuration. Created by addw-init.
 # Skills read this at runtime; never edit a skill to change these values.
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=4
+ADDW_SCHEMA=5
 ADDW_PROJECT_NAME="<project name>"
 ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, ...>"
 # A bare branch name — never remote-qualified. Consumers check it out and pass
@@ -257,6 +257,8 @@ ADDW_MAIN_BRANCH="<bare branch name>"
 ADDW_AUDIT_NUDGE_N=5
 # The ADR directory the domain-layout contract declares (Step 1.5):
 ADDW_ADR_DIR="<resolved ADR directory>"
+# The shipped ADR template, or a project-owned replacement:
+ADDW_ADR_TEMPLATE=".claude/skills/lib/templates/adr.md"
 # Testing-gate recipes, from TESTING.md's Verification Recipes. All three keys
 # are always present: an empty value is a step this project does not have, and
 # the gate reports it as a visible skip.
@@ -283,56 +285,29 @@ marker moves only at a structural boundary, which `UPGRADING.md` documents.
 
 ### 2.8 The ADR contract
 
-Write the template to `<ADDW_ADR_DIR>/template.md` — the directory resolved
-in Step 1.5, never a literal path from this skill. It merges Matt's minimal
-format with ADDW's decision-record rules:
+The ADR format is shipped at `.claude/skills/lib/templates/adr.md` with the
+wholesale skills copy. Init does not write a template file. It writes only one
+line to the `CLAUDE.md` or `AGENTS.md` that Matt's setup already edited,
+**never the other one**, declaring `<ADDW_ADR_TEMPLATE>` authoritative over any
+ADR format bundled with a skill, including `domain-modeling`'s. A project that
+keeps its own ADR format points `ADDW_ADR_TEMPLATE` at its own file rather than
+overwriting a generated one. That declaration is the documented customization
+seam and the path is the same one doctor checks.
+
+Put the resolved value of `ADDW_ADR_TEMPLATE` **in backticks** and the word
+**authoritative** on the same line:
 
 ```markdown
-# ADR NNNN: <Title>
-
-- **Status**: active | superseded by ADR-NNNN
-- **Date**: <YYYY-MM-DD>
-- **Origin**: <spec issue, ticket, PR, or "design session">
-
-<One paragraph — one to three sentences carrying the context, the decision,
-and why. That is the whole ADR by default; the value is in recording that a
-decision was made and why, not in filling out sections.>
-
-## Alternatives Considered (only when they earn their place)
-
-<Discarded options and why. This is where discarded ideas live, never the
-living docs.>
-
-## Consequences (only when they earn their place)
-
-<What becomes easier, harder, or forbidden.>
-
-## Gate (required for a guardrail decision)
-
-<What a future reviewer must check so later work does not violate this.>
+`<ADDW_ADR_TEMPLATE>` is the authoritative ADR format for this project.
 ```
 
-Carry these rules into the template's own prose:
-
-- ADRs are **write-once**, sequence-numbered, and self-contained — evidence
-  restated in the ADR's own words, citing only living docs and other ADRs.
-  The `Status` pointer is the only edit ever made to an existing ADR.
-- The three bold fields are **mandatory and always present**. `Status` has
-  exactly two states, `active` and `superseded by ADR-NNNN`.
-- `Origin` is historical provenance: the **spec issue** for a decision made
-  during alignment or specification, the **ticket or PR** when implementation
-  forced it, or the literal `design session` when the decision predates any
-  tracker artifact. Origins are never backfilled and are exempt from
-  dead-link checking — they are expected to outlive what they cite.
-
-Then add one line to the project instructions — the `CLAUDE.md` or
-`AGENTS.md` that Matt's setup already edited, **never the other one** —
-declaring that `<ADDW_ADR_DIR>/template.md` is authoritative over any
-ADR format bundled with a skill, including `domain-modeling`'s. That
-override is what makes the template the enforcing surface for every
-authoring path. Put the resolved path and the word **authoritative** on the
-same line: doctor looks for both together, so that a passing mention of the
-template somewhere else in the file cannot be mistaken for the declaration.
+Doctor looks for both together, so that a passing mention of the template
+somewhere else in the file cannot be mistaken for the declaration. The
+backticks are what make that check exact rather than approximate: a bare path
+in prose cannot be told apart from a longer path containing it — an install
+naming `.claude/skills/lib/templates/adr.md` has not declared
+`skills/lib/templates/adr.md`, and it is the near-miss, not the obvious
+mismatch, that this check exists to catch.
 
 ### 2.9 `docs/ARCHITECTURE-rules.md` and `CHANGELOG.md`
 
@@ -361,7 +336,7 @@ read it, agents don't.
 
 chore: initialize the ADDW workflow
 
-- Initialized ADDW — architecture, charter, testing guide, ADR template, and
+- Initialized ADDW — architecture, charter, testing guide, ADR declaration, and
   project config.
 ```
 
@@ -385,10 +360,11 @@ is the only place it can be answered.
 
 Then offer — do not perform unasked — the initial commit and tag, at the
 version the `CHANGELOG.md` entry carries. Stage by **explicit paths**, and
-stage the paths this run actually wrote: the ADR directory may sit outside
-`docs/`, and the project-instructions file is whichever of `CLAUDE.md` or
-`AGENTS.md` Matt's setup chose — naming the other one aborts the whole `git
-add` on a pathspec error.
+stage the paths this run actually wrote and no others: the
+project-instructions file is whichever of `CLAUDE.md` or `AGENTS.md` Matt's
+setup chose, and the ADR directory now holds nothing init produced — the
+template ships with the skills. Naming a path this run did not write aborts
+the whole `git add` on a pathspec error, taking the commit with it.
 
 ```bash
 git commit -m "chore: initialize the ADDW workflow"

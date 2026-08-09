@@ -14,9 +14,9 @@ live under `.claude/skills/...`.
 `setup-matt-pocock-skills`. His setup configures the tracker (GitHub — the overlay is
 GitHub-only) and the domain layout; ADDW's init adds the living docs (ARCHITECTURE.md,
 charter.md, TESTING.md), the project config `docs/addw.env`, the `spec` and `backlog` labels,
-and the ADR template, then gates on doctor (`addw-init` § *Step 2: Generate — ADDW's
-artifacts only*). Skills are never edited per project; everything project-specific lives in
-those files.
+and the line declaring the ADR template authoritative — the template itself ships with the
+skills — then gates on doctor (`addw-init` § *Step 2: Generate — ADDW's artifacts only*).
+Skills are never edited per project; everything project-specific lives in those files.
 
 **Where the work lives**: on the tracker, as GitHub issues — not in this tree. There are no
 plan documents and no backlog file. A spec issue carries the `spec` label; its tickets cite

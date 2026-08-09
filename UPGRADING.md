@@ -167,3 +167,73 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Schema 4 → 5
+
+The ADR template stops being a generated project file and rides the skills copy
+instead, so a template change arrives with the next install rather than costing
+every project a hand migration. The config gains one key naming the file, which
+is also where an install that keeps its own ADR format now says so. The
+migration is manual: replacing `.claude/skills/` cannot delete a generated file
+or edit your project instructions for you.
+
+### 1. Delete the generated template
+
+Remove the install's local `<ADDW_ADR_DIR>/template.md`. Its replacement is the
+shipped `.claude/skills/lib/templates/adr.md`, which carries the same format and
+the same authoring rules. Existing ADRs are not reformatted.
+
+Keeping your own ADR format is now a supported answer rather than a silent
+overwrite: leave your template where it is, name it in the key below, and doctor
+verifies *its* format instead. What is no longer supported is editing a
+generated file and hoping the next upgrade preserves it.
+
+### 2. Name the template in `docs/addw.env`
+
+Add the key. It is required — an install that skipped this step is told so
+rather than defaulted into a path it never chose:
+
+```bash
+ADDW_ADR_TEMPLATE=".claude/skills/lib/templates/adr.md"
+```
+
+### 3. Re-point the project instructions
+
+The one `CLAUDE.md` or `AGENTS.md` line declaring the ADR format authoritative
+has to name **the same path the key does** — doctor checks the two agree,
+because an install customizing one file while the workflow reads another is the
+exact divergence that declaration exists to prevent.
+
+Put the path **in backticks** while you are there, if it isn't already:
+
+```markdown
+`.claude/skills/lib/templates/adr.md` is the authoritative ADR format for this project.
+```
+
+Doctor now requires the code span. It is what makes "the same path" an exact
+test — a bare path in prose cannot be distinguished from a longer path that
+contains it, which is precisely the mistake this boundary makes easy, since
+`skills/lib/templates/adr.md` and `.claude/skills/lib/templates/adr.md` are one
+prefix apart.
+
+### 4. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=5
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.
+
+Two things this boundary deliberately does **not** ask of you. ADRs superseded
+before supersession began sweeping its own vocabulary have no swept terms to
+find, so the maintenance sweep's vocabulary check is weaker over that older
+stretch of the tree — a known degradation, not a migration you owe it. And the
+tracker seam's snapshot limit, which arrives with the archive-filtering work,
+will need no step here whenever it lands: it carries a default, so its absence
+is a working install rather than a silent one, and an operator meets it through
+the seam's refusal message at the moment it starts to matter.

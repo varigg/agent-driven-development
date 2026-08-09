@@ -21,7 +21,7 @@ set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
 # UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
-EXPECTED_SCHEMA=4
+EXPECTED_SCHEMA=5
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
@@ -33,7 +33,7 @@ bad() {
 # Config values come from docs/addw.env alone. In particular, an exported
 # recipe must not make an absent recipe key look defined.
 unset ADDW_SCHEMA ADDW_PROJECT_NAME ADDW_VERSION_FILE ADDW_MAIN_BRANCH \
-    ADDW_AUDIT_NUDGE_N ADDW_ADR_DIR ADDW_RECIPE_LINT \
+    ADDW_AUDIT_NUDGE_N ADDW_ADR_DIR ADDW_ADR_TEMPLATE ADDW_RECIPE_LINT \
     ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED \
     ADDW_PLAN_REVIEW_SKILL ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL \
     ADDW_ASK_SKILL
@@ -62,6 +62,7 @@ required_keys=(
     ADDW_MAIN_BRANCH
     ADDW_AUDIT_NUDGE_N
     ADDW_ADR_DIR
+    ADDW_ADR_TEMPLATE
 )
 for key in "${required_keys[@]}"; do
     if [ -n "${!key:-}" ]; then
@@ -146,9 +147,8 @@ else
     ok "no retired ADDW_PLAN_REVIEW_SKILL"
 fi
 
-adr_template=""
-if [ -n "${ADDW_ADR_DIR:-}" ]; then
-    adr_template="$ADDW_ADR_DIR/template.md"
+adr_template="${ADDW_ADR_TEMPLATE:-}"
+if [ -n "$adr_template" ]; then
     if [ -f "$adr_template" ]; then
         ok "$adr_template exists"
         for field in Status Date Origin; do
@@ -175,7 +175,7 @@ if [ -n "${ADDW_ADR_DIR:-}" ]; then
         bad "$adr_template missing"
     fi
 else
-    bad "ADDW_ADR_DIR is unset, so neither the ADR template nor the project-instructions override could be checked"
+    bad "ADDW_ADR_TEMPLATE is unset, so neither the ADR template nor the project-instructions override could be checked"
 fi
 
 if [ -f docs/4-unit-tests/TESTING.md ]; then
@@ -192,20 +192,40 @@ if [ -f docs/4-unit-tests/TESTING.md ]; then
 fi
 
 if [ -n "$adr_template" ]; then
-    # The path and the word together, on one line: a template mentioned in
-    # passing elsewhere in the instructions is not a declaration, and matching
-    # the path alone would accept one.
+    # A declaration is one line carrying two things: the configured path in
+    # backticks, and the word "authoritative". Both, on the same line — a
+    # template mentioned in passing elsewhere in the file is not a declaration.
+    #
+    # The backticks are required, not decoration. Without them this would have
+    # to find a bare path in English prose and work out where it ends, and
+    # there is no reliable way to do that. Say the config reads
+    # ADDW_ADR_TEMPLATE="skills/lib/templates/adr.md". A plain search for that
+    # text also matches all of these, and not one of them names that file:
+    #
+    #     .claude/skills/lib/templates/adr.md    (an install's copy)
+    #     skills/lib/templates/adr.md.backup
+    #     skills/lib/templates/adr.md old        (a filename with a space?)
+    #
+    # Ruling those out means deciding which characters a filename may contain —
+    # and that decision then starts rejecting honest declarations, such as a
+    # sentence ending "...is skills/lib/templates/adr.md." where the full stop
+    # looks like part of the name, because it could be.
+    #
+    # Backticks mark where the path ends, so none of that arises: this is a
+    # plain substring search, no escaping and no guessing. The cost is one
+    # format rule on a line a human writes once, and addw-init states it.
     instructions_override=0
     for instructions in CLAUDE.md AGENTS.md; do
         if [ -f "$instructions" ] &&
-            grep -F -- "$adr_template" "$instructions" | grep -qi authoritative; then
+            grep -F -- "\`$adr_template\`" "$instructions" |
+            grep -qi authoritative; then
             instructions_override=1
         fi
     done
     if [ "$instructions_override" -eq 1 ]; then
         ok "project instructions declare $adr_template authoritative"
     else
-        bad "CLAUDE.md or AGENTS.md must carry one line naming $adr_template and calling it authoritative"
+        bad "CLAUDE.md or AGENTS.md must carry one line with \`$adr_template\` in backticks and the word authoritative"
     fi
 fi
 
