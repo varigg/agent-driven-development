@@ -34,7 +34,7 @@ Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencie
 
 ## The living docs
 
-`ARCHITECTURE.md` is the agent's long-term memory of your codebase: an always-current, as-built snapshot read at the start of each task, so the agent doesn't re-derive your structure from scratch every session — or worse, guess it. It is flanked by `docs/charter.md`, which holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and a set of write-once, dated ADRs — `active` until superseded, including guardrail ADRs that record what you deliberately do *not* build so no future change reintroduces it.
+`ARCHITECTURE.md` is the agent's long-term memory of your codebase: an always-current, as-built snapshot read at the start of each task, so the agent doesn't re-derive your structure from scratch every session — or worse, guess it. It is flanked by `docs/charter.md`, which holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and a set of dated ADRs that are write-once from the moment they merge — correctable in their own PR while still under review, then changed only through the `Status` pointer, `active` until superseded, and including guardrail ADRs that record what you deliberately do *not* build so no future change reintroduces it.
 
 ## One config file, zero skill edits
 

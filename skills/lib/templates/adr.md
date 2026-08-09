@@ -25,11 +25,16 @@ living docs.>
 
 ## The rules (this section is not copied into an ADR)
 
-- ADRs are **write-once**, sequence-numbered, and self-contained — evidence
-  restated in the ADR's own words, citing only living docs and other ADRs.
-  The `Status` pointer is the only edit ever made to an existing ADR.
+- ADRs are **write-once from the merge boundary**, sequence-numbered, and
+  self-contained — evidence restated in the ADR's own words, citing only
+  living docs and other ADRs. Until it merges an ADR is a draft under review
+  like any other file in its PR, so correct it there freely; once merged, the
+  `Status` pointer is the only edit ever made to it.
 - The three bold fields are **mandatory and always present**. `Status` has
   exactly two states, `active` and `superseded by ADR-NNNN`.
+- `Date` is the date the ADR was **written**, not the date it merged, so the
+  field is not a function of review latency. Correcting a draft under review
+  does not restamp it.
 - `Origin` is historical provenance: the **spec issue** for a decision made
   during alignment or specification, the **ticket or PR** when implementation
   forced it, or the literal `design session` when the decision predates any
