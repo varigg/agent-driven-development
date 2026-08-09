@@ -21,23 +21,6 @@ Issues labeled **`backlog`** are undesigned ideas, not tickets — nothing there
 is workable until it graduates into a proposal and a spec, and the frontier
 skips them. They carry no `## Parent`.
 
-## Working a ticket
-
-This repo dogfoods its own workflow: one ticket per session, `/addw-implement`,
-contract tests frozen before implementation, deterministic gate, `codex-code-review`
-loop to `APPROVED`, then a PR that the human reviews and squash-merges. The base
-branch is `master` (`ADDW_MAIN_BRANCH` in `docs/addw.env`), and PR titles must
-parse as conventional commits — the release version and changelog are derived
-from them by `skills/lib/release/derive.sh`.
-
-Verify with the gate, which runs this repo's own recipes:
-
-```
-bash skills/lib/gate/gate.sh      # lint (shellcheck) → typecheck (skipped) → tests
-bash tests/run.sh                 # tests alone
-```
-
-Its one-line summary is what the PR body carries verbatim.
 
 ## Conventions that bite
 
@@ -69,6 +52,5 @@ Its one-line summary is what the PR body carries verbatim.
 | Where | What |
 | --- | --- |
 | `README.md` | What ADDW is, the flow, the skills reference |
-| `docs/proposals/pocock-overlay.md` | The design ADDW is built on; issue #2 supersedes it where they differ |
 | `UPGRADING.md` | Structural steps per schema boundary |
 | `docs/cycle-walkthrough.md` | The guided tour of one overlay cycle, pointing into the skills for every rule |
