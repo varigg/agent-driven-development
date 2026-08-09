@@ -49,15 +49,22 @@ build_context() {
     # never reach the caller. Unsetting first keeps an exported value from
     # making an unconfigured project look configured, and the source's own
     # stdout is discarded so only the key's value is captured.
+    #
+    # The key is read after the source regardless of its exit status: `.`
+    # returns the status of the config's last command, so gating on it would
+    # report a correctly-configured project as unconfigured whenever its
+    # config happens to end on a conditional. A config that fails to parse
+    # says so on stderr and leaves the key unset, which the absent branch
+    # below already covers; one that calls `exit` takes the subshell with it,
+    # so the assignment itself falls back rather than aborting the review.
     adr_dir="$(
         unset ADDW_ADR_DIR
         if [ -r "docs/addw.env" ]; then
             # shellcheck disable=SC1091
-            if . "docs/addw.env" >/dev/null; then
-                printf '%s' "${ADDW_ADR_DIR:-}"
-            fi
+            . "docs/addw.env" >/dev/null || true
         fi
-    )"
+        printf '%s' "${ADDW_ADR_DIR:-}"
+    )" || adr_dir=""
 
     {
         printf '# Ticket #%s — %s\n\n' "$issue" "$(bash "$TRACKER" title "$issue")"
@@ -80,7 +87,7 @@ build_context() {
     if [ -n "$adr_dir" ]; then
         printf '\n---\n\nADR directory for guardrail review: `%s`\n' "$adr_dir" >> "$file"
     else
-        printf '\n---\n\nADR directory for guardrail review: not configured (`ADDW_ADR_DIR` is absent, empty, or unreadable).\n' \
+        printf '\n---\n\nADR directory for guardrail review: none. `ADDW_ADR_DIR` did not resolve from this project'"'"'s config, so the guardrail-ADR checklist item has nothing to check — skip it rather than guessing a path.\n' \
             >> "$file"
     fi
 }

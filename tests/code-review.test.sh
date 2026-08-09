@@ -95,6 +95,12 @@ run_resume() { # <project-root> <state-dir> <issue> [args…]
       bash "$INSTALL/skills/codex-code-review/scripts/resume.sh" "$@" )
 }
 
+build() { # <project-root> <issue> <buffer> — build_context alone, no runner
+  ( cd "$1" && STATE_DIR="$work/state-direct" \
+      source "$INSTALL/skills/codex-code-review/scripts/_fetch.sh"
+    build_context "$2" "$3" )
+}
+
 # --- the configured directory reaches the buffer ---------------------------
 
 # An ADR directory other than docs/adr/ — the whole point of the fixture.
@@ -118,6 +124,8 @@ assert_not_contains "$buf" "docs/adr" \
   "start: the buffer names no hardcoded ADR directory"
 assert_contains "$buf" "A ticket body." \
   "start: the buffer still carries the ticket body"
+assert_contains "$(cat "$TRACKER_LOG")" "body 12" \
+  "start: the ticket is read through the tracker layer"
 
 # Resume rebuilds the buffer from scratch, so it must interpolate too — a
 # reviewer that saw the directory on turn 1 and lost it on turn 2 is the same
@@ -145,6 +153,45 @@ assert_not_contains "$buf" "docs/adr" \
 assert_contains "$buf" "ADDW_ADR_DIR" \
   "no ADR dir: the buffer names the key whose absence disabled the check"
 
+# An exported value must not stand in for an absent key: a session that happens
+# to carry ADDW_ADR_DIR from elsewhere would otherwise hand the reviewer some
+# other project's directory and call it configured. The other ADR consumer
+# freezes the same property (tests/next-adr-number.test.sh).
+project="$(new_project exported 'ADDW_MAIN_BRANCH="master"
+')"
+state="$work/state-exported"
+out="$( export ADDW_ADR_DIR="docs/from-the-environment"
+        run_start "$project" "$state" 14 2>&1 )" \
+  || fail "start.sh (exported ADR dir): exited non-zero: $out"
+buf="$(cat "$state/issue-14.context.md")"
+assert_not_contains "$buf" "docs/from-the-environment" \
+  "exported ADR dir: an inherited value never stands in for an absent key"
+
+# A declared-but-empty value is an absent directory, not a directory named "".
+project="$(new_project empty 'ADDW_ADR_DIR=""
+')"
+state="$work/state-empty"
+out="$(run_start "$project" "$state" 15 2>&1)" \
+  || fail "start.sh (empty ADR dir): exited non-zero: $out"
+assert_contains "$(cat "$state/issue-15.context.md")" "ADDW_ADR_DIR" \
+  "empty ADR dir: reported as unresolved, not as a configured directory"
+
+# `.` returns the exit status of the config's LAST command, so a shell-clean
+# config ending on a false conditional must still yield its ADR directory —
+# gating the read on that status would report a configured project as
+# unconfigured, which is the silent pass this ticket exists to kill, one layer
+# down. Asserted against build_context rather than the adapter entry point:
+# the shared runner sources the same config under `set -e` and dies on such a
+# config before any review starts, which is a defect of its own.
+project="$(new_project trailing-false 'ADDW_ADR_DIR="docs/decisions"
+[ -n "${ADDW_NOT_SET:-}" ]
+')"
+buffer="$work/trailing-false.context.md"
+build "$project" 16 "$buffer" \
+  || fail "build_context (config ending false): exited non-zero"
+assert_contains "$(cat "$buffer")" "docs/decisions" \
+  "config ending on a false conditional: the directory still resolves"
+
 # --- the checklist names no directory --------------------------------------
 
 checklist="$(cat "$SKILL/checklist.md")"
@@ -157,6 +204,6 @@ assert_contains "$checklist" "guardrail ADRs" \
 
 implement_md="$(cat "$REPO/skills/addw-implement/SKILL.md")"
 assert_contains "$implement_md" 'ADR `Gate`' \
-  "addw-implement: the instruction block names any ADR Gate bearing on the ticket"
+  "addw-implement: Step 6 obliges the caller to carry an ADR Gate into the instruction block"
 
 echo "code-review: ADR directory from configuration, on start and resume; Gate in the instruction block"

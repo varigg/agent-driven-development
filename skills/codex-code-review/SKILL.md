@@ -17,7 +17,8 @@ State (thread ID, review text, event log) persists under
 `.claude/skills/codex-code-review/state/`, keyed on the issue number. The scripts wrap the
 shared runner in `.claude/skills/lib/codex/` with this skill's prompts and state — the same
 pattern as `codex-spec-review`. The per-issue file `state/issue-<N>.context.md` holds the
-ticket body plus the parent spec's, and is the target handed to the runner.
+ticket body, the parent spec's, and the project's configured ADR directory, and is the
+target handed to the runner.
 
 That buffer exists because the reviewer runs in a read-only sandbox with **no network**: it
 cannot fetch the ticket itself, and a diff without the intent behind it is unreviewable for
@@ -86,6 +87,8 @@ either earns another round or is disclosed in the PR body as uncovered.
 - Extra context -> `{{EXTRA_PROMPT}}`. Keep short — the gate summary line is the usual payload.
 - A ticket with no parent spec reviews fine; the buffer says so and the reviewer falls back to
   the ticket's own acceptance criteria.
+- The guardrail-ADR checklist item names no directory. `ADDW_ADR_DIR` supplies it through the
+  buffer; a project that declares no such key gets a stated absence there, never a guessed path.
 
 ## Loop Shape
 
