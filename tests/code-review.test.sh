@@ -95,12 +95,6 @@ run_resume() { # <project-root> <state-dir> <issue> [args…]
       bash "$INSTALL/skills/codex-code-review/scripts/resume.sh" "$@" )
 }
 
-build() { # <project-root> <issue> <buffer> — build_context alone, no runner
-  ( cd "$1" && STATE_DIR="$work/state-direct" \
-      source "$INSTALL/skills/codex-code-review/scripts/_fetch.sh"
-    build_context "$2" "$3" )
-}
-
 # --- the configured directory reaches the buffer ---------------------------
 
 # An ADR directory other than docs/adr/ — the whole point of the fixture.
@@ -182,16 +176,15 @@ assert_contains "$(cat "$state/issue-15.context.md")" "ADDW_ADR_DIR" \
 # config ending on a false conditional must still yield its ADR directory —
 # gating the read on that status would report a configured project as
 # unconfigured, which is the silent pass this ticket exists to kill, one layer
-# down. Asserted against build_context rather than the adapter entry point:
-# the shared runner sources the same config under `set -e` and dies on such a
-# config before any review starts, which is a defect of its own.
+# down. Asserted through the adapter entry point, which covers this wrapper's
+# read and the shared runner's sourcing of the same config in one pass.
 project="$(new_project trailing-false 'ADDW_ADR_DIR="docs/decisions"
 [ -n "${ADDW_NOT_SET:-}" ]
 ')"
-buffer="$work/trailing-false.context.md"
-build "$project" 16 "$buffer" \
-  || fail "build_context (config ending false): exited non-zero"
-assert_contains "$(cat "$buffer")" "docs/decisions" \
+state="$work/state-trailing-false"
+out="$(run_start "$project" "$state" 16 2>&1)" \
+  || fail "start.sh (config ending false): exited non-zero: $out"
+assert_contains "$(cat "$state/issue-16.context.md")" "docs/decisions" \
   "config ending on a false conditional: the directory still resolves"
 
 # --- the checklist names no directory --------------------------------------

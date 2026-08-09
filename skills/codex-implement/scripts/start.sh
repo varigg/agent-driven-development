@@ -11,7 +11,7 @@
 # Usage: start.sh [--prompt-file <tpl>] <target> [custom instructions…]
 # --prompt-file defaults to this skill's prompts/implement.tpl (adapter contract).
 # Exits 0 on success, 1 on Codex / thread_id capture failure,
-# 2 on an existing thread (use reset.sh first).
+# 2 on an existing thread (use reset.sh first), 78 on invalid docs/addw.env.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

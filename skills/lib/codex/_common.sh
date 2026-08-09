@@ -16,9 +16,38 @@ mkdir -p "$STATE_DIR"
 # Per-project overrides come from docs/addw.env (ADDW_CODEX_MODEL_IMPL /
 # ADDW_CODEX_MODEL_REVIEW / ADDW_CODEX_EFFORT); CODEX_MODEL / CODEX_EFFORT
 # env vars act as per-run overrides on top of both.
+# These three come from the config alone. Clearing them first stops a value
+# inherited from the environment from making an unconfigured project look
+# configured, which is the property the other config readers hold too. The
+# subshell below inherits the cleared state, so it needs no unset of its own.
+unset ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT
 if [ -f "docs/addw.env" ]; then
-    # shellcheck disable=SC1091
-    . "docs/addw.env"
+    # A config that cannot be parsed is a defect and stays fatal; only the
+    # sourcing's exit status is forgiven below. The parser's own diagnostic
+    # is relayed because this runs mid-workflow, where the line number is
+    # the whole remedy.
+    if ! config_error="$(bash -n "docs/addw.env" 2>&1)"; then
+        echo "error: docs/addw.env is not shell-sourceable" >&2
+        [ -z "$config_error" ] || printf '%s\n' "$config_error" >&2
+        exit 78
+    fi
+
+    # Read only the runner's keys in a subshell. The config's stdout is
+    # discarded, and its status or an exit inside it cannot reach this shell.
+    # One read per key, in the order printed, so no index has to be kept in
+    # step with the printf below.
+    {
+        IFS= read -r ADDW_CODEX_MODEL_IMPL || true
+        IFS= read -r ADDW_CODEX_MODEL_REVIEW || true
+        IFS= read -r ADDW_CODEX_EFFORT || true
+    } < <(
+        # shellcheck disable=SC1091
+        . "docs/addw.env" >/dev/null || true
+        printf '%s\n' \
+            "${ADDW_CODEX_MODEL_IMPL:-}" \
+            "${ADDW_CODEX_MODEL_REVIEW:-}" \
+            "${ADDW_CODEX_EFFORT:-}"
+    )
 fi
 case "$STATE_DIR" in
     *codex-implement*) CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_IMPL:-gpt-5.6-luna}}" ;;

@@ -6,7 +6,8 @@
 # Usage: resume.sh --prompt-file <tpl> [--notes "..."] <target> [extra prompt text...]
 # Both --prompt-file and $STATE_DIR are required: the runner is shared and
 # owns neither prompts nor state — each adapter pins its own.
-# Exits 0 on success, 1 on Codex failure, 2 if no prior session exists.
+# Exits 0 on success, 1 on Codex failure, 2 if no prior session exists,
+# 78 on invalid docs/addw.env.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

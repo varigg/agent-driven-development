@@ -129,8 +129,12 @@ lives inside `skills/` rather than at the repo root.
   the key derivation, the prompt-template substitution, and the model/effort
   resolution (`ADDW_CODEX_MODEL_IMPL` / `ADDW_CODEX_MODEL_REVIEW` /
   `ADDW_CODEX_EFFORT` from the project config, `CODEX_MODEL` / `CODEX_EFFORT`
-  as per-run overrides). It was previously hosted inside a skill until the
-  adapters outnumbered it.
+  as per-run overrides). Those three are read in a subshell, so neither the
+  config's exit status nor an `exit` inside it can stop an adapter: `.` returns
+  the status of the config's *last command*, and a shell-clean config ending on
+  a false conditional is no defect. A config that fails to *parse* is one, and
+  exits 78 with the parser's diagnostic. It was previously hosted inside a skill
+  until the adapters outnumbered it.
   The exception: model *class* is chosen by matching the caller's `STATE_DIR`
   against `*codex-implement*`, so implementation gets the implementation-class
   model and everything else the review-class one. That is the layer knowing one
