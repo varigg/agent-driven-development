@@ -46,35 +46,21 @@ lives inside `skills/` rather than at the repo root.
     ticket reads as in progress exactly while its branch is visible to
     everybody, and deleting the branch on merge is what retires the
     annotation.
-    `snapshot` is the layer's second unit-tested verb
-    (`tests/tracker-snapshot.test.sh`), for the same reason `create` is: it
-    drops `archived` issues, which is logic rather than a passthrough, and it
-    is the *only* enforcement of the write-only archive — locating the drop
-    here means no consumer **can** read a retired document back, rather than
-    every consumer promising not to. The drop is client-side deliberately. The
-    tracker CLI's issue listing offers no exclude-label flag, so excluding
-    server-side means its search mode, which moves the query onto an
-    eventually-consistent index — one capable of omitting an issue labelled
-    moments earlier from a listing whose entire justification is that nothing
-    goes stale between sessions — and imposes a hard 1,000-result cap where the
-    limit here is a raisable default. Filtering after the fetch saves no
-    bandwidth, which nothing asks for, and buys the property that matters:
-    `resolve.sh` never parses a retired body.
-    Completeness is the seam's property rather than each caller's, for the same
-    structural reason. Because the filter runs after retrieval, archives occupy
-    fetch slots and can displace live issues *before* anything drops them, so a
-    fetch reaching `ADDW_TRACKER_FETCH_LIMIT` (default 1000) refuses instead of
-    answering, and `frontier` and `spec-complete` inherit that refusal as a
-    non-zero exit — a frontier that merely looked shorter is a wrong answer,
-    not a slow one. A caller-side guard could not do this: it would need the
-    raw pre-filter count, which the filtered array cannot carry without
-    changing the bare-JSON-array shape `resolve.sh` asserts. The bound is
+    `snapshot` is unit-tested (`tests/tracker-snapshot.test.sh`) for the same
+    reason `create` is. It drops `archived` issues, which is logic rather than
+    a passthrough, and it is the *only* enforcement of the write-only archive:
+    dropping them here means no consumer **can** read a retired document back,
+    rather than every consumer promising not to. Client-side deliberately —
+    the tracker CLI offers no exclude-label flag on a listing, so excluding
+    server-side means its search mode, whose hard 1,000-result cap would stop
+    the limit below from being a remedy exactly when it is needed.
+    That ordering is why reaching `ADDW_TRACKER_FETCH_LIMIT` (default 1000)
+    refuses rather than truncating: archives occupy fetch slots and can
+    displace live issues *before* anything drops them, so a shortened frontier
+    would be a wrong answer rather than a slow one. `frontier` and
+    `spec-complete` inherit the refusal as a non-zero exit. The bound is
     configuration because the remedy would otherwise mean editing a skill,
-    which must stay byte-identical across installs; raising it degrades rather
-    than fixes, since every query then carries more payload, and that
-    degradation is the pressure behind the scoped-snapshot question filed as
-    backlog. What stays unaddressed is that archives are still *fetched* — the
-    refusal makes that loud rather than silent.
+    which must stay byte-identical across installs.
 
 - `templates/` — shipped, project-agnostic templates that ride along with the
   wholesale skills copy. `adr.md` holds the ADR format and its authoring rules;
