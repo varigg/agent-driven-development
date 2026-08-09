@@ -266,7 +266,8 @@ ADDW_RECIPE_LINT="<command or empty>"
 ADDW_RECIPE_TYPECHECK="<command or empty>"
 # {paths} is replaced by the affected test paths; a recipe without it runs as-is:
 ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
-# Optional codex model/effort overrides — unset, built-in defaults apply:
+# Optional codex model/effort overrides — unset, the shared codex runner's own
+# defaults apply:
 # ADDW_CODEX_MODEL_IMPL="..."
 # ADDW_CODEX_MODEL_REVIEW="..."
 # ADDW_CODEX_EFFORT="..."

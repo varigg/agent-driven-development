@@ -12,9 +12,9 @@ export STATE_DIR
 mkdir -p "$STATE_DIR"
 
 # Model/effort per flow, resolved below and the single source of truth for all
-# codex skills: the defaults are what the `case` on model class picks, a
-# project overrides them from docs/addw.env, and CODEX_MODEL / CODEX_EFFORT
-# override both per run.
+# codex skills: the fallbacks in that resolution are the defaults, a project
+# overrides them from docs/addw.env, and CODEX_MODEL / CODEX_EFFORT override
+# both per run.
 # The three config keys come from the config alone. Clearing them first stops
 # a value inherited from the environment from making an unconfigured project
 # look configured, which is the property the other config readers hold too. The

@@ -112,9 +112,10 @@ lives inside `skills/` rather than at the repo root.
     gap.
     Archival is what makes those two diverge, so the intuitive answer — the
     first unused number in the listing — is one already spent, which is why
-    the rule is a script rather than prose the Doc Impact step points at. No
-    tracker call is needed, because every departed number sits below a present
-    one. It does not solve concurrent authorship: two branches each computing
+    the rule is a script rather than prose the Doc Impact step points at. A
+    superseding ADR is always numbered above the document it retires, so every
+    departed number sits below a present one and the directory alone is
+    authoritative — no tracker call is needed. It does not solve concurrent authorship: two branches each computing
     max plus one land on the same number, which only merge order or a reviewer
     catches.
 

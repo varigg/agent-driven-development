@@ -8,17 +8,16 @@
 #   --spec <n>       the spec issue to close as completed; omitted for a
 #                    repository release, which closes nothing
 #   --commit <sha>   the release PR's merge commit (default HEAD). Callers
-#                    should always pass it — HEAD is wrong the moment another
-#                    PR merges in between.
+#                    should always pass it: let it default once another PR has
+#                    merged, and the tag covers commits the changelog entry
+#                    never mentions.
 #   <version>        the version to tag and publish. Must match an entry in
 #                    the target commit's CHANGELOG.md, whose body becomes the
 #                    release notes, read from that commit's tree rather than
 #                    the working tree.
 #
 # Run from the repository root after the release PR has been merged. Each step
-# prints one `done:`/`skip:` line, and a skip tests for the step's *result*,
-# not for something with the right name: a tag pointing away from the release
-# commit — locally or on the remote — is refused rather than skipped.
+# prints one `done:`/`skip:` line.
 #
 # Exit 0 when every step succeeded or skipped; 1 when the release commit's
 # CHANGELOG.md has no entry for the version; 2 on usage errors, outside a git

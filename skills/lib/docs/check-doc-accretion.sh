@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Deterministic accretion probe for a living design document: count the
 # version references it carries now against its copy at the previous release
-# tag, and name the lines counted. Advisory, never a gate. Why version density
-# is the signal, and which references legitimately stay: ../README.md.
+# tag, and name the lines counted. Why version density is the signal, which
+# references legitimately stay, and why no verdict is ever a gate: ../README.md.
 #
 # Usage: check-doc-accretion.sh [file ...]   (default docs/ARCHITECTURE.md)
 # Run from the repo root. Exit 0 on any verdict; 1 if a named file is missing.

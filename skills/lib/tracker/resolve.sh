@@ -18,10 +18,10 @@
 #   needs-rescoping:     dependents of a blocker closed as not planned
 #   unknown-blockers:    dependents of a blocker absent from the snapshot
 #   release-ready-specs: open spec-labeled issues whose completion query passes
-# The branch annotation matches whatever heads the caller passes in, which the
-# layer's contract fixes as the remote ones. Where a repo keeps merged branches,
-# the annotation outlives the work — harmless for the ticket the PR closed
-# (closed tickets never reach the listing), stale only for one left open
+# The branch annotation matches whatever heads the caller passes in, which
+# ../README.md's contract fixes as the remote ones. Where a repo keeps merged
+# branches, the annotation outlives the work — harmless for the ticket the PR
+# closed (closed tickets never reach the listing), stale only for one left open
 # afterwards.
 # When one ticket has blockers in several states, the loudest wins the
 # listing: unknown over not-planned over open (an open blocker excludes
