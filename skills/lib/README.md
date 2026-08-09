@@ -46,6 +46,21 @@ lives inside `skills/` rather than at the repo root.
     ticket reads as in progress exactly while its branch is visible to
     everybody, and deleting the branch on merge is what retires the
     annotation.
+    `snapshot` is unit-tested (`tests/tracker-snapshot.test.sh`) for the same
+    reason `create` is. It drops `archived` issues, which is logic rather than
+    a passthrough, and it is the *only* enforcement of the write-only archive:
+    dropping them here means no consumer **can** read a retired document back,
+    rather than every consumer promising not to. Client-side deliberately —
+    the tracker CLI offers no exclude-label flag on a listing, so excluding
+    server-side means its search mode, whose hard 1,000-result cap would stop
+    the limit below from being a remedy exactly when it is needed.
+    That ordering is why reaching `ADDW_TRACKER_FETCH_LIMIT` (default 1000)
+    refuses rather than truncating: archives occupy fetch slots and can
+    displace live issues *before* anything drops them, so a shortened frontier
+    would be a wrong answer rather than a slow one. `frontier` and
+    `spec-complete` inherit the refusal as a non-zero exit. The bound is
+    configuration because the remedy would otherwise mean editing a skill,
+    which must stay byte-identical across installs.
 
 - `templates/` — shipped, project-agnostic templates that ride along with the
   wholesale skills copy. `adr.md` holds the ADR format and its authoring rules;

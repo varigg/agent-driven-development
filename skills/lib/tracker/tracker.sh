@@ -19,27 +19,80 @@
 #   tracker.sh issues-enabled                    repository issues are enabled
 #   tracker.sh labels                            label names, one per line
 #   tracker.sh create-label <label>              create an idempotent label
-#   tracker.sh snapshot                          all issues, resolver JSON, stdout
+#   tracker.sh snapshot                          the workflow's issues, resolver JSON, stdout
 #   tracker.sh branches                          remote branch names, one per line
 #   tracker.sh frontier                          live frontier listing
 #   tracker.sh spec-complete <n>                 live spec-completion query
 #
+# `snapshot` means "the issues the workflow reasons about", not "every issue":
+# `archived` issues are dropped immediately after the fetch, so no consumer can
+# decode a retired document's body. Single-issue reads through `view` are
+# unaffected — an archive stays deliberately fetchable by number.
+#
+# The fetch is bounded by ADDW_TRACKER_FETCH_LIMIT (default 1000). Reaching that
+# bound exits non-zero rather than answering, and every consumer inherits the
+# refusal. Why the filter is client-side and why the bound refuses rather than
+# truncating: ../README.md.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOLVE="$here/resolve.sh"
 
-# The resolver's snapshot shape. --limit raises gh's default of 30; a repo
-# outgrowing 1000 issues will need pagination here before anything truncates.
+# The resolver's snapshot shape. --limit raises gh's default of 30.
 FIELDS='number,title,state,stateReason,labels,assignees,body'
+
+CONFIG="docs/addw.env"
+FETCH_LIMIT_DEFAULT=1000
+FETCH_LIMIT=""
 
 usage() {
   sed -n 's/^# \{0,1\}//p' "${BASH_SOURCE[0]}" | sed -n '/^Usage:/,/^$/p' >&2
   exit 2
 }
 
+# Sets FETCH_LIMIT from the project config, or the default when unconfigured.
+# It assigns a global rather than printing one, so the refusals below exit the
+# script instead of a command substitution's subshell.
+resolve_fetch_limit() {
+  local configured=""
+  if [ -r "$CONFIG" ]; then
+    # Read in a subshell: many scripts source this config, and neither a
+    # non-zero status nor an `exit` inside it may take the seam down with it.
+    # The key is cleared first so a value inherited from the environment
+    # cannot make an unconfigured project look configured.
+    configured="$(
+      unset ADDW_TRACKER_FETCH_LIMIT
+      # shellcheck disable=SC1090,SC1091
+      . "$CONFIG" >/dev/null 2>&1 || true
+      printf '%s' "${ADDW_TRACKER_FETCH_LIMIT:-}"
+    )"
+  fi
+  [ -n "$configured" ] || configured=$FETCH_LIMIT_DEFAULT
+  # Checked here rather than by the tracker CLI, which would reject it with its
+  # own diagnostic several layers from the config line that caused it.
+  if ! [[ $configured =~ ^[1-9][0-9]*$ ]]; then
+    printf 'tracker.sh: ADDW_TRACKER_FETCH_LIMIT must be a positive integer, got %s (in %s)\n' \
+      "$(printf '%q' "$configured")" "$CONFIG" >&2
+    exit 1
+  fi
+  FETCH_LIMIT=$configured
+}
+
 snapshot() {
-  gh issue list --state all --limit 1000 --json "$FIELDS"
+  local raw fetched
+  resolve_fetch_limit
+  raw="$(gh issue list --state all --limit "$FETCH_LIMIT" --json "$FIELDS")"
+  fetched="$(printf '%s' "$raw" | jq 'length')"
+  # Counted before the filter: archives are what make the bound reachable, so a
+  # post-filter count would under-report exactly when it matters.
+  if [ "$fetched" -ge "$FETCH_LIMIT" ]; then
+    printf 'tracker.sh: the issue fetch returned %s and reached its limit of %s, so this snapshot cannot be shown to be complete.\n' \
+      "$fetched" "$FETCH_LIMIT" >&2
+    printf 'tracker.sh: raise ADDW_TRACKER_FETCH_LIMIT in %s (default %s). Archived issues are filtered out of the snapshot but still count toward the limit.\n' \
+      "$CONFIG" "$FETCH_LIMIT_DEFAULT" >&2
+    exit 1
+  fi
+  printf '%s' "$raw" | jq 'map(select(any(.labels[]?; .name == "archived") | not))'
 }
 
 branches() {
