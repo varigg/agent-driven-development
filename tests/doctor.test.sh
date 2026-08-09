@@ -379,6 +379,20 @@ run "$d"
 assert_eq 1 "$RUN_STATUS" \
   "override: a declaration whose path merely ends in the configured one is unhealthy"
 
+# added at codex round 1: the near-miss runs the other way too. A declaration
+# naming `<template>.backup` contains the configured path as a prefix and is
+# still a different file, so the match must be flanked on both sides.
+d="$(case_dir extendedpath)"
+(
+  cd "$d/project"
+  cp "$SHIPPED_TEMPLATE" "$SHIPPED_TEMPLATE.backup"
+  printf '# Project\n\n`%s.backup` is the authoritative ADR format.\n' \
+    "$SHIPPED_TEMPLATE" > CLAUDE.md
+) >/dev/null
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "override: a declaration naming a longer path starting with the configured one is unhealthy"
+
 # The key is the customization seam: an install keeping its own template says
 # so in the config and stays healthy — and its format is still verified, which
 # is what makes the seam an override rather than an escape hatch.

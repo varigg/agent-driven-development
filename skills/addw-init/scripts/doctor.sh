@@ -195,16 +195,27 @@ if [ -n "$adr_template" ]; then
     # The path and the word together, on one line: a template mentioned in
     # passing elsewhere in the instructions is not a declaration, and matching
     # the path alone would accept one.
-    # A line naming a *longer* path that merely ends in the configured one is
-    # naming a different file — `.claude/skills/lib/templates/adr.md` is not
-    # `skills/lib/templates/adr.md`, and the two are exactly the pair an
-    # install is likeliest to confuse. Dropping those lines first is what makes
-    # this check "the same path" rather than "some path ending in it".
+    #
+    # The path must also match as a whole path, not as a substring of a longer
+    # one — a declaration naming `.claude/skills/lib/templates/adr.md` or
+    # `docs/adr/template.md.backup` is naming a different file than a config
+    # reading `skills/lib/templates/adr.md` or `docs/adr/template.md`, and
+    # those near-misses are exactly what this check exists to catch. So the
+    # match is flanked: anything that could extend a path on either side
+    # disqualifies it. The value is escaped first, since a path is data here
+    # and a `.` in one must not match any character.
+    # Backslashes first, so the ones added below are not escaped twice. `[` sits
+    # last in the set deliberately: `[.` would open a POSIX collating symbol and
+    # swallow the rest of the expression.
+    template_re="$(
+        printf '%s' "$adr_template" |
+            sed -e 's/\\/\\\\/g' -e 's/[]^$*+?(){}|.[]/\\&/g'
+    )"
+    path_char='[^[:alnum:]_./~-]'
     instructions_override=0
     for instructions in CLAUDE.md AGENTS.md; do
         if [ -f "$instructions" ] &&
-            grep -F -- "$adr_template" "$instructions" |
-            grep -vF -- "/$adr_template" |
+            grep -E -- "(^|$path_char)$template_re($path_char|\$)" "$instructions" |
             grep -qi authoritative; then
             instructions_override=1
         fi
