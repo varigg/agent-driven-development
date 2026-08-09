@@ -192,22 +192,28 @@ if [ -f docs/4-unit-tests/TESTING.md ]; then
 fi
 
 if [ -n "$adr_template" ]; then
-    # The path and the word together, on one line: a template mentioned in
-    # passing elsewhere in the instructions is not a declaration, and matching
-    # the path alone would accept one.
+    # A declaration is one line carrying two things: the configured path in
+    # backticks, and the word "authoritative". Both, on the same line — a
+    # template mentioned in passing elsewhere in the file is not a declaration.
     #
-    # The path is matched **inside a Markdown code span**, and that is a format
-    # requirement on the declaration rather than an incidental convention. The
-    # alternative — finding a bare path in prose — cannot be done exactly: the
-    # declaration must not be satisfied by a longer path that merely contains
-    # the configured one, and telling `docs/adr/template.md` from
-    # `docs/adr/template.md.backup`, from `.claude/skills/…/adr.md`, or from a
-    # filename with a space in it means inferring which characters a filename
-    # may contain. Every such guess is wrong in both directions at once: it
-    # accepts some other file's name, and it rejects correct prose that ends a
-    # sentence on the path. Requiring the backticks makes the match a plain
-    # substring test with no escaping and no heuristics, and the declaration is
-    # a line a human writes once from an instruction that states the form.
+    # The backticks are required, not decoration. Without them this would have
+    # to find a bare path in English prose and work out where it ends, and
+    # there is no reliable way to do that. Say the config reads
+    # ADDW_ADR_TEMPLATE="skills/lib/templates/adr.md". A plain search for that
+    # text also matches all of these, and not one of them names that file:
+    #
+    #     .claude/skills/lib/templates/adr.md    (an install's copy)
+    #     skills/lib/templates/adr.md.backup
+    #     skills/lib/templates/adr.md old        (a filename with a space?)
+    #
+    # Ruling those out means deciding which characters a filename may contain —
+    # and that decision then starts rejecting honest declarations, such as a
+    # sentence ending "...is skills/lib/templates/adr.md." where the full stop
+    # looks like part of the name, because it could be.
+    #
+    # Backticks mark where the path ends, so none of that arises: this is a
+    # plain substring search, no escaping and no guessing. The cost is one
+    # format rule on a line a human writes once, and addw-init states it.
     instructions_override=0
     for instructions in CLAUDE.md AGENTS.md; do
         if [ -f "$instructions" ] &&
