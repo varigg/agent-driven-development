@@ -160,4 +160,75 @@ done
 [ ! -e "$INSTALL/skills/lib/state" ] \
   || fail "adapters: state leaked into the shared layer"
 
-echo "codex runner: shared-layer home, required state/prompt, adapter wiring, inventory"
+# --- 5. the project config cannot take the runner down ---------------------
+
+# `.` returns the exit status of the config's LAST command, not of the
+# sourcing. Under `set -e` that conflates two events the runner must keep
+# apart: a config that FAILS TO PARSE is a real defect and stays fatal, while
+# a shell-clean config whose last command happens to return false is not a
+# defect at all and must not stop anything. The runner is on the path of all
+# four adapters, so this is asserted through each entry point rather than
+# against the sourced helper — the helper can be correct while the adapters
+# still die.
+#
+# Each case gets its own project root, because the config is read from the
+# working directory, exactly as a session would.
+new_project() { # <name> <config-body> -> project root on stdout
+  local root="$work/$1"
+  mkdir -p "$root/docs"
+  printf '%s' "$2" > "$root/docs/addw.env"
+  printf '%s' "$root"
+}
+
+start_in() { # <project-root> <state-dir> <skill> <target...>
+  local root="$1" state="$2" skill="$3"; shift 3
+  ( cd "$root" && env -u CODEX_MODEL -u CODEX_EFFORT \
+      PATH="$INSTALL/bin:$PATH" STATE_DIR="$state" \
+      bash "$INSTALL/skills/$skill/scripts/start.sh" "$@" )
+}
+
+# The two model keys carry distinct values so that each adapter is shown to
+# read its OWN key rather than whichever one happens to be set: the impl flow
+# runs ADDW_CODEX_MODEL_IMPL, every review flow runs ADDW_CODEX_MODEL_REVIEW.
+trailing_false="$(new_project trailing-false 'ADDW_CODEX_MODEL_IMPL="impl-from-config"
+ADDW_CODEX_MODEL_REVIEW="review-from-config"
+ADDW_CODEX_EFFORT="effort-from-config"
+[ -n "${ADDW_NOT_SET:-}" ]
+')"
+
+for case in "codex-ask a-topic review" "codex-implement 42 impl" \
+            "codex-code-review 42 review" "codex-spec-review 42 review"; do
+  # shellcheck disable=SC2086
+  set -- $case
+  skill="$1" target="$2" flow="$3"
+  out="$(start_in "$trailing_false" "$work/tf-$skill" "$skill" "$target" 2>&1)" \
+    || fail "$skill: a config ending on a false conditional stopped the adapter: $out"
+  assert_contains "$out" "$flow-from-config" \
+    "$skill: config ending false — the model key is still read"
+  assert_contains "$out" "effort-from-config" \
+    "$skill: config ending false — the effort key is still read"
+done
+
+# A config that cannot be parsed is the defect CLAUDE.md deliberately keeps
+# fatal. Whatever makes the case above survivable must not swallow it: it
+# fails, it names the config, and it exits 78 (EX_CONFIG) so a caller can tell
+# a config defect from a Codex failure (1) or a live thread (2).
+unparseable="$(new_project unparseable 'ADDW_CODEX_MODEL_REVIEW="unterminated
+')"
+
+for case in "codex-ask a-topic" "codex-implement 42" \
+            "codex-code-review 42" "codex-spec-review 42"; do
+  # shellcheck disable=SC2086
+  set -- $case
+  skill="$1" target="$2"
+  status=0
+  out="$(start_in "$unparseable" "$work/bad-$skill" "$skill" "$target" 2>&1)" || status=$?
+  [ "$status" -eq 78 ] \
+    || fail "$skill: unparseable config expected exit 78, got $status: $out"
+  assert_contains "$out" "docs/addw.env" \
+    "$skill: unparseable config — the failure names the config"
+  assert_not_contains "$out" "stub review" \
+    "$skill: unparseable config — Codex is never invoked"
+done
+
+echo "codex runner: shared-layer home, required state/prompt, adapter wiring, config sourcing, inventory"
