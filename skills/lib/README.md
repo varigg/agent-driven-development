@@ -47,6 +47,12 @@ lives inside `skills/` rather than at the repo root.
     everybody, and deleting the branch on merge is what retires the
     annotation.
 
+- `templates/` — shipped, project-agnostic templates that ride along with the
+  wholesale skills copy. `adr.md` holds the ADR format and its authoring rules;
+  it belongs with the skills because the format is not project state and a
+  template change should arrive with the next skills install, rather than
+  requiring every project to migrate a generated copy by hand.
+
 - `gate/gate.sh` — the deterministic testing gate. Sources the project config
   (default `docs/addw.env`) and runs the recipe ladder in fixed order — lint
   (`ADDW_RECIPE_LINT`), typecheck (`ADDW_RECIPE_TYPECHECK`), tests

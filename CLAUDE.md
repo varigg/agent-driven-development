@@ -51,6 +51,11 @@ Its one-line summary is what the PR body carries verbatim.
   get an `UPGRADING.md` entry; they are never free cosmetics. The
   `addw-4-maintain` → `addw-maintain` rename waited for one and rode the schema
   3 → 4 boundary, which is what such a rename is supposed to do.
+- **`skills/lib/templates/adr.md` is the authoritative ADR format** here, over
+  any format bundled with a skill — `domain-modeling`'s included. It ships with
+  the skills rather than being generated per project, and `ADDW_ADR_TEMPLATE` is
+  what names it; an install points that key at `.claude/skills/lib/...`, or at
+  its own file if it keeps its own format.
 - **Shared scripts live in `skills/lib/`**, a non-skill directory that rides the
   wholesale `skills/` copy: `tracker/`, `gate/`, `release/`, `docs/`, `codex/`.
   A script two skills call belongs here, not in whichever skill happened to own
