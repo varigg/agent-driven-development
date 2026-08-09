@@ -7,7 +7,7 @@
 # Both --prompt-file and $STATE_DIR are required: the runner is shared and
 # owns neither prompts nor state — each adapter pins its own.
 # Exits 0 on success, 1 on Codex / thread_id capture failure,
-# 2 on an existing thread (use reset.sh first).
+# 2 on an existing thread (use reset.sh first), 78 on invalid docs/addw.env.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

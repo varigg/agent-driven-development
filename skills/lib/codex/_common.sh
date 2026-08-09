@@ -16,9 +16,33 @@ mkdir -p "$STATE_DIR"
 # Per-project overrides come from docs/addw.env (ADDW_CODEX_MODEL_IMPL /
 # ADDW_CODEX_MODEL_REVIEW / ADDW_CODEX_EFFORT); CODEX_MODEL / CODEX_EFFORT
 # env vars act as per-run overrides on top of both.
+unset ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT
 if [ -f "docs/addw.env" ]; then
-    # shellcheck disable=SC1091
-    . "docs/addw.env"
+    # A config that cannot be parsed is a defect and stays fatal; only the
+    # sourcing's exit status is forgiven below. The parser's own diagnostic
+    # is relayed because this runs mid-workflow, where the line number is
+    # the whole remedy.
+    if ! config_error="$(bash -n "docs/addw.env" 2>&1)"; then
+        echo "error: docs/addw.env is not shell-sourceable" >&2
+        [ -z "$config_error" ] || printf '%s\n' "$config_error" >&2
+        exit 78
+    fi
+
+    # Read only the runner's keys in a subshell. The config's stdout is
+    # discarded, and its status or an exit inside it cannot reach this shell.
+    config_values=()
+    mapfile -t config_values < <(
+        unset ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT
+        # shellcheck disable=SC1091
+        . "docs/addw.env" >/dev/null || true
+        printf '%s\n' \
+            "${ADDW_CODEX_MODEL_IMPL:-}" \
+            "${ADDW_CODEX_MODEL_REVIEW:-}" \
+            "${ADDW_CODEX_EFFORT:-}"
+    )
+    ADDW_CODEX_MODEL_IMPL="${config_values[0]:-}"
+    ADDW_CODEX_MODEL_REVIEW="${config_values[1]:-}"
+    ADDW_CODEX_EFFORT="${config_values[2]:-}"
 fi
 case "$STATE_DIR" in
     *codex-implement*) CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_IMPL:-gpt-5.6-luna}}" ;;
