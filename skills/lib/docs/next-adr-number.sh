@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 # Deterministic next-ADR number: inspect the configured ADR directory's
 # immediate files and print max(present number) + 1, never the first gap.
-# A superseding ADR is always numbered above the document it retires, so every
-# departed number sits below a present one and the directory is authoritative;
-# no tracker call is needed.
+# Why a gap is never reused, and what this does not solve: ../README.md.
 #
 # Usage: next-adr-number.sh [--config <file>]   (run from the repo root)
+# The directory comes from ADDW_ADR_DIR in the config (default docs/addw.env).
 # Prints one four-digit, zero-padded number on stdout and nothing else.
 # Exit 0 on success; exit 2 for usage errors, an unreadable config, or an
-# absent, empty, or unusable ADDW_ADR_DIR. The config supplies the directory so
-# this shared script stays project-agnostic.
+# absent, empty, or unusable ADDW_ADR_DIR.
 
 set -euo pipefail
 

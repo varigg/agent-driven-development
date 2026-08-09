@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Deterministic testing gate. Sources the project config and runs the recipe
-# ladder in fixed order — lint (ADDW_RECIPE_LINT), typecheck
-# (ADDW_RECIPE_TYPECHECK), tests (ADDW_RECIPE_TESTS_AFFECTED) — reporting
-# every rung in one summary line on stdout, the line PR bodies carry
-# verbatim. Recipe output goes to stderr; stdout is only the summary.
+# Deterministic testing gate over the project config's recipe ladder. Why the
+# ladder is shaped this way, and where its summary line is consumed:
+# ../README.md.
 #
 # Usage: gate.sh [--config <file>] [test-path...]
 #
@@ -12,9 +10,12 @@
 #                     occurrence in the tests recipe, shell-quoted and
 #                     space-joined. A recipe without {paths} runs as-is.
 #
-# Every rung runs even after an earlier one fails. A missing or empty recipe
-# key reports "skipped (no recipe)" — visible, never silent. Exit 0 iff no
-# rung failed, 1 on any failure, 2 on usage errors or an unreadable config.
+# Rung order is fixed: lint (ADDW_RECIPE_LINT), typecheck
+# (ADDW_RECIPE_TYPECHECK), tests (ADDW_RECIPE_TESTS_AFFECTED). Every rung runs
+# even after an earlier one fails, and a missing or empty key reports
+# "skipped (no recipe)". Stdout carries exactly one summary line; recipe output
+# goes to stderr. Exit 0 iff no rung failed, 1 on any failure, 2 on usage
+# errors or an unreadable config.
 set -euo pipefail
 
 config="docs/addw.env"

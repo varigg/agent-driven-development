@@ -53,52 +53,40 @@ lives inside `skills/` rather than at the repo root.
   template change should arrive with the next skills install, rather than
   requiring every project to migrate a generated copy by hand.
 
-- `gate/gate.sh` — the deterministic testing gate. Sources the project config
-  (default `docs/addw.env`) and runs the recipe ladder in fixed order — lint
-  (`ADDW_RECIPE_LINT`), typecheck (`ADDW_RECIPE_TYPECHECK`), tests
-  (`ADDW_RECIPE_TESTS_AFFECTED`) — emitting exactly one summary line on
-  stdout, the line PR bodies carry verbatim; recipe output goes to stderr.
-  Every rung runs even after an earlier one fails; a missing or empty key
-  reports `skipped (no recipe)`, never silence. The tests recipe is a command
-  template: every `{paths}` occurrence is replaced by the shell-quoted test
-  paths passed on the gate's command line (selection stays agent judgment;
-  execution and reporting are mechanical), and a recipe without the
-  placeholder runs as-is.
+- `gate/gate.sh` — the deterministic testing gate, and the reason a PR body's
+  verification evidence is a line nobody had to compose: the gate runs the
+  project's own lint, typecheck, and test recipes from the config and emits
+  that line itself. Every rung runs even after an earlier one fails, because
+  what a reviewer needs is the whole picture of what is broken rather than the
+  first thing that broke, and an absent recipe reports a visible skip rather
+  than silence. Affected-test selection stays agent judgment while execution
+  and reporting are mechanical, which is why the tests recipe is a template
+  the gate fills in rather than a fixed command.
 
 - `release/derive.sh` — the mechanical release derivations, run from a
-  project's repo root. One commit-collection pass — every commit since the
-  last tag reachable from HEAD (whole history when no tag exists) whose
-  subject parses as a conventional commit, release commits (`release:` /
-  `chore(release):`) excluded, unclassifiable subjects warned and listed on
-  stderr — feeds two subcommands, so the changelog and the version can never
-  disagree about which commits count. `version` prints the proposed bump
-  (`!` → major, else `feat` → minor, else patch) and the next version
-  (applied to the last tag, prefix preserved; base v0.0.0 when untagged);
-  `changelog` prints the Markdown entry — versioned, dated header, then
-  Breaking / Features / Fixes / Other sections of verbatim subjects; `prepend`
-  writes that same entry into `CHANGELOG.md` above the newest existing one
-  (creating the file with a title when absent) and skips an entry already
-  present. The write lives here rather than in skill prose because the
-  changelog is write-only for the workflow and an agent's edit tool must read
-  a file before modifying it — an instruction not to look is not a mechanism.
-  A range with no qualifying commit exits 1: stop and ask the human, never
-  release silently.
+  project's repo root. One commit-collection pass feeds every subcommand, so
+  the changelog and the version can never disagree about which commits count,
+  and both stay projections of history rather than prose an agent composed.
+  Release commits are excluded, and a subject the derivation cannot classify is
+  warned and listed rather than dropped, because an unreadable subject is a
+  defect at the commit and not something for the changelog to swallow. The
+  changelog *write* lives here rather than in skill prose because the changelog
+  is write-only for the workflow and an agent's edit tool must read a file
+  before modifying it — an instruction not to look is not a mechanism. A range
+  with no qualifying commit stops and asks the human, never releasing silently.
 
-- `release/tail.sh` — the re-runnable post-merge tail: lay the version tag on
-  HEAD, push it, publish the GitHub Release, and for a spec release close the
-  spec issue as completed — through `tracker/tracker.sh`, never the tracker
-  CLI directly, since closing an issue is a tracker operation while creating a
+- `release/tail.sh` — the re-runnable post-merge tail: the version tag, its
+  push, the GitHub Release, and for a spec release the spec issue's closure —
+  the last of those through `tracker/tracker.sh`, never the tracker CLI
+  directly, since closing an issue is a tracker operation while creating a
   GitHub Release is not.
-  Each step skips what is already done and prints one `done:`/`skip:` line, so
-  running the tail twice is harmless and an interrupted run completes on the
-  next invocation — the property that makes a half-finished release
-  recoverable by re-running rather than by hand. Everything is validated
-  before anything is mutated, since a published tag is awkward to retract, and
-  skipping tests for the step's *result*, not its name: a tag that exists but
-  points away from the release commit — locally or on the remote — is refused,
-  since skipping it would cement a tag laid from a stale checkout. `--commit`
-  names the release PR's merge commit and callers should always pass it; HEAD
-  is a default that goes wrong the moment another PR merges in between.
+  Each step skips what is already done, so running the tail twice is harmless
+  and an interrupted run completes on the next invocation — the property that
+  makes a half-finished release recoverable by re-running rather than by hand.
+  Everything is validated before anything is mutated, since a published tag is
+  awkward to retract, and a skip therefore tests for the step's *result* rather
+  than its name: a tag pointing away from the release commit would otherwise
+  cement one laid from a stale checkout.
   The release notes are the changelog entry's body, read rather than
   re-derived — which is what keeps the published release and the committed
   changelog the same words — and read from the *target commit's* tree rather
@@ -108,14 +96,20 @@ lives inside `skills/` rather than at the repo root.
 
 - `docs/` — living-document probes, shared because the release runs them as its
   backstop sweep and the maintenance audit runs them deliberately.
-  - `check-doc-accretion.sh` — counts a document's version references against
-    its copy at the previous tag. A count climbing release over release means
-    the document is narrating its own history, the failure a size threshold
-    cannot see. Advisory, never a gate.
-  - `audit-nudge.sh` — counts release tags since the newest maintenance report
-    against `ADDW_AUDIT_NUDGE_N` and prints `NUDGE` or `OK`.
-  - `next-adr-number.sh` — the next ADR number, read from the directory
-    `ADDW_ADR_DIR` names: max plus one, zero-padded, never the first gap.
+  - `check-doc-accretion.sh` — version density is the signal a living design
+    document is narrating its own history: it describes the system as it is, so
+    a release rewrites the passages it affects rather than appending to them,
+    and appending is invisible to a size threshold — a document stays well
+    under budget while its overview turns into a changelog — which is why the
+    comparison is against the previous release rather than against a limit. A
+    handful of references are legitimate (the as-built statement, a dependency
+    pin, a hazard predating its fix), so the probe names what it counted and is
+    advisory, never a gate.
+  - `audit-nudge.sh` — the maintenance-audit cadence check, so that a stack of
+    releases with no audit behind it is something the flow says out loud rather
+    than something the human has to remember.
+  - `next-adr-number.sh` — the next ADR number: max plus one, never the first
+    gap.
     Archival is what makes those two diverge, so the intuitive answer — the
     first unused number in the listing — is one already spent, which is why
     the rule is a script rather than prose the Doc Impact step points at. No
@@ -139,20 +133,18 @@ lives inside `skills/` rather than at the repo root.
   config's exit status nor an `exit` inside it can stop an adapter: `.` returns
   the status of the config's *last command*, and a shell-clean config ending on
   a false conditional is no defect. A config that fails to *parse* is one, and
-  exits 78 with the parser's diagnostic. It was previously hosted inside a skill
-  until the adapters outnumbered it.
+  exits 78 with the parser's diagnostic.
   The exception: model *class* is chosen by matching the caller's `STATE_DIR`
   against `*codex-implement*`, so implementation gets the implementation-class
   model and everything else the review-class one. That is the layer knowing one
   thing about its callers, and it is a wart — the honest shape is a variable the
-  adapter sets. It survives relocation unchanged rather than being redesigned
-  in a sweep that was meant to move code, not alter it.
+  adapter sets.
   Two inputs are **required**, not defaulted: the caller pins `STATE_DIR` to
-  its own skill's `state/`, and passes `--prompt-file`. Both used to fall back
-  to the hosting skill's folders, which is precisely what a shared layer must
-  not do — a default here would merge every adapter's threads into one
-  namespace under `skills/lib/`. Absent either, the runner exits 64 rather than
-  guessing. The adapters are the thin half: pin state, pin prompt, hand off.
+  its own skill's `state/`, and passes `--prompt-file`. A shared layer must
+  default neither, because a default here would merge every adapter's threads
+  into one namespace under `skills/lib/`. Absent either, the runner exits 64
+  rather than guessing. The adapters are the thin half: pin state, pin prompt,
+  hand off.
 
 Tested from the repo root via `tests/run.sh` against fixtures in
 `tests/fixtures/`.

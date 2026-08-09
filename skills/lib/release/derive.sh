@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Mechanical release derivations over the repository at the current working
-# directory. One commit-collection pass feeds both subcommands, so the
-# changelog and the version can never disagree about which commits count.
+# directory, from one commit-collection pass shared by every subcommand. Why
+# the derivations and the changelog write both live here: ../README.md.
 #
 # Usage: derive.sh <changelog|version|prepend>
 #
@@ -10,8 +10,7 @@
 # qualifies iff its subject parses as a conventional commit
 # (`type(scope)?!?: description`) and is not a release commit — type
 # `release`, or type `chore` with scope `release` (the subjects addw-release
-# gives release PRs). Unclassifiable subjects are warned and listed on
-# stderr, never silently dropped.
+# gives release PRs). Unclassifiable subjects are warned and listed on stderr.
 #
 #   version    stdout: `bump: <major|minor|patch>` then `version: <next>`.
 #              Any `!` subject → major, else any `feat` → minor, else patch;
@@ -23,15 +22,12 @@
 #              in git-log order; empty sections are omitted.
 #   prepend    writes that same entry into CHANGELOG.md, above the newest
 #              existing entry (creating the file with a `# Changelog` title
-#              when absent), and prints one `done:`/`skip:` line. The
-#              changelog is write-only for the workflow — humans read it,
-#              agents get history from git — and doing the write here is what
-#              keeps that honest, since an agent's edit tool must read a file
-#              before modifying it. Re-running skips an entry already present,
-#              so a re-attempted release branch does not double-write.
+#              when absent), and prints one `done:`/`skip:` line. Re-running
+#              skips an entry already present, so a re-attempted release
+#              branch does not double-write.
 #
-# Exit 0 on success; 1 when no commit in the range qualifies (stop and ask
-# the human); 2 on usage errors, outside a git work tree, in a shallow clone
+# Exit 0 on success; 1 when no commit in the range qualifies; 2 on usage
+# errors, outside a git work tree, in a shallow clone
 # (truncated history cannot be projected), when git log itself fails, or on
 # a last tag that is not X.Y.Z / vX.Y.Z.
 set -euo pipefail

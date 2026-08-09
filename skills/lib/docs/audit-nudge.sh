@@ -2,6 +2,7 @@
 # Deterministic maintenance-audit nudge: count v* release tags created since
 # the newest maintenance report in docs/7-maintenance/ (every v* tag if no
 # report exists yet) and compare against ADDW_AUDIT_NUDGE_N from docs/addw.env.
+# Why the cadence is watched at all: ../README.md.
 #
 # Usage: audit-nudge.sh          (run from the repo root)
 # Prints one line: "NUDGE: ..." when the threshold is reached, else "OK: ...".

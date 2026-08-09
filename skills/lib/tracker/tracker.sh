@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 # The tracker seam: every ADDW tracker operation goes through this file — no
-# other script invokes the tracker CLI (gh) for tracker work. The wrappers are
-# deliberately thin (dogfood-verified, not unit-tested); the two queries fetch
-# a live snapshot and delegate all reasoning to resolve.sh, which is pure and
-# contract-tested. This file is the documented seam for a future tracker
-# adapter: swapping trackers means reimplementing these subcommands, nothing
-# else.
+# other script invokes the tracker CLI (gh) for tracker work. Why the layer is
+# shaped this way, and what a future tracker adapter inherits: ../README.md.
 #
 # Usage:
 #   tracker.sh view <n>                          issue JSON (snapshot shape + url)
@@ -27,6 +23,7 @@
 #   tracker.sh branches                          remote branch names, one per line
 #   tracker.sh frontier                          live frontier listing
 #   tracker.sh spec-complete <n>                 live spec-completion query
+#
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
