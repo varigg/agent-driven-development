@@ -394,32 +394,44 @@ assert_eq 1 "$RUN_STATUS" \
   "override: a declaration naming a longer path starting with the configured one is unhealthy"
 
 # added at codex round 2: `.` is not the only character a filename may continue
-# with. Inferring a filename alphabet is what let `.backup` through in the first
-# place, so a `+`, `@`, `:` or `=` must extend the path too, not delimit it.
+# with, so a `+` must extend the path too. Round 3 settled how: the declaration
+# names its path in a Markdown code span, which turns the whole question into a
+# substring test and needs no theory of which characters a filename may hold.
 d="$(case_dir extendedpathplus)"
 (
   cd "$d/project"
   cp "$SHIPPED_TEMPLATE" "$SHIPPED_TEMPLATE+old"
-  printf '# Project\n\n%s+old is the authoritative ADR format.\n' \
+  printf '# Project\n\n`%s+old` is the authoritative ADR format.\n' \
     "$SHIPPED_TEMPLATE" > CLAUDE.md
 ) >/dev/null
 run "$d"
 assert_eq 1 "$RUN_STATUS" \
   "override: a longer path continuing with a non-dot filename character is unhealthy"
 
-# The other side of that line: an ordinary declaration must still be found,
-# quoted or bare, mid-sentence or at the line's end. A check this tight is
-# worthless if it fails the installs that got it right.
+# The code span is required, not merely accepted. A bare path is what makes the
+# check approximate, and an install that writes one is told so rather than
+# passed on a match that could have been some other file's name.
+d="$(case_dir barepath)"
+printf '# Project\n\n%s is the authoritative ADR format.\n' "$SHIPPED_TEMPLATE" \
+  > "$d/project/CLAUDE.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "override: a declaration that does not put the path in backticks is unhealthy"
+assert_contains "$RUN_OUT" "backticks" \
+  "override: the failing line says what form the declaration must take"
+
+# The other side of that line: the declaration must be found wherever it sits on
+# its line. A check this tight is worthless if it fails the installs that got it
+# right.
 for decl in '`%s` is the authoritative ADR format.' \
-  '%s is the authoritative ADR format.' \
-  'The authoritative ADR format is %s' \
-  '(%s), authoritative for this project.'; do
+  'The authoritative ADR format is `%s`' \
+  '- **ADR format**: `%s` (authoritative)'; do
   d="$(case_dir okdecl)"
   # shellcheck disable=SC2059
   printf "# Project\n\n$decl\n" "$SHIPPED_TEMPLATE" > "$d/project/CLAUDE.md"
   run "$d"
   assert_eq 0 "$RUN_STATUS" \
-    "override: a plain declaration is recognised — $decl"
+    "override: a backticked declaration is recognised — $decl"
 done
 
 # The key is the customization seam: an install keeping its own template says

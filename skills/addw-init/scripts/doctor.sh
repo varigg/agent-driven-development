@@ -196,32 +196,22 @@ if [ -n "$adr_template" ]; then
     # passing elsewhere in the instructions is not a declaration, and matching
     # the path alone would accept one.
     #
-    # The path must also match as a whole path, not as a substring of a longer
-    # one — a declaration naming `.claude/skills/lib/templates/adr.md` or
-    # `docs/adr/template.md.backup` is naming a different file than a config
-    # reading `skills/lib/templates/adr.md` or `docs/adr/template.md`, and
-    # those near-misses are exactly what this check exists to catch. So the
-    # match must be flanked by something that ends a path in prose — quoting,
-    # brackets, sentence punctuation, whitespace, or the line's edge. Anything
-    # else continues the path, `+` `@` `:` `=` included, since those are legal
-    # in filenames and guessing a filename alphabet is what let `.backup`
-    # through. Whitespace is the one unavoidable concession: a filename
-    # containing a space cannot be told apart from a path followed by a word,
-    # and treating space as path-continuation would reject every declaration
-    # that does not quote its path. The value is escaped first, since a path is
-    # data here and a `.` in one must not match any character.
-    # Backslashes first, so the ones added below are not escaped twice. `[` sits
-    # last in the set deliberately: `[.` would open a POSIX collating symbol and
-    # swallow the rest of the expression.
-    template_re="$(
-        printf '%s' "$adr_template" |
-            sed -e 's/\\/\\\\/g' -e 's/[]^$*+?(){}|.[]/\\&/g'
-    )"
-    path_delim="[][:space:]\`\"'(),;<>[]"
+    # The path is matched **inside a Markdown code span**, and that is a format
+    # requirement on the declaration rather than an incidental convention. The
+    # alternative — finding a bare path in prose — cannot be done exactly: the
+    # declaration must not be satisfied by a longer path that merely contains
+    # the configured one, and telling `docs/adr/template.md` from
+    # `docs/adr/template.md.backup`, from `.claude/skills/…/adr.md`, or from a
+    # filename with a space in it means inferring which characters a filename
+    # may contain. Every such guess is wrong in both directions at once: it
+    # accepts some other file's name, and it rejects correct prose that ends a
+    # sentence on the path. Requiring the backticks makes the match a plain
+    # substring test with no escaping and no heuristics, and the declaration is
+    # a line a human writes once from an instruction that states the form.
     instructions_override=0
     for instructions in CLAUDE.md AGENTS.md; do
         if [ -f "$instructions" ] &&
-            grep -E -- "(^|$path_delim)$template_re($path_delim|\$)" "$instructions" |
+            grep -F -- "\`$adr_template\`" "$instructions" |
             grep -qi authoritative; then
             instructions_override=1
         fi
@@ -229,7 +219,7 @@ if [ -n "$adr_template" ]; then
     if [ "$instructions_override" -eq 1 ]; then
         ok "project instructions declare $adr_template authoritative"
     else
-        bad "CLAUDE.md or AGENTS.md must carry one line naming $adr_template and calling it authoritative"
+        bad "CLAUDE.md or AGENTS.md must carry one line with \`$adr_template\` in backticks and the word authoritative"
     fi
 fi
 

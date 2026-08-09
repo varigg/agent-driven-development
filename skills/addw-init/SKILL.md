@@ -294,10 +294,20 @@ keeps its own ADR format points `ADDW_ADR_TEMPLATE` at its own file rather than
 overwriting a generated one. That declaration is the documented customization
 seam and the path is the same one doctor checks.
 
-Put the resolved value of `ADDW_ADR_TEMPLATE` and the word
-**authoritative** on the same line: doctor looks for both together, so that a
-passing mention of the template somewhere else in the file cannot be mistaken
-for the declaration.
+Put the resolved value of `ADDW_ADR_TEMPLATE` **in backticks** and the word
+**authoritative** on the same line:
+
+```markdown
+`<ADDW_ADR_TEMPLATE>` is the authoritative ADR format for this project.
+```
+
+Doctor looks for both together, so that a passing mention of the template
+somewhere else in the file cannot be mistaken for the declaration. The
+backticks are what make that check exact rather than approximate: a bare path
+in prose cannot be told apart from a longer path containing it — an install
+naming `.claude/skills/lib/templates/adr.md` has not declared
+`skills/lib/templates/adr.md`, and it is the near-miss, not the obvious
+mismatch, that this check exists to catch.
 
 ### 2.9 `docs/ARCHITECTURE-rules.md` and `CHANGELOG.md`
 

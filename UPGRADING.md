@@ -200,9 +200,21 @@ ADDW_ADR_TEMPLATE=".claude/skills/lib/templates/adr.md"
 ### 3. Re-point the project instructions
 
 The one `CLAUDE.md` or `AGENTS.md` line declaring the ADR format authoritative
-still has to name **the same path the key does** — doctor checks the two agree,
+has to name **the same path the key does** — doctor checks the two agree,
 because an install customizing one file while the workflow reads another is the
 exact divergence that declaration exists to prevent.
+
+Put the path **in backticks** while you are there, if it isn't already:
+
+```markdown
+`.claude/skills/lib/templates/adr.md` is the authoritative ADR format for this project.
+```
+
+Doctor now requires the code span. It is what makes "the same path" an exact
+test — a bare path in prose cannot be distinguished from a longer path that
+contains it, which is precisely the mistake this boundary makes easy, since
+`skills/lib/templates/adr.md` and `.claude/skills/lib/templates/adr.md` are one
+prefix apart.
 
 ### 4. Bump and verify
 
