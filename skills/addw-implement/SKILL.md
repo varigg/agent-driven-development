@@ -162,7 +162,10 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
 
   You have read the ticket and its spec; the adapter has not. State the scope in your own
   words — what to build, what to leave to a later ticket, which conventions bind — rather than
-  pasting the ticket wholesale. Parse the trailing tag: `IMPLEMENTATION_COMPLETE` → proceed.
+  pasting the ticket wholesale. The instruction block must also name any ADR `Gate` bearing on
+  the ticket's work: the adapter cannot read the tracker and is never told to read the ADR
+  directory, so a constraint reaches it only if you carry it. Parse the
+  trailing tag: `IMPLEMENTATION_COMPLETE` → proceed.
   `IMPLEMENTATION_PARTIAL` → read the report, then `resume.sh` for the remainder or finish
   small leftovers yourself.
 

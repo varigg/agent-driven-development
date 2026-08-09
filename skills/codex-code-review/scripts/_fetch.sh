@@ -14,6 +14,14 @@
 # The parent spec is included when the ticket declares one. Spec membership
 # is optional by contract: a standalone ticket reviews fine against its own
 # acceptance criteria, and the buffer says so rather than going silent.
+# The buffer also names the configured ADR directory. The reviewer is read-only
+# and offline, so configuration needed to interpret checklist references must
+# travel with the context; an absent value is stated explicitly rather than
+# guessed, and the reviewer is told to report the guardrail item as unperformed
+# rather than pass it. Whether a project may lack the key at all is doctor's
+# question, not this adapter's — doctor already fails an install missing it,
+# and refusing to review would withhold the check that finds problems from the
+# install least likely to have none.
 
 set -euo pipefail
 
@@ -38,9 +46,30 @@ require_issue_number() {
 # build_context <issue-number> <buffer-file>
 # Writes the ticket and, when declared, its parent spec into the buffer.
 build_context() {
-    local issue="$1" file="$2" body parent
+    local issue="$1" file="$2" body parent adr_dir
     mkdir -p "$(dirname "$file")"
     body="$(bash "$TRACKER" body "$issue")"
+
+    # Command substitution is already a subshell, so the config's other keys
+    # never reach the caller. Unsetting first keeps an exported value from
+    # making an unconfigured project look configured, and the source's own
+    # stdout is discarded so only the key's value is captured.
+    #
+    # The key is read after the source regardless of its exit status: `.`
+    # returns the status of the config's last command, so gating on it would
+    # report a correctly-configured project as unconfigured whenever its
+    # config happens to end on a conditional. A config that fails to parse
+    # says so on stderr and leaves the key unset, which the absent branch
+    # below already covers; one that calls `exit` takes the subshell with it,
+    # so the assignment itself falls back rather than aborting the review.
+    adr_dir="$(
+        unset ADDW_ADR_DIR
+        if [ -r "docs/addw.env" ]; then
+            # shellcheck disable=SC1091
+            . "docs/addw.env" >/dev/null || true
+        fi
+        printf '%s' "${ADDW_ADR_DIR:-}"
+    )" || adr_dir=""
 
     {
         printf '# Ticket #%s — %s\n\n' "$issue" "$(bash "$TRACKER" title "$issue")"
@@ -57,6 +86,13 @@ build_context() {
         } >> "$file"
     else
         printf '\n---\n\nNo parent spec: this ticket stands alone. Review it against its own acceptance criteria.\n' \
+            >> "$file"
+    fi
+
+    if [ -n "$adr_dir" ]; then
+        printf '\n---\n\nADR directory for guardrail review: `%s`\n' "$adr_dir" >> "$file"
+    else
+        printf '\n---\n\nADR directory for guardrail review: none. `ADDW_ADR_DIR` did not resolve from this project'"'"'s config, so the guardrail-ADR checklist item cannot be performed. Do not guess a path, and do not pass the item quietly: report it as **not performed**, naming `ADDW_ADR_DIR` as the reason.\n' \
             >> "$file"
     fi
 }
