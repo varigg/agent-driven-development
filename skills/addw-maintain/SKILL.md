@@ -37,7 +37,7 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
 **Vocabulary**
 
 - Superseded-vocabulary sweep: grep vocabulary retired by superseded/amended ADRs across the living docs — process files included. Every hit must be a dated record, an explicit negation, or a standing lesson.
-- Living docs describe only current design — flag anything narrating history outside dated records (CHANGELOG.md, ADRs, and incident notes are exempt: their date is part of their meaning; never retro-edit a merged one, though before merge it is a draft under review like any other file in its PR).
+- Living docs describe only current design — flag anything narrating history outside dated records (CHANGELOG.md, ADRs, and incident notes are exempt: their date is part of their meaning; never retro-edit a merged one).
 - A rename pass is **prose only**. Identifiers, script names, and paths are
   code changes — file them as tracker issues, don't do them here.
 - Verify a rename by listing what survived, never by trusting the edit.
