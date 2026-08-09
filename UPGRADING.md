@@ -173,9 +173,9 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 The ADR template stops being a generated project file and rides the skills copy
 instead, so a template change arrives with the next install rather than costing
 every project a hand migration. The config gains one key naming the file, which
-is also where an install that keeps its own ADR format now says so. These three
-steps are manual: replacing `.claude/skills/` cannot delete a generated file or
-edit your project instructions for you.
+is also where an install that keeps its own ADR format now says so. The
+migration is manual: replacing `.claude/skills/` cannot delete a generated file
+or edit your project instructions for you.
 
 ### 1. Delete the generated template
 
@@ -220,7 +220,8 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 Two things this boundary deliberately does **not** ask of you. ADRs superseded
 before supersession began sweeping its own vocabulary have no swept terms to
 find, so the maintenance sweep's vocabulary check is weaker over that older
-stretch of the tree — that is a known degradation, not a migration you owe it.
-And the snapshot-limit key needs no step here: it carries a default, so its
-absence is a working install rather than a silent one, and an operator meets it
-through the refusal message at the moment it starts to matter.
+stretch of the tree — a known degradation, not a migration you owe it. And the
+tracker seam's snapshot limit, which arrives with the archive-filtering work,
+will need no step here whenever it lands: it carries a default, so its absence
+is a working install rather than a silent one, and an operator meets it through
+the seam's refusal message at the moment it starts to matter.

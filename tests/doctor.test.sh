@@ -94,18 +94,21 @@ mkdir -p "$BASE/project" "$BASE/home"
   cd "$BASE/project"
   mkdir -p docs/agents docs/4-unit-tests docs/6-memo docs/7-maintenance docs/adr
 
-  cat > docs/addw.env <<ENV
+  # Quoted heredoc: a config is exactly where a recipe carrying `$` or a
+  # backtick belongs, and an expanding one would corrupt it silently. The one
+  # interpolated value is appended instead.
+  cat > docs/addw.env <<'ENV'
 ADDW_SCHEMA=5
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
 ADDW_AUDIT_NUDGE_N=5
 ADDW_ADR_DIR="docs/adr"
-ADDW_ADR_TEMPLATE="$SHIPPED_TEMPLATE"
 ADDW_RECIPE_LINT="true"
 ADDW_RECIPE_TYPECHECK=""
 ADDW_RECIPE_TESTS_AFFECTED="true"
 ENV
+  printf 'ADDW_ADR_TEMPLATE="%s"\n' "$SHIPPED_TEMPLATE" >> docs/addw.env
 
   printf '# Issue tracker: GitHub\n\nIssues live as GitHub issues.\n' \
     > docs/agents/issue-tracker.md
@@ -120,28 +123,15 @@ ENV
   printf '# Testing Guidelines\n\n## Verification Recipes\n\n## Integration / E2E Impact Rules\n' \
     > docs/4-unit-tests/TESTING.md
 
+  # The real shipped template, not a paraphrase of it. Copying is what makes
+  # the healthy case assert that the file this repo actually ships satisfies
+  # doctor's four format checks — a second hand-written copy would only ever
+  # test itself, and would drift from the shipped one silently.
   mkdir -p "$(dirname "$SHIPPED_TEMPLATE")"
-  cat > "$SHIPPED_TEMPLATE" <<'ADR'
-# ADR NNNN: <Title>
+  cp "$REPO/skills/lib/templates/adr.md" "$SHIPPED_TEMPLATE"
 
-- **Status**: active | superseded by ADR-NNNN
-- **Date**: <YYYY-MM-DD>
-- **Origin**: <#spec-issue, #ticket, PR #n, or "design session">
-
-<One paragraph.>
-
-## Gate (required for a guardrail decision)
-
-<What a future reviewer must check.>
-ADR
-
-  cat > CLAUDE.md <<MD
-# Project
-
-## ADR format
-
-\`$SHIPPED_TEMPLATE\` is the authoritative ADR format for this project.
-MD
+  printf '# Project\n\n## ADR format\n\n`%s` is the authoritative ADR format.\n' \
+    "$SHIPPED_TEMPLATE" > CLAUDE.md
 
   git init -q -b main .
   git config user.email fixture@example.com
@@ -285,8 +275,10 @@ grep -v '^ADDW_ADR_TEMPLATE=' "$d/project/docs/addw.env" \
 mv "$d/project/docs/addw.env.new" "$d/project/docs/addw.env"
 run "$d"
 assert_eq 1 "$RUN_STATUS" "adr: an absent ADDW_ADR_TEMPLATE is unhealthy"
-assert_contains "$RUN_OUT" "ADDW_ADR_TEMPLATE" \
+assert_contains "$RUN_OUT" "ADDW_ADR_TEMPLATE unset in docs/addw.env" \
   "adr: the failing line names the absent key"
+assert_contains "$RUN_OUT" "ADDW_ADR_TEMPLATE is unset" \
+  "adr: the template checks say why they could not run"
 assert_not_contains "$RUN_OUT" "$SHIPPED_TEMPLATE missing" \
   "adr: an absent key does not masquerade as a missing file"
 
@@ -370,6 +362,22 @@ assert_eq 1 "$RUN_STATUS" \
   "override: a declaration naming a different template than the key is unhealthy"
 assert_contains "$RUN_OUT" "$SHIPPED_TEMPLATE" \
   "override: the failing line names the configured template, not the declared one"
+
+# added at the cold pre-filter: the near-miss the relocation creates. An
+# install naming `skills/lib/templates/adr.md` in its config and
+# `.claude/skills/lib/templates/adr.md` in its instructions has declared a
+# different file, and a substring match would call that agreement.
+d="$(case_dir suffixmatch)"
+(
+  cd "$d/project"
+  sed -i "s|^ADDW_ADR_TEMPLATE=.*|ADDW_ADR_TEMPLATE=\"skills/lib/templates/adr.md\"|" \
+    docs/addw.env
+  mkdir -p skills/lib/templates
+  cp "$SHIPPED_TEMPLATE" skills/lib/templates/adr.md
+) >/dev/null
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "override: a declaration whose path merely ends in the configured one is unhealthy"
 
 # The key is the customization seam: an install keeping its own template says
 # so in the config and stays healthy — and its format is still verified, which

@@ -195,10 +195,17 @@ if [ -n "$adr_template" ]; then
     # The path and the word together, on one line: a template mentioned in
     # passing elsewhere in the instructions is not a declaration, and matching
     # the path alone would accept one.
+    # A line naming a *longer* path that merely ends in the configured one is
+    # naming a different file — `.claude/skills/lib/templates/adr.md` is not
+    # `skills/lib/templates/adr.md`, and the two are exactly the pair an
+    # install is likeliest to confuse. Dropping those lines first is what makes
+    # this check "the same path" rather than "some path ending in it".
     instructions_override=0
     for instructions in CLAUDE.md AGENTS.md; do
         if [ -f "$instructions" ] &&
-            grep -F -- "$adr_template" "$instructions" | grep -qi authoritative; then
+            grep -F -- "$adr_template" "$instructions" |
+            grep -vF -- "/$adr_template" |
+            grep -qi authoritative; then
             instructions_override=1
         fi
     done

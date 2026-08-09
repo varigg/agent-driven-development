@@ -350,10 +350,11 @@ is the only place it can be answered.
 
 Then offer — do not perform unasked — the initial commit and tag, at the
 version the `CHANGELOG.md` entry carries. Stage by **explicit paths**, and
-stage the paths this run actually wrote: the ADR directory may sit outside
-`docs/`, and the project-instructions file is whichever of `CLAUDE.md` or
-`AGENTS.md` Matt's setup chose — naming the other one aborts the whole `git
-add` on a pathspec error.
+stage the paths this run actually wrote and no others: the
+project-instructions file is whichever of `CLAUDE.md` or `AGENTS.md` Matt's
+setup chose, and the ADR directory now holds nothing init produced — the
+template ships with the skills. Naming a path this run did not write aborts
+the whole `git add` on a pathspec error, taking the commit with it.
 
 ```bash
 git commit -m "chore: initialize the ADDW workflow"
