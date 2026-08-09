@@ -14,9 +14,12 @@
 #      absent key is a gap. Recipes come from the config alone — an exported
 #      ADDW_RECIPE_* must not stand in for a key the config doesn't set.
 #   2. Docs contract. The directories and living docs, the ADR template at the
-#      location ADDW_ADR_DIR names (never a hardcoded path — that is what the
-#      domain-layout contract decides), and the project-instructions line that
-#      declares that template authoritative over any skill-bundled ADR format.
+#      location ADDW_ADR_TEMPLATE names — the shipped one under
+#      `.claude/skills/lib/templates/` by default, a project's own when it
+#      declares one, and never a path derived from ADDW_ADR_DIR or hardcoded
+#      here — and the project-instructions line that declares *that same path*
+#      authoritative over any skill-bundled ADR format. An absent key and a
+#      missing file are different faults and read differently.
 #   2b. The migrated state (#13). The generation marker must match the skills,
 #      and the retired artifacts must be gone — but only the ones ADDW's
 #      migration actually mandates removing. The backlog file is one: its
@@ -48,6 +51,12 @@ DOCTOR="$REPO/skills/addw-init/scripts/doctor.sh"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
+
+# Where the wholesale skills copy puts the ADR template in an install, and the
+# default addw-init writes into the config. Deliberately outside the fixture's
+# ADDW_ADR_DIR, so a doctor that still derived the path from the ADR directory
+# fails every case below instead of passing by coincidence.
+SHIPPED_TEMPLATE=".claude/skills/lib/templates/adr.md"
 
 # --- the stub tracker CLI --------------------------------------------------
 # Answers exactly the three questions the tracker layer asks on doctor's
@@ -85,13 +94,14 @@ mkdir -p "$BASE/project" "$BASE/home"
   cd "$BASE/project"
   mkdir -p docs/agents docs/4-unit-tests docs/6-memo docs/7-maintenance docs/adr
 
-  cat > docs/addw.env <<'ENV'
-ADDW_SCHEMA=4
+  cat > docs/addw.env <<ENV
+ADDW_SCHEMA=5
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
 ADDW_AUDIT_NUDGE_N=5
 ADDW_ADR_DIR="docs/adr"
+ADDW_ADR_TEMPLATE="$SHIPPED_TEMPLATE"
 ADDW_RECIPE_LINT="true"
 ADDW_RECIPE_TYPECHECK=""
 ADDW_RECIPE_TESTS_AFFECTED="true"
@@ -110,7 +120,8 @@ ENV
   printf '# Testing Guidelines\n\n## Verification Recipes\n\n## Integration / E2E Impact Rules\n' \
     > docs/4-unit-tests/TESTING.md
 
-  cat > docs/adr/template.md <<'ADR'
+  mkdir -p "$(dirname "$SHIPPED_TEMPLATE")"
+  cat > "$SHIPPED_TEMPLATE" <<'ADR'
 # ADR NNNN: <Title>
 
 - **Status**: active | superseded by ADR-NNNN
@@ -124,12 +135,12 @@ ENV
 <What a future reviewer must check.>
 ADR
 
-  cat > CLAUDE.md <<'MD'
+  cat > CLAUDE.md <<MD
 # Project
 
 ## ADR format
 
-`docs/adr/template.md` is the authoritative ADR format for this project.
+\`$SHIPPED_TEMPLATE\` is the authoritative ADR format for this project.
 MD
 
   git init -q -b main .
@@ -169,6 +180,13 @@ assert_eq 0 "$RUN_STATUS" "healthy: a complete install exits zero"
 assert_contains "$RUN_OUT" "HEALTHY: all checks passed" \
   "healthy: terminal line reports health"
 assert_not_contains "$RUN_OUT" "FAIL:" "healthy: no check fails"
+# The template ships with the skills and is found there. A doctor still
+# deriving the path from ADDW_ADR_DIR would name docs/adr/template.md — a file
+# this fixture deliberately does not have.
+assert_contains "$RUN_OUT" "$SHIPPED_TEMPLATE" \
+  "healthy: the template checks name the configured shipped path"
+assert_not_contains "$RUN_OUT" "docs/adr/template.md" \
+  "healthy: no template path is derived from ADDW_ADR_DIR"
 
 # --- config keys -----------------------------------------------------------
 
@@ -213,7 +231,7 @@ assert_contains "$RUN_OUT" "docs/addw.env" \
 # The marker is the whole point of the schema: an install left at the previous
 # generation must be told to apply the upgrade doc, not quietly accepted.
 d="$(case_dir oldschema)"
-sed -i 's|^ADDW_SCHEMA=.*|ADDW_SCHEMA=3|' "$d/project/docs/addw.env"
+sed -i 's|^ADDW_SCHEMA=.*|ADDW_SCHEMA=4|' "$d/project/docs/addw.env"
 run "$d"
 assert_eq 1 "$RUN_STATUS" "schema: an install left at the previous generation is unhealthy"
 assert_contains "$RUN_OUT" "UPGRADING.md" \
@@ -256,17 +274,35 @@ assert_not_contains "$RUN_OUT" "1-plans" \
 
 # --- docs contract ---------------------------------------------------------
 
+# The key and the file are different faults. An install that never added the
+# key on upgrade has nothing to check; one whose template is gone has a path
+# that resolved and came up empty. Telling a human to add a config line and
+# telling them to restore a file are different instructions, so the two lines
+# must not read alike.
+d="$(case_dir notemplatekey)"
+grep -v '^ADDW_ADR_TEMPLATE=' "$d/project/docs/addw.env" \
+  > "$d/project/docs/addw.env.new"
+mv "$d/project/docs/addw.env.new" "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adr: an absent ADDW_ADR_TEMPLATE is unhealthy"
+assert_contains "$RUN_OUT" "ADDW_ADR_TEMPLATE" \
+  "adr: the failing line names the absent key"
+assert_not_contains "$RUN_OUT" "$SHIPPED_TEMPLATE missing" \
+  "adr: an absent key does not masquerade as a missing file"
+
 d="$(case_dir noadr)"
-rm "$d/project/docs/adr/template.md"
+rm "$d/project/$SHIPPED_TEMPLATE"
 run "$d"
 assert_eq 1 "$RUN_STATUS" "adr: a missing ADR template is unhealthy"
-assert_contains "$RUN_OUT" "docs/adr/template.md" \
+assert_contains "$RUN_OUT" "$SHIPPED_TEMPLATE" \
   "adr: the failing line names the template path"
+assert_not_contains "$RUN_OUT" "ADDW_ADR_TEMPLATE is unset" \
+  "adr: a missing file does not masquerade as an absent key"
 
 d="$(case_dir badadr)"
-grep -v '^- \*\*Origin\*\*' "$d/project/docs/adr/template.md" \
-  > "$d/project/docs/adr/template.md.new"
-mv "$d/project/docs/adr/template.md.new" "$d/project/docs/adr/template.md"
+grep -v '^- \*\*Origin\*\*' "$d/project/$SHIPPED_TEMPLATE" \
+  > "$d/project/$SHIPPED_TEMPLATE.new"
+mv "$d/project/$SHIPPED_TEMPLATE.new" "$d/project/$SHIPPED_TEMPLATE"
 run "$d"
 assert_eq 1 "$RUN_STATUS" \
   "adr: a template without the mandatory Origin field is unhealthy"
@@ -277,7 +313,7 @@ assert_contains "$RUN_OUT" "Origin" "adr: the failing line names the field"
 # line too, and an install still carrying one is exactly what doctor is for.
 d="$(case_dir wrongstatus)"
 sed -i 's|^- \*\*Status\*\*.*|- **Status**: proposed / accepted / deprecated|' \
-  "$d/project/docs/adr/template.md"
+  "$d/project/$SHIPPED_TEMPLATE"
 run "$d"
 assert_eq 1 "$RUN_STATUS" \
   "adr: a template offering the wrong Status states is unhealthy"
@@ -287,16 +323,16 @@ assert_contains "$RUN_OUT" "Status" "adr: the failing line names the field"
 # the right pair must not pass on the strength of the pair being there.
 d="$(case_dir threestatus)"
 sed -i 's|^- \*\*Status\*\*.*|- **Status**: proposed \| active \| superseded by ADR-NNNN|' \
-  "$d/project/docs/adr/template.md"
+  "$d/project/$SHIPPED_TEMPLATE"
 run "$d"
 assert_eq 1 "$RUN_STATUS" "adr: a third Status state is unhealthy"
 
 # added at codex round 1: the Gate section is where an author of a guardrail
 # ADR learns it is required, so a template without one is a broken surface.
 d="$(case_dir nogate)"
-grep -v '^## Gate' "$d/project/docs/adr/template.md" \
-  > "$d/project/docs/adr/template.md.new"
-mv "$d/project/docs/adr/template.md.new" "$d/project/docs/adr/template.md"
+grep -v '^## Gate' "$d/project/$SHIPPED_TEMPLATE" \
+  > "$d/project/$SHIPPED_TEMPLATE.new"
+mv "$d/project/$SHIPPED_TEMPLATE.new" "$d/project/$SHIPPED_TEMPLATE"
 run "$d"
 assert_eq 1 "$RUN_STATUS" "adr: a template without a Gate section is unhealthy"
 assert_contains "$RUN_OUT" "Gate" "adr: the failing line names the section"
@@ -304,7 +340,7 @@ assert_contains "$RUN_OUT" "Gate" "adr: the failing line names the section"
 # added at codex round 1: the declaration is the path and the word together.
 # A file that merely mentions the template is not declaring anything.
 d="$(case_dir passingmention)"
-printf '# Project\n\nADRs use the template at `docs/adr/template.md`.\n' \
+printf '# Project\n\nADRs use the template at `%s`.\n' "$SHIPPED_TEMPLATE" \
   > "$d/project/CLAUDE.md"
 run "$d"
 assert_eq 1 "$RUN_STATUS" \
@@ -315,23 +351,63 @@ printf '# Project\n' > "$d/project/CLAUDE.md"
 run "$d"
 assert_eq 1 "$RUN_STATUS" \
   "override: project instructions that don't declare the template are unhealthy"
-assert_contains "$RUN_OUT" "docs/adr/template.md" \
+assert_contains "$RUN_OUT" "$SHIPPED_TEMPLATE" \
   "override: the failing line names the template the instructions must declare"
 
-# The ADR location is the domain-layout contract's to choose, so nothing here
-# is hardcoded: point the config elsewhere, move the artifacts, stay healthy.
+# The declaration and the key must agree. A declaration naming some other
+# template is the install customizing one file and pointing the workflow at
+# another — the authoring path and the checked path diverge, silently, which
+# is the exact failure the declaration exists to prevent.
+d="$(case_dir declmismatch)"
+(
+  cd "$d/project"
+  printf '# Project\n\n`docs/adr/template.md` is the authoritative ADR format.\n' \
+    > CLAUDE.md
+  printf '# ADR NNNN\n' > docs/adr/template.md
+) >/dev/null
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "override: a declaration naming a different template than the key is unhealthy"
+assert_contains "$RUN_OUT" "$SHIPPED_TEMPLATE" \
+  "override: the failing line names the configured template, not the declared one"
+
+# The key is the customization seam: an install keeping its own template says
+# so in the config and stays healthy — and its format is still verified, which
+# is what makes the seam an override rather than an escape hatch.
+d="$(case_dir owntemplate)"
+(
+  cd "$d/project"
+  git mv "$SHIPPED_TEMPLATE" docs/adr/template.md
+  sed -i "s|^ADDW_ADR_TEMPLATE=.*|ADDW_ADR_TEMPLATE=\"docs/adr/template.md\"|" \
+    docs/addw.env
+  printf '# Project\n\n`docs/adr/template.md` is the authoritative ADR format.\n' \
+    > CLAUDE.md
+) >/dev/null
+run "$d"
+assert_eq 0 "$RUN_STATUS" \
+  "adr: a project declaring its own template is healthy"
+assert_contains "$RUN_OUT" "HEALTHY" "adr: the template path is not hardcoded"
+
+sed -i 's|^- \*\*Status\*\*.*|- **Status**: proposed / accepted / deprecated|' \
+  "$d/project/docs/adr/template.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "adr: a project's own template has its format verified too"
+
+# The ADR *directory* is a separate contract — the numbering script's, and the
+# living-docs check's. Moving it must not disturb a template that lives with
+# the skills.
 d="$(case_dir altadr)"
 (
   cd "$d/project"
   mkdir -p docs/decisions
-  git mv docs/adr/template.md docs/decisions/template.md
+  touch docs/decisions/.gitkeep
   rmdir docs/adr
   sed -i 's|^ADDW_ADR_DIR=.*|ADDW_ADR_DIR="docs/decisions"|' docs/addw.env
-  sed -i 's|docs/adr/template.md|docs/decisions/template.md|' CLAUDE.md
 ) >/dev/null
 run "$d"
 assert_eq 0 "$RUN_STATUS" \
-  "adr-dir: an ADR location other than docs/adr/ is healthy when its artifacts are there"
+  "adr-dir: an ADR location other than docs/adr/ is healthy"
 assert_contains "$RUN_OUT" "HEALTHY" "adr-dir: no hardcoded ADR path"
 
 # added at codex round 2: consumers check the value out, pass it to
