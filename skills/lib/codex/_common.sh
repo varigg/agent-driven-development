@@ -16,6 +16,10 @@ mkdir -p "$STATE_DIR"
 # Per-project overrides come from docs/addw.env (ADDW_CODEX_MODEL_IMPL /
 # ADDW_CODEX_MODEL_REVIEW / ADDW_CODEX_EFFORT); CODEX_MODEL / CODEX_EFFORT
 # env vars act as per-run overrides on top of both.
+# These three come from the config alone. Clearing them first stops a value
+# inherited from the environment from making an unconfigured project look
+# configured, which is the property the other config readers hold too. The
+# subshell below inherits the cleared state, so it needs no unset of its own.
 unset ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT
 if [ -f "docs/addw.env" ]; then
     # A config that cannot be parsed is a defect and stays fatal; only the
@@ -32,7 +36,6 @@ if [ -f "docs/addw.env" ]; then
     # discarded, and its status or an exit inside it cannot reach this shell.
     config_values=()
     mapfile -t config_values < <(
-        unset ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT
         # shellcheck disable=SC1091
         . "docs/addw.env" >/dev/null || true
         printf '%s\n' \

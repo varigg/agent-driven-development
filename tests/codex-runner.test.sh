@@ -231,4 +231,35 @@ for case in "codex-ask a-topic" "codex-implement 42" \
     "$skill: unparseable config — Codex is never invoked"
 done
 
+# The three keys come from the config alone. A value inherited from the
+# environment must never stand in for one the project did not declare, or a
+# session carrying another project's value would silently pick the wrong model
+# — the same property the other config readers freeze (tests/code-review.test.sh,
+# tests/next-adr-number.test.sh). Both routes to an undeclared key are covered:
+# no config file at all, and a config that simply does not mention it.
+run_with_env() { # <project-root> <state-dir> -> adapter stdout, ADDW_ key exported
+  ( cd "$1" && export ADDW_CODEX_MODEL_REVIEW="model-from-the-environment"
+    env -u CODEX_MODEL -u CODEX_EFFORT \
+      PATH="$INSTALL/bin:$PATH" STATE_DIR="$2" \
+      bash "$INSTALL/skills/codex-ask/scripts/start.sh" a-topic 2>&1 )
+}
+
+no_config="$work/no-config"
+mkdir -p "$no_config"
+out="$(run_with_env "$no_config" "$work/inherited-nofile")" \
+  || fail "codex-ask: no config file at all stopped the adapter: $out"
+assert_contains "$out" "model/effort:" \
+  "no config file: the adapter still runs"
+assert_not_contains "$out" "model-from-the-environment" \
+  "no config file: an inherited key never stands in for an absent one"
+
+silent="$(new_project silent-on-the-key 'ADDW_CODEX_EFFORT="effort-from-config"
+')"
+out="$(run_with_env "$silent" "$work/inherited-silent")" \
+  || fail "codex-ask: a config silent on the key stopped the adapter: $out"
+assert_contains "$out" "effort-from-config" \
+  "config silent on the key: the keys it does declare are still read"
+assert_not_contains "$out" "model-from-the-environment" \
+  "config silent on the key: an inherited key never stands in for it"
+
 echo "codex runner: shared-layer home, required state/prompt, adapter wiring, config sourcing, inventory"
