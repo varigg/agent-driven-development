@@ -16,7 +16,12 @@
 # acceptance criteria, and the buffer says so rather than going silent.
 # The buffer also names the configured ADR directory. The reviewer is read-only
 # and offline, so configuration needed to interpret checklist references must
-# travel with the context; an absent value is stated explicitly rather than guessed.
+# travel with the context; an absent value is stated explicitly rather than
+# guessed, and the reviewer is told to report the guardrail item as unperformed
+# rather than pass it. Whether a project may lack the key at all is doctor's
+# question, not this adapter's — doctor already fails an install missing it,
+# and refusing to review would withhold the check that finds problems from the
+# install least likely to have none.
 
 set -euo pipefail
 
@@ -87,7 +92,7 @@ build_context() {
     if [ -n "$adr_dir" ]; then
         printf '\n---\n\nADR directory for guardrail review: `%s`\n' "$adr_dir" >> "$file"
     else
-        printf '\n---\n\nADR directory for guardrail review: none. `ADDW_ADR_DIR` did not resolve from this project'"'"'s config, so the guardrail-ADR checklist item has nothing to check — skip it rather than guessing a path.\n' \
+        printf '\n---\n\nADR directory for guardrail review: none. `ADDW_ADR_DIR` did not resolve from this project'"'"'s config, so the guardrail-ADR checklist item cannot be performed. Do not guess a path, and do not pass the item quietly: report it as **not performed**, naming `ADDW_ADR_DIR` as the reason.\n' \
             >> "$file"
     fi
 }

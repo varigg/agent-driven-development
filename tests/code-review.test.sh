@@ -152,6 +152,8 @@ assert_not_contains "$buf" "docs/adr" \
   "no ADR dir: the buffer falls back to no directory at all"
 assert_contains "$buf" "ADDW_ADR_DIR" \
   "no ADR dir: the buffer names the key whose absence disabled the check"
+assert_contains "$buf" "not performed" \
+  "no ADR dir: the reviewer reports the item unperformed rather than passing it"
 
 # An exported value must not stand in for an absent key: a session that happens
 # to carry ADDW_ADR_DIR from elsewhere would otherwise hand the reviewer some
