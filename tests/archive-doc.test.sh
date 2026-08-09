@@ -225,8 +225,10 @@ assert_contains "$body" 'a list item' "body: the document arrives whole"
 # US10 asks for retrieval to be one copy-paste. Executing the generated command
 # turns that from a claim about a string into an assertion about bytes.
 
-recover="$(printf '%s\n' "$body" | sed -n 's/.*\(git show [^`]*\).*/\1/p' | head -1)"
-[ -n "$recover" ] || fail "recover: the body carries a git show retrieval command"
+recover="$(printf '%s\n' "$body" | sed -n 's/^\*\*Retrieve\*\*: `\(.*\)`$/\1/p' | head -1)"
+[ -n "$recover" ] || fail "recover: the body carries a retrieval command"
+assert_contains "$recover" "git show $sha:$DOC" \
+  "recover: the command reads the archived bytes out of the captured commit"
 (cd "$repo" && eval "$recover")
 assert_eq "$original" "$(cat "$repo/$DOC")" \
   "recover: the generated command reproduces the archived bytes exactly"
