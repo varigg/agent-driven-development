@@ -4,8 +4,8 @@
 # the per-target state file written by start.sh.
 #
 # Usage: resume.sh --prompt-file <tpl> [--notes "..."] <target> [extra prompt text...]
-# Both --prompt-file and $STATE_DIR are required: the runner is shared and
-# owns neither prompts nor state — each adapter pins its own.
+# Both --prompt-file and $STATE_DIR are required; each adapter pins its own
+# (../README.md has the reason a shared layer defaults neither).
 # Exits 0 on success, 1 on Codex failure, 2 if no prior session exists,
 # 78 on invalid docs/addw.env.
 

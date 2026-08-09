@@ -59,7 +59,10 @@ Its one-line summary is what the PR body carries verbatim.
 - **Shared scripts live in `skills/lib/`**, a non-skill directory that rides the
   wholesale `skills/` copy: `tracker/`, `gate/`, `release/`, `docs/`, `codex/`.
   A script two skills call belongs here, not in whichever skill happened to own
-  it first — `skills/lib/README.md` is the layer's contract.
+  it first — `skills/lib/README.md` is the layer's contract. That contract is
+  also a split: the README owns the layer's *rationale*, and a script header
+  owns its usage block, flags, and exit codes. A header explaining why the
+  design is what it is has started a second copy of a document it delegated to.
 
 ## Pointers
 

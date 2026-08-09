@@ -11,14 +11,13 @@ fi
 export STATE_DIR
 mkdir -p "$STATE_DIR"
 
-# Model/effort per flow (single source of truth for all codex skills):
-# implementation runs Luna, reviews (spec + code) run Sol, effort xhigh.
-# Per-project overrides come from docs/addw.env (ADDW_CODEX_MODEL_IMPL /
-# ADDW_CODEX_MODEL_REVIEW / ADDW_CODEX_EFFORT); CODEX_MODEL / CODEX_EFFORT
-# env vars act as per-run overrides on top of both.
-# These three come from the config alone. Clearing them first stops a value
-# inherited from the environment from making an unconfigured project look
-# configured, which is the property the other config readers hold too. The
+# Model/effort per flow, resolved below and the single source of truth for all
+# codex skills: the fallbacks in that resolution are the defaults, a project
+# overrides them from docs/addw.env, and CODEX_MODEL / CODEX_EFFORT override
+# both per run.
+# The three config keys come from the config alone. Clearing them first stops
+# a value inherited from the environment from making an unconfigured project
+# look configured, which is the property the other config readers hold too. The
 # subshell below inherits the cleared state, so it needs no unset of its own.
 unset ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT
 if [ -f "docs/addw.env" ]; then

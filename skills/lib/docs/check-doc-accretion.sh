@@ -1,18 +1,8 @@
 #!/usr/bin/env bash
-# Deterministic accretion probe for a living design document. Such a document
-# describes the system as it is, so a release rewrites the passages it affects
-# rather than appending to them. Appending is invisible to a size threshold —
-# a document stays well under budget while its overview turns into a changelog
-# — so this compares against the previous release instead of against a limit.
-#
-# The signal is version density: how many version references the document
-# carries now versus at the previous tag. A living design document needs
-# almost none — the as-built statement, and versions that are live facts a
-# reader must act on (a dependency pin, a hazard predating its fix). A count
-# that climbs release over release is releases narrating themselves.
-#
-# Advisory, never a gate: legitimate growth exists, so the probe names the
-# lines it counted and leaves the judgement to the reader.
+# Deterministic accretion probe for a living design document: count the
+# version references it carries now against its copy at the previous release
+# tag, and name the lines counted. Why version density is the signal, which
+# references legitimately stay, and why no verdict is ever a gate: ../README.md.
 #
 # Usage: check-doc-accretion.sh [file ...]   (default docs/ARCHITECTURE.md)
 # Run from the repo root. Exit 0 on any verdict; 1 if a named file is missing.

@@ -248,9 +248,9 @@ syntax error here breaks skills far from the edit.
 ADDW_SCHEMA=5
 ADDW_PROJECT_NAME="<project name>"
 ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, ...>"
-# A bare branch name — never remote-qualified. Consumers check it out and pass
-# it to `gh pr create --base`, and one derives `origin/$ADDW_MAIN_BRANCH`, so
-# an "origin/main" here becomes "origin/origin/main" there:
+# A bare branch name — never remote-qualified: a consumer derives
+# `origin/$ADDW_MAIN_BRANCH` from it, so an "origin/main" here becomes
+# "origin/origin/main" there. Resolve it with:
 #   git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||'
 # falling back to `git branch --show-current` in a repo with no remote.
 ADDW_MAIN_BRANCH="<bare branch name>"
@@ -266,7 +266,8 @@ ADDW_RECIPE_LINT="<command or empty>"
 ADDW_RECIPE_TYPECHECK="<command or empty>"
 # {paths} is replaced by the affected test paths; a recipe without it runs as-is:
 ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
-# Optional codex model overrides (defaults live in the shared codex runner):
+# Optional codex model/effort overrides — unset, the shared codex runner's own
+# defaults apply:
 # ADDW_CODEX_MODEL_IMPL="..."
 # ADDW_CODEX_MODEL_REVIEW="..."
 # ADDW_CODEX_EFFORT="..."

@@ -1,27 +1,23 @@
 #!/usr/bin/env bash
-# The re-runnable post-merge tail of the ADDW release flow.
+# The re-runnable post-merge tail of the ADDW release flow: tag, push,
+# GitHub Release, and for a spec release the spec issue's closure. What each
+# step is for, why an interrupted run is finished by re-running it, and why
+# nothing is mutated before everything is validated: ../README.md.
 #
 # Usage: tail.sh [--spec <n>] [--commit <sha>] <version>
+#   --spec <n>       the spec issue to close as completed; omitted for a
+#                    repository release, which closes nothing
+#   --commit <sha>   the release PR's merge commit (default HEAD). Callers
+#                    should always pass it: let it default once another PR has
+#                    merged, and the tag covers commits the changelog entry
+#                    never mentions.
+#   <version>        the version to tag and publish. Must match an entry in
+#                    the target commit's CHANGELOG.md, whose body becomes the
+#                    release notes, read from that commit's tree rather than
+#                    the working tree.
 #
-# Run from the repository root after the release PR has been merged. The tail
-# lays the version tag on the release commit, pushes it to origin, publishes
-# the GitHub Release from the changelog entry, and for a spec release closes
-# the spec issue. Each step skips work that is already complete, so an
-# interrupted run is finished by running it again rather than by hand.
-#
-# --commit is the release PR's merge commit, and the caller should always pass
-# it: HEAD is only a convenience default, and it is wrong the moment another
-# PR merges between the release merge and this run — the tag would then cover
-# commits the changelog entry never mentions.
-#
-# Everything is validated before anything is mutated. A tag is public and
-# awkward to retract, so a version that does not match the changelog, or a tag
-# already pointing somewhere else, must fail before the first `git tag` rather
-# than after the push. For the same reason, skipping asks whether the step's
-# *result* is present, not merely whether something with the right name is: a
-# tag pointing away from the release commit — locally or on the remote — is
-# refused rather than skipped, since skipping would cement a tag laid from a
-# stale checkout and publish notes against the wrong code.
+# Run from the repository root after the release PR has been merged. Each step
+# prints one `done:`/`skip:` line.
 #
 # Exit 0 when every step succeeded or skipped; 1 when the release commit's
 # CHANGELOG.md has no entry for the version; 2 on usage errors, outside a git

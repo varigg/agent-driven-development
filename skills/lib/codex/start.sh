@@ -4,8 +4,8 @@
 # the final message to the per-target review file.
 #
 # Usage: start.sh --prompt-file <tpl> <target> [extra prompt text...]
-# Both --prompt-file and $STATE_DIR are required: the runner is shared and
-# owns neither prompts nor state — each adapter pins its own.
+# Both --prompt-file and $STATE_DIR are required; each adapter pins its own
+# (../README.md has the reason a shared layer defaults neither).
 # Exits 0 on success, 1 on Codex / thread_id capture failure,
 # 2 on an existing thread (use reset.sh first), 78 on invalid docs/addw.env.
 
