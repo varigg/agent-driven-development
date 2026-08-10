@@ -9,10 +9,11 @@
 #
 # What it verifies, in the ticket's terms (#9):
 #
-#   1. Config keys. The required values must be non-empty; the three recipe
-#      keys must be *defined*, where an empty value is a deliberate skip and an
-#      absent key is a gap. Recipes come from the config alone — an exported
-#      ADDW_RECIPE_* must not stand in for a key the config doesn't set.
+#   1. Config keys. The required values must be non-empty; the empty-legal keys
+#      — the three recipes and ADDW_VERSION_FILE — must be *defined*, where an
+#      empty value is a deliberate skip and an absent key is a gap. Values come
+#      from the config alone — an exported ADDW_RECIPE_* must not stand in for a
+#      key the config doesn't set.
 #   2. Docs contract. The directories and living docs, the ADR template at the
 #      location ADDW_ADR_TEMPLATE names — the shipped one under
 #      `.claude/skills/lib/templates/` by default, a project's own when it
@@ -208,6 +209,42 @@ run "$d"
 assert_eq 1 "$RUN_STATUS" "config: a missing required key is unhealthy"
 assert_contains "$RUN_OUT" "ADDW_PROJECT_NAME" \
   "config: the failing line names the missing key"
+
+# ADDW_VERSION_FILE is empty-legal for the same reason a recipe is: a project
+# with no native version manifest (Go, C, plain shell) has no file to name, and
+# addw-release Step 2 already skips the version write when the value is empty.
+# Requiring a value here made those projects invent a file whose only purpose
+# was passing this check, and made doctor's own existence check below dead code
+# — it could never be reached with an empty value (#74).
+d="$(case_dir emptyversion)"
+sed -i 's|^ADDW_VERSION_FILE=.*|ADDW_VERSION_FILE=""|' "$d/project/docs/addw.env"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "version: an empty ADDW_VERSION_FILE is healthy"
+assert_contains "$RUN_OUT" "ADDW_VERSION_FILE defined (empty: deliberate skip)" \
+  "version: an empty value reads as a considered skip, not a silent pass"
+assert_contains "$RUN_OUT" "HEALTHY: all checks passed" \
+  "version: no version manifest does not make an install unhealthy"
+
+# Presence is what separates a considered skip from an omission, so the key
+# itself still has to be there. Without this the fix above would be indistinguishable
+# from dropping the check entirely.
+d="$(case_dir noversionkey)"
+grep -v '^ADDW_VERSION_FILE=' "$d/project/docs/addw.env" \
+  > "$d/project/docs/addw.env.new"
+mv "$d/project/docs/addw.env.new" "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "version: an absent ADDW_VERSION_FILE is unhealthy"
+assert_contains "$RUN_OUT" "ADDW_VERSION_FILE absent from docs/addw.env" \
+  "version: the failing line distinguishes an omission from an empty value"
+
+# The existence check the empty case makes reachable. A named file that isn't
+# there is still a fault — releases would write a version into nothing.
+d="$(case_dir missingversionfile)"
+sed -i 's|^ADDW_VERSION_FILE=.*|ADDW_VERSION_FILE="Cargo.toml"|' "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "version: a named-but-missing version file is unhealthy"
+assert_contains "$RUN_OUT" "version file Cargo.toml missing" \
+  "version: the failing line names the file the config points at"
 
 d="$(case_dir noconfig)"
 rm "$d/project/docs/addw.env"

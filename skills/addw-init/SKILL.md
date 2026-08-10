@@ -133,8 +133,10 @@ and the test framework and conventions.
 
 Record the current version and its format (SemVer, CalVer, custom) from
 `package.json`, `Cargo.toml`, `pyproject.toml`, `version.h`, `__version__`,
-or git tags. A project with no version mechanism gets the smallest
-appropriate one before `ADDW_VERSION_FILE` can name a file.
+or git tags. Languages with no native version manifest — Go, C, plain shell —
+often have no such file, and inventing one solely to name it here is not the
+goal: `ADDW_VERSION_FILE` may be left empty, and releases then carry the
+version in the tag and the changelog alone.
 
 Then classify:
 
@@ -247,7 +249,11 @@ syntax error here breaks skills far from the edit.
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
 ADDW_SCHEMA=5
 ADDW_PROJECT_NAME="<project name>"
-ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, ...>"
+# The file a release writes the version into. Empty is valid and means the
+# project has no version manifest to write — the release then carries the
+# version in its tag and CHANGELOG.md alone. The key itself must be present
+# either way, so a considered skip cannot be mistaken for an omission.
+ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, or empty>"
 # A bare branch name — never remote-qualified: a consumer derives
 # `origin/$ADDW_MAIN_BRANCH` from it, so an "origin/main" here becomes
 # "origin/origin/main" there. Resolve it with:
