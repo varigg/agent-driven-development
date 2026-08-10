@@ -109,8 +109,9 @@ lives inside `skills/` rather than at the repo root.
   does not contain its own notes. That lookup is also what catches a version
   argument disagreeing with the one the release PR committed.
 
-- `docs/` — living-document probes, shared because the release runs them as its
-  backstop sweep and the maintenance audit runs them deliberately.
+- `docs/` — living-document probes and the one operation performed on a living
+  document, shared because the release runs the probes as its backstop sweep
+  and the maintenance audit runs them deliberately.
   - `check-doc-accretion.sh` — version density is the signal a living design
     document is narrating its own history: it describes the system as it is, so
     a release rewrites the passages it affects rather than appending to them,
@@ -133,6 +134,22 @@ lives inside `skills/` rather than at the repo root.
     authoritative — no tracker call is needed. It does not solve concurrent authorship: two branches each computing
     max plus one land on the same number, which only merge order or a reviewer
     catches.
+  - `archive-doc.sh` — retires a document to a closed, labeled issue and stages
+    the deletion. A script rather than an agent step because the harness
+    forbids writing a file's contents anywhere without reading them first, so
+    an agent performing the archival guarantees exactly the context
+    contamination the rule exists to prevent — the same reasoning that made the
+    changelog prepender a script. The reference check spans two surfaces with
+    two verdicts: a live pointer in the tree or in an open issue refuses, since
+    a deletion that strands one has moved the defect rather than fixed it,
+    while a closed issue's mention is reported and does not block, since
+    history must not deadlock the tool permanently. ADR `Origin:` lines are
+    exempt on both. One PR is a review unit rather than a transaction, so what
+    the ordering guarantees is that the irreversible step comes last: every
+    failure before the issue exists leaves the tree untouched, and after that
+    point the residue is made loud — the number is printed the moment it
+    exists — rather than resumable, since recognising an existing archive for a
+    path would mean reading archives back.
 
 - `codex/` — the shared Codex runner every `codex-*` adapter sits on. It owns
   the mechanics of a resumable non-interactive Codex session — invoking
