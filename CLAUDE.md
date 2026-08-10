@@ -18,8 +18,8 @@ That script is also the tracker **seam**: every `gh` call for tracker work
 routes through it, so reach for it rather than `gh issue` directly.
 
 Issues labeled **`backlog`** are undesigned ideas, not tickets — nothing there
-is workable until it graduates into a proposal and a spec, and the frontier
-skips them. They carry no `## Parent`.
+is workable until it graduates into a spec and the tickets decomposed from it,
+and the frontier skips them. They carry no `## Parent`.
 
 
 ## Conventions that bite
