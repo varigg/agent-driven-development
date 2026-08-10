@@ -195,6 +195,34 @@ reviewed alongside the code that changed them. A new decision gets an ADR from t
 template, with the ticket or PR as its Origin; use `.claude/skills/lib/docs/next-adr-number.sh`
 to get its number.
 
+**A document this ticket made untrue leaves the tree here.** This is the only step in the
+workflow that archives one — everywhere else a stale document is noticed, it is filed as a
+ticket that arrives back here:
+
+```bash
+bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<why it stopped being true>"
+```
+
+The test is **"is this still true?"** — never "is this about the past?" A document may narrate
+history and remain entirely true: rejected alternatives, incident notes, and an ADR's own
+reasoning are the highest-value content in a tree precisely because the code cannot supply
+them. What leaves is a document making present-tense claims about a tree that has moved on.
+Before running the command, confirm two things — that the document's durable content survives
+elsewhere, in the spec issue, an ADR, or the superseding document, and that no living doc still
+points at the file. Re-aim the pointers first; a deletion that strands one has moved the defect
+rather than fixed it. The script refuses on a surviving reference, but the judgment is yours,
+and it prints no document content, which is why it exists at all. It leaves the deletion
+staged — commit it with the rest of the ticket's changes.
+
+**An ADR that supersedes another archives the superseded one in the same PR**, since this is
+where both documents are in hand and nowhere later are they. The departing ADR is not edited on
+its way out: a merged ADR is never edited, and the reason you pass the script — which names the
+superseding ADR — is what records the supersession. Then **sweep the vocabulary the superseded
+decision introduced** out of the living docs, in this same PR, and list the swept terms in the
+PR body so a reviewer can tell a thorough sweep from a cursory one. That list lives in the PR
+body and nowhere else: it is needed once, while you hold both documents, and an in-tree list of
+retired terms would serve a transient purpose forever.
+
 If nothing documented changed, say so; the PR body carries the note either way.
 
 ### Step 9: Testing Gate
@@ -276,7 +304,9 @@ human has to do by archaeology:
 3. **Codex verdict** — the tag, the round count, and the commit SHA it covers.
 4. **Disclosures** — a skipped pre-filter, a skipped review round, an edited contract test,
    an accepted open finding. If there are none, say none.
-5. **Doc-impact note** — which living docs this changed, or that none needed changing.
+5. **Doc-impact note** — which living docs this changed, or that none needed changing. A
+   document archived here is named with its archive issue number; a supersession also lists the
+   vocabulary it swept, since that list exists nowhere else.
 6. **What changed** — a short prose summary of the change and anything the reviewer should
    look at first.
 7. **Merge recommendation** — **squash by default**. Recommend **rebase-merge** only when the

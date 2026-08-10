@@ -118,7 +118,13 @@ The fresh-build path (§ *Mode B: Fresh Build*):
 
 6. **Doc impact now, not at release.** A ticket that changed documented design updates the
    affected living-doc passages in its own PR, so docs are reviewed alongside the code that
-   changed them (§ *Step 8: Doc Impact*).
+   changed them (§ *Step 8: Doc Impact*). It is also the **only** step that retires one: a
+   document the change made untrue leaves the tree here, via
+   `skills/lib/docs/archive-doc.sh`, landing as a closed `archived` issue whose bytes never
+   passed through an agent's context. Detection is deliberately a separate step: wherever else
+   a stale document is spotted it becomes a ticket, which arrives back here. An ADR that
+   supersedes another archives the superseded one here and sweeps its vocabulary in the same
+   PR, listing the swept terms in the PR body — the only place that list exists.
 
 7. **The deterministic gate**, green before cross-model review starts (§ *Step 9: Testing
    Gate*). `skills/lib/gate/gate.sh` runs the lint / typecheck / affected-tests recipes from
@@ -206,7 +212,7 @@ Not part of the cycle, but reachable from it:
 | Tickets | GitHub issues with `## Parent` / `## Blocked by` | `to-tickets` |
 | Undesigned ideas | `backlog`-labeled issues, no parent | you, or `addw-maintain` |
 | Implementation | One squash-merged PR per ticket | `addw-implement` |
-| Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR` | the ticket's own PR, or alignment (origin `design session`) |
+| Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR`, `active` for as long as they are there — a superseded one departs to a closed `archived` issue | the ticket's own PR, or alignment (origin `design session`); retired by the superseding PR |
 | Glossary / domain docs | The layout `docs/agents/domain.md` declares | `domain-modeling`, during alignment |
 | Version + changelog | A release PR, then a tag and GitHub Release | `addw-release` |
 | Audit reports | `docs/7-maintenance/MAINT_<date>.md`, via a PR | `addw-maintain` |

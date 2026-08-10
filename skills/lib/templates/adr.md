@@ -30,7 +30,13 @@ living docs.>
   living docs and other ADRs. An unmerged ADR can still be corrected; a merged
   one never is.
 - The three bold fields are **mandatory and always present**. `Status` has
-  exactly two states, `active` and `superseded by ADR-NNNN`.
+  exactly two states, `active` and `superseded by ADR-NNNN`. Only the first is
+  ever written. Supersession is a **departure**: the superseding PR archives
+  the ADR it supersedes, and the archive's provenance block carries the pointer
+  — so no ADR in the tree ever reads `superseded by`, and none is edited after
+  merge to make it. The second state stays because it names the only exit an
+  ADR has, which is what keeps the next number `max + 1`: every departed number
+  sits below the active ADR that superseded it.
 - `Date` is the date the ADR was **written**, not the date it merged, so the
   field is not a function of review latency.
 - `Origin` is historical provenance: the **spec issue** for a decision made
