@@ -233,6 +233,24 @@ bash .claude/skills/lib/docs/check-doc-accretion.sh docs/ARCHITECTURE.md
   retro-edited.
 - **Accretion** — on `ACCRETION`, the document is narrating its own history one
   appended sentence at a time, a failure no size threshold can see. File it.
+- **Retirement** — a document this release left untrue *in whole*, rather than in
+  a passage, is retired rather than corrected. File one ticket per document:
+
+  ```bash
+  bash .claude/skills/lib/tracker/tracker.sh create \
+    "docs: retire <path>" <body-file> ready-for-agent
+  ```
+
+  The body carries the path, the kind (`adr` or `proposal`), why the document
+  stopped being true, and the command that retires it —
+  `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` —
+  so the ticket is workable without rediscovering the finding. It carries **no
+  `## Parent`**: an unparented ticket belongs to no spec, so it can make no spec
+  incomplete and no release unready, and a document found here cannot block the
+  release that found it. Being filed and reported is what makes it loud;
+  withholding a release over a documentation deletion would be disproportionate.
+  Never archive or delete the document here — that is the retirement ticket's own
+  PR, reviewed like any other.
 - **Charter fit** — re-read the charter and verify the release did not
   invalidate its purpose, principles, scope, or non-goals. If it did, flag it to
   the human: the charter changes only by their explicit decision, never as a

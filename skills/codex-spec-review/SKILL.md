@@ -17,9 +17,9 @@ pattern as `codex-code-review`. The per-issue file `state/issue-<N>.md` mirrors 
 body and doubles as the **edit buffer**: fixes are made there and pushed back with
 `tracker.sh edit-body`.
 
-Every tracker operation — issue reads, body edits, the `spec` label, the verdict comment —
-goes through the tracker layer at `.claude/skills/lib/tracker/tracker.sh`. Never call `gh`
-for tracker work here.
+Every tracker operation — issue reads, body edits, the `spec` label, the verdict comment,
+the retirement tickets of Step 7 — goes through the tracker layer at
+`.claude/skills/lib/tracker/tracker.sh`. Never call `gh` for tracker work here.
 
 ## Arguments
 
@@ -43,7 +43,8 @@ for tracker work here.
 4. **Show**: `bash .claude/skills/codex-spec-review/scripts/show.sh <issue-number>`
 
 5. **Parse trailing tag**:
-   - `APPROVED` — post the verdict comment (below), tell the user, done.
+   - `APPROVED` — post the verdict comment (below), file any retirement the spec earned
+     (Step 7), tell the user, done.
    - `REQUEST_CHANGES` — engage critically: fix legitimate findings by editing
      `state/issue-<N>.md` and pushing with
      `bash .claude/skills/lib/tracker/tracker.sh edit-body <N> .claude/skills/codex-spec-review/state/issue-<N>.md`;
@@ -60,6 +61,33 @@ for tracker work here.
    printf 'Codex spec review: APPROVED after <R> round(s).\n' > "$S/issue-<N>.verdict.md"
    bash .claude/skills/lib/tracker/tracker.sh comment <N> "$S/issue-<N>.verdict.md"
    ```
+
+7. **Retirement filing** — an approved spec supersedes what it replaces. For each
+   in-tree document the spec has left untrue *in whole* — a proposal it replaces, an ADR
+   whose decision it overturns — file one ticket. Filing is all this step does: no branch,
+   no commit, no PR, no gate, and never a deletion or an edit of the document itself.
+
+   The ticket body carries the path, the kind (`adr` or `proposal`), why the document
+   stopped being true, and the command that retires it —
+
+   ```
+   bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"
+   ```
+
+   — so whoever picks the ticket rediscovers none of it. Write it into adapter state and
+   file:
+
+   ```bash
+   S=.claude/skills/codex-spec-review/state
+   bash .claude/skills/lib/tracker/tracker.sh create \
+     "docs: retire <path>" "$S/issue-<N>.retire-<k>.md" ready-for-agent
+   ```
+
+   `ready-for-agent` rather than `backlog`: target, reason and command are all fixed here,
+   so nothing remains to design, and the human's sign-off arrives at the retirement PR's
+   merge. **No `## Parent`** — the ticket belongs to no spec, so it gates no spec's
+   completion and no release. Another detector may later file the same document; the
+   duplicate costs one close, which is cheaper than a tracker query to prevent it.
 
 ## Notes
 
@@ -85,4 +113,5 @@ turn 2: resume.sh --notes "Fixed A B. Pushed back on C because …" 42
          edit + push
 turn 3: resume.sh --notes "…" 42 -> APPROVED
          tracker.sh comment 42 state/issue-42.verdict.md
+         tracker.sh create "docs: retire …" … ready-for-agent   (one per superseded doc)
 ```

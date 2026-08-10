@@ -36,7 +36,12 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
 
 **Vocabulary**
 
-- Superseded-vocabulary sweep: grep vocabulary retired by superseded/amended ADRs across the living docs — process files included. Every hit must be a dated record, an explicit negation, or a standing lesson.
+- **Vocabulary agrees with the active ADRs.** Read the ADRs whose `Status` is
+  `active` and check the living docs — process files included — for terms their
+  decisions replaced. The superseded ADRs are deliberately *not* the input: they
+  have left the tree, and fetching one back would read a document of stale
+  present-tense claims into the one session auditing the tree for exactly that.
+  Every hit must be a dated record, an explicit negation, or a standing lesson.
 - Living docs describe only current design — flag anything narrating history outside dated records (CHANGELOG.md, ADRs, and incident notes are exempt: their date is part of their meaning; never retro-edit a merged one).
 - A rename pass is **prose only**. Identifiers, script names, and paths are
   code changes — file them as tracker issues, don't do them here.
@@ -74,6 +79,12 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
   a completed action does not look stale the way a description of a retired
   mechanism does. Delete the steps; keep only what they taught, as a lesson or
   a warning.
+- **A document untrue *in whole*** — a design the tree moved past, a proposal
+  whose implementation landed elsewhere, an ADR something has superseded — is
+  retired rather than corrected. The test is whether a reader can act on it: a
+  document whose reader must diff it against something else to learn which half
+  still holds is one of these. Do not delete, edit or archive it here; file it
+  under **Retirement filing** in Step 4.
 - Accretion has a cheap measurement:
   `bash .claude/skills/lib/docs/check-doc-accretion.sh <file>...`
   counts a document's version references against its copy at the previous tag.
@@ -111,7 +122,14 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
   bash .claude/skills/lib/tracker/tracker.sh create "<conventional subject>" <body-file> backlog
   ```
 
-  `backlog` unless the human wants it worked now, in which case use `ready-for-agent`. A `backlog` issue is an undesigned idea: it carries no `## Parent`, and the frontier skips it until it graduates into a spec.
+  `backlog` unless the human wants it worked now, in which case use `ready-for-agent`. A `backlog` issue is an undesigned idea: it carries no `## Parent`, and the frontier skips it until it graduates into a spec. **Retirement filing**, below, is the one standing exception to that default.
+- **Retirement filing**: a document Sweep A found untrue in whole leaves the tree rather than being corrected — and leaves it through a ticket like any other substantive finding, since deleting a file is substantive by any reading. One ticket per document:
+
+  ```bash
+  bash .claude/skills/lib/tracker/tracker.sh create "docs: retire <path>" <body-file> ready-for-agent
+  ```
+
+  The body carries the path, the kind (`adr` or `proposal`), why the document stopped being true, and the command that retires it — `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` — so whoever picks the ticket rediscovers none of the finding. `ready-for-agent` is deliberate here: `backlog` means an undesigned idea awaiting a human's decision to design it, and a retirement is the opposite, since target, reason and command are all fixed at detection and nothing remains to graduate. The sign-off is not lost, only moved to the retirement PR's merge, where every other ticket's happens. The ticket carries **no `## Parent`**, so it gates no spec's completion and no release. Another detector may file the same document; the duplicate costs one close, which is cheaper than a tracker query to prevent it.
 - **Process findings** (a skill is wrong): file separately against the ADDW repo — skills change via dedicated process commits, never inside an audit fix.
 
 ## Step 5: Ship the Audit

@@ -6,7 +6,8 @@
 #   1. Tracker routing. Every tracker operation goes through the tracker
 #      layer (skills/lib/tracker/tracker.sh), resolved relative to the
 #      installed skills tree: the body sync reads `body <n>`, the session
-#      start reads `title <n>` and applies `label <n> spec`. Nothing here
+#      start reads `title <n>` and applies `label <n> spec`, and the skill's
+#      own instructions file retirement tickets with `create`. Nothing here
 #      calls the tracker CLI (that half of the contract is static, and lives
 #      in tracker-seam.test.sh).
 #
@@ -157,5 +158,7 @@ assert_contains "$skill_md" "tracker.sh edit-body" \
   "SKILL.md: body pushes go through the tracker layer"
 assert_contains "$skill_md" "tracker.sh comment" \
   "SKILL.md: the verdict comment goes through the tracker layer"
+assert_contains "$skill_md" "tracker.sh create" \
+  "SKILL.md: retirement tickets go through the tracker layer"
 
 echo "spec-review: tracker routing, spec label, body-sync guard, prompt contract"
