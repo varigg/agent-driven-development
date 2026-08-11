@@ -37,3 +37,7 @@ _Avoid_: queue, ready list
 **Bootstrap Exception**:
 The window before a repo's first commit, when no PR machinery exists and addw-init's approval questions are the only gate that can be.
 _Avoid_: init special case
+
+**Deliverable**:
+The independently-checkable unit of work a ticket delivers; a ticket carries exactly one. Checkable means a reviewer can verify it passed or failed without reference to the ticket's other criteria.
+_Avoid_: feature, work item
