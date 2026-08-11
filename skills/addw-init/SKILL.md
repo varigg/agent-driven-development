@@ -98,7 +98,6 @@ before anything writes into it:
 
 ```
 docs/4-unit-tests/     # the testing guide and the coverage-debt ledger
-docs/6-memo/           # research memos
 docs/7-maintenance/    # dated maintenance reports (addw-maintain)
 <ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.5
 ```
@@ -108,7 +107,9 @@ tracker now, and tutorials have no consumer left in the skill set. Historical
 installs may still carry `docs/1-plans/`, `docs/2-changelog/`,
 `docs/3-code-review/`, or `docs/5-tuto/` — leave them alone, and leave the
 numbering gaps; deleting them is the human's call, documented in
-`UPGRADING.md`.
+`UPGRADING.md`. The same holds for `docs/6-memo/`, retired once the research
+skill that was its only writer retired: never recreate it, and never assume a
+surviving one holds anything.
 
 ### 2.2 The ADDW labels
 
