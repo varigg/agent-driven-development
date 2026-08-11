@@ -58,7 +58,6 @@ ok "docs/addw.env parses"
 required_keys=(
     ADDW_SCHEMA
     ADDW_PROJECT_NAME
-    ADDW_VERSION_FILE
     ADDW_MAIN_BRANCH
     ADDW_AUDIT_NUDGE_N
     ADDW_ADR_DIR
@@ -72,8 +71,19 @@ for key in "${required_keys[@]}"; do
     fi
 done
 
-recipe_keys=(ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED)
-for key in "${recipe_keys[@]}"; do
+# Keys that must be *present* but may legitimately be empty, where empty means
+# "this project deliberately has no such thing". Checked for presence rather
+# than for a value, so an accidental omission stays distinguishable from a
+# considered skip — which is why the unset above the source matters: presence
+# here means the key was assigned by docs/addw.env and nothing else.
+#
+# A recipe is empty when the project has no such step (plain bash has no
+# typecheck). ADDW_VERSION_FILE is empty when the project has no native version
+# manifest — Go, C, plain shell — and `addw-release` Step 2 already skips the
+# version write for exactly that case. Its value, when non-empty, is checked
+# against the filesystem further down.
+empty_ok_keys=(ADDW_VERSION_FILE ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED)
+for key in "${empty_ok_keys[@]}"; do
     if declare -p "$key" >/dev/null 2>&1; then
         if [ -n "${!key}" ]; then
             ok "$key defined"
