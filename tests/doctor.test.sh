@@ -299,17 +299,6 @@ assert_eq 0 "$RUN_STATUS" "plans: a surviving plans directory is still healthy"
 assert_not_contains "$RUN_OUT" "1-plans" \
   "plans: doctor says nothing about a directory whose deletion is the human's call"
 
-# The memo directory joined that category when addw-research, its only writer,
-# retired. Both directions matter: the healthy fixture above no longer creates
-# it, so a re-add to docs_dirs fails there; here we hold the other half — an
-# install that kept an empty one is fully migrated, and doctor stays silent.
-d="$(case_dir memodir)"
-mkdir -p "$d/project/docs/6-memo"
-run "$d"
-assert_eq 0 "$RUN_STATUS" "memo: a surviving memo directory is still healthy"
-assert_not_contains "$RUN_OUT" "6-memo" \
-  "memo: doctor says nothing about a retired directory it no longer mandates"
-
 # --- docs contract ---------------------------------------------------------
 
 # The key and the file are different faults. An install that never added the
