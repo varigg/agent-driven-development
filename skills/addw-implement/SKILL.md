@@ -106,7 +106,8 @@ Deliverable** — an independently-checkable unit of work, one a reviewer can ve
 failed without reference to the ticket's other criteria. Read the acceptance criteria and
 judge their breadth: criteria that can pass or fail independently of one another mark a
 bundle of Deliverables. A bundled ticket is **not started** — report it for rescoping, the
-same human-facing disposition the frontier's **needs-rescoping** section gets. Decomposition
+same human-facing disposition the frontier's **needs-rescoping** section gets (that section
+itself stays mechanical and will never list the bundle; the report is yours). Decomposition
 should have split it, so this is a backstop, not a routine gate; but breadth is not
 mechanically computable, so no script runs the check for you.
 
