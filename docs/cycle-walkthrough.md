@@ -216,7 +216,7 @@ Not part of the cycle, but reachable from it:
 | Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR`, `active` for as long as they are there — a superseded one departs to a closed `archived` issue | the ticket's own PR, or alignment (origin `design session`); retired by the superseding PR |
 | Glossary / domain docs | The layout `docs/agents/domain.md` declares | `domain-modeling`, during alignment |
 | Version + changelog | A release PR, then a tag and GitHub Release | `addw-release` |
-| Audit reports | `docs/7-maintenance/MAINT_<date>.md`, via a PR | `addw-maintain` |
+| Audit record | The audit commit's message (subject `chore: maintenance audit <date>`), via a PR | `addw-maintain` |
 
 ## Every question you'll be asked
 

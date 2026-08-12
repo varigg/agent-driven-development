@@ -20,7 +20,9 @@ Maintenance: $ARGUMENTS
 1. @docs/ARCHITECTURE.md - Current as-built architecture
 2. @docs/charter.md - Stable intent
 3. The ADRs and the glossary — at the locations the domain-layout contract (`docs/agents/domain.md`) declares
-4. The newest report in `docs/7-maintenance/` (if any) — check its open findings first
+4. Prior audits' findings live on the tracker as issues — check the open issues earlier
+   audits filed via `bash .claude/skills/lib/tracker/tracker.sh snapshot` (the
+   `backlog`-labeled ones and any still-open retirement tickets)
 
 ---
 
@@ -107,16 +109,19 @@ testing doc): is each line still valid? Is its escape plan still right?
 
 - Outdated packages, security advisories, pin/lockfile hygiene
 
-## Step 3: Write the Findings Report
+## Step 3: Keep the Findings List
 
-Create `docs/7-maintenance/MAINT_<YYYY-MM-DD>.md`, dated in its header. This is a dated record: **"looked, found nothing" is a valid and required entry per sweep.** Skipped sweeps are recorded as skipped.
+Keep a findings list as working scratch for this run. It exists because Step 4
+files one issue per theme, and a theme across three findings is only visible
+with the list in front of you. It is not a committed artifact, and nothing in
+`docs/` carries it.
 
 Per finding: severity (trivial / substantive), evidence (file:line or command output), disposition (fixed here / routed to tracker / accepted).
 
 ## Step 4: Triage & Apply
 
-- **Trivial mechanical fixes** (typo, dead import, stale doc line): apply directly and list them in the report.
-- **Substantive findings**: never fix here. File a tracker issue per theme through the tracker layer — never the tracker CLI directly — and record the issue number in the report as the finding's disposition:
+- **Trivial mechanical fixes** (typo, dead import, stale doc line): apply directly and list them in the audit commit's message.
+- **Substantive findings**: never fix here. File a tracker issue per theme through the tracker layer — never the tracker CLI directly — and record the issue number in the audit commit's message as the finding's disposition:
 
   ```bash
   bash .claude/skills/lib/tracker/tracker.sh create "<conventional subject>" <body-file> backlog
@@ -134,4 +139,23 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
 
 ## Step 5: Ship the Audit
 
-The audit ships like everything else: as a PR. On a branch off the main branch, review `git status`, stage the report plus any trivial-fix paths **explicitly** (never `git add -A`), and commit. Open a PR whose title parses as a conventional-commit subject (e.g. `chore: maintenance audit 2026-08-07`); the human's merge is the sign-off on the dispositions.
+The audit ships like everything else: as a PR. On a branch off the main branch,
+review `git status`, stage any trivial-fix paths **explicitly** (never `git add -A`),
+and commit. **The commit message is the audit record.** Its subject is
+`chore: maintenance audit <YYYY-MM-DD>` — the exact subject `audit-nudge.sh`
+dates the last audit by — and its body carries one line per sweep — run with
+findings, run and found nothing, or skipped — plus the issue numbers filed and
+the trivial fixes applied.
+
+An audit that applied no trivial fixes has nothing to stage — filing issues
+changes the tracker, not the tree — and still commits: `git commit --allow-empty`,
+same message contract. The empty commit **is** the audit record, and GitHub
+opens a PR on a branch whose only commit is empty, so the sign-off flow is
+unchanged.
+
+Open a PR whose title carries the same subject, and **keep the audit on that
+single commit** (amend rather than stack): with exactly one commit, the default
+squash message is that commit's message, so the record — body included — lands
+on the main branch, where `audit-nudge.sh` reads the history. A multi-commit
+audit branch risks the merge keeping only the title and discarding the sweep
+record. The human's merge is the sign-off on the dispositions.

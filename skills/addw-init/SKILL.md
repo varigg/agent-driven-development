@@ -98,7 +98,6 @@ before anything writes into it:
 
 ```
 docs/4-unit-tests/     # the testing guide and the coverage-debt ledger
-docs/7-maintenance/    # dated maintenance reports (addw-maintain)
 <ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.5
 ```
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Deterministic maintenance-audit nudge: count v* release tags created since
-# the newest maintenance report in docs/7-maintenance/ (every v* tag if no
-# report exists yet) and compare against ADDW_AUDIT_NUDGE_N from docs/addw.env.
+# the last maintenance audit commit (every v* tag if no audit commit exists
+# yet) and compare against ADDW_AUDIT_NUDGE_N from docs/addw.env.
 # Why the cadence is watched at all: ../README.md.
 #
 # Usage: audit-nudge.sh          (run from the repo root)
@@ -13,16 +13,10 @@ set -euo pipefail
 [ -f docs/addw.env ] && source docs/addw.env
 THRESHOLD="${ADDW_AUDIT_NUDGE_N:-5}"
 
-# Reference point: last commit touching the newest report, falling back to
-# file mtime for an uncommitted report. No report -> 0, so every tag counts.
-SINCE=0
-NEWEST_REPORT="$(ls -1 docs/7-maintenance/MAINT_*.md 2>/dev/null | sort -V | tail -1 || true)"
-if [ -n "$NEWEST_REPORT" ]; then
-    SINCE="$(git log -1 --format=%ct -- "$NEWEST_REPORT" 2>/dev/null || true)"
-    if [ -z "$SINCE" ]; then
-        SINCE="$(stat -c %Y "$NEWEST_REPORT" 2>/dev/null || stat -f %m "$NEWEST_REPORT")"
-    fi
-fi
+# Reference point: the last maintenance audit commit, found by its mandated
+# subject. No audit commit -> 0, so every tag counts.
+SINCE="$(git log -1 --grep='^chore: maintenance audit' --format=%ct 2>/dev/null || true)"
+[ -n "$SINCE" ] || SINCE=0
 
 COUNT=0
 while read -r ts _tag; do
@@ -31,8 +25,8 @@ while read -r ts _tag; do
     fi
 done < <(git for-each-ref --format='%(creatordate:unix) %(refname:short)' 'refs/tags/v*')
 
-LABEL="since the last maintenance report"
-[ "$SINCE" -eq 0 ] && LABEL="since init (no maintenance report yet)"
+LABEL="since the last maintenance audit"
+[ "$SINCE" -eq 0 ] && LABEL="since init (no maintenance audit yet)"
 
 if [ "$COUNT" -ge "$THRESHOLD" ]; then
     echo "NUDGE: $COUNT release tags $LABEL (threshold $THRESHOLD) — suggest running addw-maintain"
