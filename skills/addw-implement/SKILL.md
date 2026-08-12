@@ -101,6 +101,15 @@ The ticket must be **open**, labeled **`ready-for-agent`**, and labeled neither 
 never unlocks it, and the ticket needs human re-scoping instead. Its `## Parent` section is
 read when present but never required — standalone tickets are workable.
 
+Those checks are mechanical; one judgment call remains. **A ticket carries exactly one
+Deliverable** — an independently-checkable unit of work, one a reviewer can verify passed or
+failed without reference to the ticket's other criteria. Read the acceptance criteria and
+judge their breadth: criteria that can pass or fail independently of one another mark a
+bundle of Deliverables. A bundled ticket is **not started** — report it for rescoping, the
+same human-facing disposition the frontier's **needs-rescoping** section gets. Decomposition
+should have split it, so this is a backstop, not a routine gate; but breadth is not
+mechanically computable, so no script runs the check for you.
+
 Stop and report if any of that fails. Derive the branch slug from the ticket title: a few
 lowercase, hyphenated words, no issue number in the slug itself.
 
