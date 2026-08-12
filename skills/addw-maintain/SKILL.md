@@ -152,6 +152,9 @@ An audit with no findings and no trivial fixes still commits:
 audit record, and GitHub opens a PR on a branch whose only commit is empty, so
 the sign-off flow is unchanged.
 
-Open a PR whose title carries the same subject — a squash merge lands the
-*title* on the main branch, which is where `audit-nudge.sh` reads the history —
-and the human's merge is the sign-off on the dispositions.
+Open a PR whose title carries the same subject, and **keep the audit on that
+single commit** (amend rather than stack): with exactly one commit, the default
+squash message is that commit's message, so the record — body included — lands
+on the main branch, where `audit-nudge.sh` reads the history. A multi-commit
+audit branch risks the merge keeping only the title and discarding the sweep
+record. The human's merge is the sign-off on the dispositions.
