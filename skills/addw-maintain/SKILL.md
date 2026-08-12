@@ -147,10 +147,11 @@ dates the last audit by — and its body carries one line per sweep — run with
 findings, run and found nothing, or skipped — plus the issue numbers filed and
 the trivial fixes applied.
 
-An audit with no findings and no trivial fixes still commits:
-`git commit --allow-empty`, same message contract. The empty commit **is** the
-audit record, and GitHub opens a PR on a branch whose only commit is empty, so
-the sign-off flow is unchanged.
+An audit that applied no trivial fixes has nothing to stage — filing issues
+changes the tracker, not the tree — and still commits: `git commit --allow-empty`,
+same message contract. The empty commit **is** the audit record, and GitHub
+opens a PR on a branch whose only commit is empty, so the sign-off flow is
+unchanged.
 
 Open a PR whose title carries the same subject, and **keep the audit on that
 single commit** (amend rather than stack): with exactly one commit, the default
