@@ -93,8 +93,9 @@ that backwards restarts finished work.
 The fresh-build path (§ *Mode B: Fresh Build*):
 
 1. **Eligibility, read-only.** Open, `ready-for-agent`, not a spec or backlog issue, every
-   blocker closed as completed. Nothing is written until the ticket is confirmed workable
-   (§ *Step 2: Eligibility — read-only*).
+   blocker closed as completed — and acceptance criteria that verify a **single
+   Deliverable**: a bundled ticket is not started but reported for rescoping. Nothing is
+   written until the ticket is confirmed workable (§ *Step 2: Eligibility — read-only*).
 
 2. **Branch and self-assign, pushed before any build work.** Not a lock — the in-progress
    marker the frontier listing shows, so a second session can see the work exists
