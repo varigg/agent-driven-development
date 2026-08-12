@@ -237,3 +237,13 @@ tracker seam's snapshot limit, which arrives with the archive-filtering work,
 will need no step here whenever it lands: it carries a default, so its absence
 is a working install rather than a silent one, and an operator meets it through
 the seam's refusal message at the moment it starts to matter.
+
+## Within schema 5
+
+`docs/7-maintenance/` and the `MAINT_*.md` class are retired; the audit record
+is now the audit commit's message, dated by its subject
+(`chore: maintenance audit <YYYY-MM-DD>`). An install may delete the directory
+at leisure; old reports stay readable in git history. Until the first
+post-retirement audit commit exists, `audit-nudge.sh` finds no audit commit,
+counts every `v*` tag, and over-nudges — a loud, self-announcing state, not a
+silent one, and the first audit shipped under the new contract quiets it.

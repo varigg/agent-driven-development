@@ -102,7 +102,7 @@ else
 fi
 
 # --- docs contract ---------------------------------------------------------
-docs_dirs=(docs/4-unit-tests docs/7-maintenance)
+docs_dirs=(docs/4-unit-tests)
 if [ -n "${ADDW_ADR_DIR:-}" ]; then
     docs_dirs+=("$ADDW_ADR_DIR")
 fi

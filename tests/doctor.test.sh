@@ -93,7 +93,7 @@ mkdir -p "$BASE/project" "$BASE/home"
 
 (
   cd "$BASE/project"
-  mkdir -p docs/agents docs/4-unit-tests docs/7-maintenance docs/adr
+  mkdir -p docs/agents docs/4-unit-tests docs/adr
 
   # Quoted heredoc: a config is exactly where a recipe carrying `$` or a
   # backtick belongs, and an expanding one would corrupt it silently. The one
