@@ -54,3 +54,25 @@ and the frontier skips them. They carry no `## Parent`.
 | `README.md` | What ADDW is, the flow, the skills reference |
 | `UPGRADING.md` | Structural steps per schema boundary |
 | `docs/cycle-walkthrough.md` | The guided tour of one overlay cycle, pointing into the skills for every rule |
+
+## Agent skills
+
+Config for Matt Pocock's engineering skills, which ADDW overlays. These files
+are repo config, not product — they sit outside `skills/` and ride no install.
+
+### Issue tracker
+
+GitHub Issues on `varigg/agent-driven-development`, via the `gh` CLI. See
+`docs/agents/issue-tracker.md`, whose closing section records how those direct
+`gh` calls coexist with ADDW's tracker seam.
+
+### Triage labels
+
+The five canonical roles, each mapping to itself. See
+`docs/agents/triage-labels.md`. `ready-for-agent` is shared with ADDW's frontier
+query and must not be renamed.
+
+### Domain docs
+
+Single-context — a root `CONTEXT.md` (maintained by `/domain-modeling`) plus
+`docs/adr/`. See `docs/agents/domain.md`.
