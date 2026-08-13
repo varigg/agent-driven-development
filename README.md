@@ -58,7 +58,7 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. Bare invocation lists the frontier. |
 | `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. Refuses a spec whose tickets are not all closed as completed. |
 | `/addw-maintain` | Periodic audit with three skippable sweeps: living-docs drift, coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
-| `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Direct push to main is documented solely as the escape hatch for when GitHub itself is the obstacle. |
+| `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Even an emergency rides a PR a human merges — no direct-push path to main. |
 | `/addw-compact` | Shrinks `ARCHITECTURE.md` through summarization and restructuring when it outgrows its token budget (rule of thumb: ~10% of the context window). |
 | `/codex-implement` | Implementation delegated to Codex CLI in a workspace-write sandbox, with a persistent thread per target for resumable context. |
 | `/codex-code-review` | The code-review loop adapter: reviews a ticket's whole branch diff against the ticket and its spec — read-only sandbox, checklist-driven, multi-round with verdict tags. |

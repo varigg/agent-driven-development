@@ -274,4 +274,4 @@ On `NUDGE`, suggest `addw-maintain` — suggest only, never start it.
   public and awkward to retract, which is why Step 1 refuses rather than
   interprets.
 - The release **never merges its own PR** and never pushes to the main branch
-  directly. `addw-hotfix` documents the one escape hatch, and it is not this.
+  directly. No skill has a direct-push path to main — emergencies included.
