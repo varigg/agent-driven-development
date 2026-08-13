@@ -202,8 +202,12 @@ Not part of the cycle, but reachable from it:
   audit PR's merge graduates it (§ *Step 4: Triage & Apply*, ADR 0007). Maintain is the
   watchdog; `addw-compact` is the surgeon.
 - **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
-  immediately (§ *Step 6: Open the Expedited PR*). Even an emergency rides a PR a human
-  merges — there is no direct-push path to `main` (ADR 0005).
+  immediately (§ *Step 7: Open the Expedited PR*). Even an emergency rides a PR a human
+  merges — there is no direct-push path to `main` (ADR 0005). The expedited path reorders
+  scrutiny rather than reducing it: every hotfix files one `backlog` follow-up naming the
+  checks it deferred — regression test, codex review, doc impact — and the PR body names
+  the filing, so the human's merge graduates it to the frontier (§ *Step 6: File the
+  Deferred-Scrutiny Ticket*, ADR 0007).
 - **`addw-compact`** — shrinks ARCHITECTURE.md when it outgrows its token budget
   (§ *Step 3: Compaction Strategies*); within range it reports and stops. Reached by
   the compaction ticket `addw-maintain`'s size check files, or directly. The rewrite
