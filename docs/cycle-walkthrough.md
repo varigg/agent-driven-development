@@ -201,7 +201,10 @@ Not part of the cycle, but reachable from it:
   immediately (§ *Step 6: Open the Expedited PR*). Direct push to `main` is documented solely
   as the escape hatch for when GitHub itself is the obstacle (§ *Escape Hatch: Direct Push*).
 - **`addw-compact`** — shrinks ARCHITECTURE.md when it outgrows its token budget
-  (§ *Step 2: Compaction Strategies*).
+  (§ *Step 3: Compaction Strategies*); within range it reports and stops. The rewrite
+  lands as its own PR (§ *Step 6: Measure & Open the PR*) — the human's merge, not an
+  in-conversation check, approves the result. Two intent forks survive: bloat triage
+  (which sections are load-bearing) and the over-15k split proposal.
 - **`codex-ask`** — a grounded second opinion on anything. Advisory only: no verdicts,
   nothing gated.
 
