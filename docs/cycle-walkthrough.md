@@ -201,7 +201,11 @@ Not part of the cycle, but reachable from it:
   immediately (§ *Step 6: Open the Expedited PR*). Direct push to `main` is documented solely
   as the escape hatch for when GitHub itself is the obstacle (§ *Escape Hatch: Direct Push*).
 - **`addw-compact`** — shrinks ARCHITECTURE.md when it outgrows its token budget
-  (§ *Step 2: Compaction Strategies*).
+  (§ *Step 3: Compaction Strategies*); within range it reports and stops. The rewrite
+  lands as its own PR (§ *Step 6: Measure & Open the PR*) — result feedback arrives at
+  the Boundary, not in conversation. Two intent forks survive: bloat triage (which
+  sections are load-bearing) and the split proposal when honest compression can't reach
+  the target.
 - **`codex-ask`** — a grounded second opinion on anything. Advisory only: no verdicts,
   nothing gated.
 
@@ -217,6 +221,7 @@ Not part of the cycle, but reachable from it:
 | Glossary / domain docs | The layout `docs/agents/domain.md` declares | `domain-modeling`, during alignment |
 | Version + changelog | A release PR, then a tag and GitHub Release | `addw-release` |
 | Audit record | The audit commit's message (subject `chore: maintenance audit <date>`), via a PR | `addw-maintain` |
+| Compacted ARCHITECTURE.md | Its own PR | `addw-compact` |
 
 ## Every question you'll be asked
 
