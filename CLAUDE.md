@@ -30,10 +30,10 @@ and the frontier skips them. They carry no `## Parent`.
 - **`docs/addw.env` must stay shell-clean.** Scripts source it directly
   (`skills/lib/codex/_common.sh` does so whenever it exists), so a syntax error
   there breaks skills far from the edit.
-- **Skill folder names are docs contract.** Renames ride a schema boundary and
-  get an `UPGRADING.md` entry; they are never free cosmetics. The
-  `addw-4-maintain` → `addw-maintain` rename waited for one and rode the schema
-  3 → 4 boundary, which is what such a rename is supposed to do.
+- **Skill folder names are docs contract.** A rename is never a free cosmetic:
+  it ships with an `UPGRADING.md` section and a schema bump in its own PR. It
+  does not queue for a distant boundary — since ADR 0008 a bump is cheap
+  same-day metadata, not a rare guarded event.
 - **`skills/lib/templates/adr.md` is the authoritative ADR format** here, over
   any format bundled with a skill — `domain-modeling`'s included. It ships with
   the skills rather than being generated per project, and `ADDW_ADR_TEMPLATE` is

@@ -16,10 +16,13 @@ common upgrade is therefore:
 ## Knowing what you're upgrading from
 
 `ADDW_SCHEMA` in `docs/addw.env` is the install's **generation marker**. It
-changes only when a version boundary alters the docs contract (file names,
-locations, retired artifacts) — not on every release. Read it with
-`grep ADDW_SCHEMA docs/addw.env`. An install with no `docs/addw.env` and
-`TRIP-*` skill folders is generation 2.
+changes when a change alters the docs contract (file names, locations, retired
+artifacts) — not on every release. A bump is same-day metadata: the PR that
+lands a structural change carries its section here and the bump with it, and
+nothing queues for a rare boundary (ADR 0008). A change whose omission fails
+loudly on a stale install gets a dated "Within schema N" note here instead of
+a bump. Read it with `grep ADDW_SCHEMA docs/addw.env`. An install with no
+`docs/addw.env` and `TRIP-*` skill folders is generation 2.
 
 Apply every section below between your install's schema and the current one,
 oldest first. Each section's last step is bumping `ADDW_SCHEMA`. This file is
