@@ -145,7 +145,8 @@ default) + `ARCHITECTURE-detailed.md` (deep dives, read on demand) — and **use
 over-target size. You cannot rank these from the repo: the split trades every reader's
 default context for depth on demand, and whether that trade is worth it is knowledge only
 the human has. If the split is chosen, perform it on this same branch so one PR carries the
-whole change.
+whole change — then repeat Step 5's validation and the token measurement on both resulting
+files, so what the PR reports is the final state, not the pre-split one.
 
 The diff is documentation-only, so no testing gate runs here; Step 5's validation — links
 resolve, diagrams parse, onboarding survives — is the pre-PR check. Commit with explicit
