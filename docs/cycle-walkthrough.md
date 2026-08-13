@@ -196,12 +196,17 @@ Not part of the cycle, but reachable from it:
 - **`addw-maintain`** — the periodic audit, on cadence rather than as a pipeline phase. Three
   skippable sweeps (living-docs drift, coverage debt, dependencies); substantive findings are
   never fixed in place but filed as tracker issues (§ *Step 4: Triage & Apply*), and the
-  audit itself ships as a PR (§ *Step 5: Ship the Audit*).
+  audit itself ships as a PR (§ *Step 5: Ship the Audit*). The docs sweep also size-checks
+  ARCHITECTURE.md mechanically (`addw-compact`'s `count-tokens.sh`, 20k threshold) and files
+  an overflow as a `backlog` compaction ticket carrying the `/addw-compact` recipe — the
+  audit PR's merge graduates it (§ *Step 4: Triage & Apply*, ADR 0007). Maintain is the
+  watchdog; `addw-compact` is the surgeon.
 - **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
   immediately (§ *Step 6: Open the Expedited PR*). Direct push to `main` is documented solely
   as the escape hatch for when GitHub itself is the obstacle (§ *Escape Hatch: Direct Push*).
 - **`addw-compact`** — shrinks ARCHITECTURE.md when it outgrows its token budget
-  (§ *Step 3: Compaction Strategies*); within range it reports and stops. The rewrite
+  (§ *Step 3: Compaction Strategies*); within range it reports and stops. Reached by
+  the compaction ticket `addw-maintain`'s size check files, or directly. The rewrite
   lands as its own PR (§ *Step 6: Measure & Open the PR*) — result feedback arrives at
   the Boundary, not in conversation. Two intent forks survive: bloat triage (which
   sections are load-bearing) and the split proposal when honest compression can't reach

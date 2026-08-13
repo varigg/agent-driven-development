@@ -93,6 +93,14 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
   A count climbing release over release means the document is narrating its own
   history. Point it at ARCHITECTURE.md and at every runbook — the release step
   runs it on ARCHITECTURE.md only.
+- Size has one too:
+  `bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md`
+  estimates the document's token count. Over 20,000 tokens it has outgrown
+  its budget. Detection ends the sweep's job — compress nothing here; file
+  the finding under **Compaction filing** in Step 4. This audit is the
+  watchdog, `addw-compact` is the surgeon: the check is mechanical, so a
+  script owns it (the ADR 0004 pattern), while the compression is judgment
+  and gets its own session.
 - **Design records are not work logs.** When auditing an ADR: an alternative
   earns its place only if a competent reader would independently propose it
   and act on it; evidence earns its place only if the decision would change
@@ -135,6 +143,13 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
   ```
 
   The body carries the path, the kind (`adr` or `proposal`), why the document stopped being true, and the command that retires it — `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` — so whoever picks the ticket rediscovers none of the finding. `ready-for-agent` is deliberate here: `backlog` means an undesigned idea awaiting a human's decision to design it, and a retirement is the opposite, since target, reason and command are all fixed at detection and nothing remains to graduate. The sign-off is not lost, only moved to the retirement PR's merge, where every other ticket's happens. The ticket carries **no `## Parent`**, so it gates no spec's completion and no release. Another detector may file the same document; the duplicate costs one close, which is cheaper than a tracker query to prevent it.
+- **Compaction filing**: an oversize ARCHITECTURE.md (Sweep A's size check) files one ticket, carrying its recipe the way retirement tickets carry their `archive-doc.sh` command — the picker rediscovers nothing:
+
+  ```bash
+  bash .claude/skills/lib/tracker/tracker.sh create "docs: compact ARCHITECTURE.md" <body-file> backlog
+  ```
+
+  The body carries the measured count, the 20k threshold it crossed, and the recipe: run `/addw-compact`. The filing is `backlog`, and its number goes in the audit record like every other filing — which is exactly what graduates it: the merge of the audit PR whose record lists the filing is the human act that admits it to the frontier (ADR 0007's graduation mechanic). Another audit may find the document still oversize and file again; the duplicate costs one close.
 - **Process findings** (a skill is wrong): file separately against the ADDW repo — skills change via dedicated process commits, never inside an audit fix.
 
 ## Step 5: Ship the Audit
