@@ -84,13 +84,7 @@ Review `git status`, stage the fix's files **explicitly** (never `git add -A`), 
 - **Title**: must parse as a conventional-commit subject — normally `fix: [brief description]`. It becomes the squash subject on main, which is all the mechanical changelog projects.
 - **Body**: what was broken, the root cause, what the fix does, and the gate summary line — and say it is a hotfix requesting immediate merge.
 
-The human merges it immediately (squash). Seconds of ceremony, and main's every-commit-is-a-reviewed-PR invariant holds.
-
----
-
-## Escape Hatch: Direct Push
-
-Direct push to `$ADDW_MAIN_BRANCH` exists for exactly one condition: **GitHub itself is the obstacle** — the platform is down, or the emergency lives in the PR/CI machinery. Commit with the same conventional subject and push; the mechanical changelog tolerates a stray direct commit because it derives from commit subjects, not PRs. Anything short of that condition goes through the expedited PR.
+The human merges it immediately (squash). Seconds of ceremony, and main's every-commit-is-a-reviewed-PR invariant holds — emergencies included.
 
 ---
 
