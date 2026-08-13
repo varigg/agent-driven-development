@@ -8,8 +8,8 @@ disable-model-invocation: true
 
 You are now in **compaction mode** - intelligently reducing ARCHITECTURE.md size while
 preserving its value. The rewrite lands the same way every other change does: on a branch,
-as a pull request the human reviews and merges. Nothing here asks permission to proceed,
-and nothing here touches the main branch.
+as a pull request reviewed at the Boundary. The human's merge is the approval — nothing
+here asks permission to proceed, and nothing here lands a commit on the main branch.
 
 ## Why Compact?
 
@@ -35,8 +35,8 @@ bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md
 ```
 
 **If token count <= 20,000**, the document is within range: report the count and **stop**.
-There is nothing to land, so no branch and no PR — and no question. Compacting a
-within-range document is work nobody asked for.
+There is nothing to land, so no branch and no PR. Compacting a within-range document is
+work nobody asked for.
 
 **If token count > 20,000**, read the full ARCHITECTURE.md and identify the bloat sources:
 
@@ -50,8 +50,8 @@ Report the assessment — the count, the target (~10,000-15,000), and the top bl
 then **use the `AskUserQuestion` tool** for the one thing only the human knows: the
 **bloat-triage intent fork**. Which sections are load-bearing (their detail must survive)
 and which are compressible? Build the options from the sections you identified, with
-multi-select. This is not a permission gate — compaction proceeds either way; the answer
-decides where the compression lands.
+multi-select. An intent fork is not permission — compaction proceeds either way; the
+answer decides where the compression lands.
 
 ---
 
@@ -64,6 +64,11 @@ source docs/addw.env
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b docs/compact-architecture
 ```
+
+If that branch already exists, locally or on the remote, an earlier compaction is in
+flight — surface that to the human before proceeding. And confirm the checkout actually
+succeeded before editing: a failed `checkout -b` leaves HEAD on `$ADDW_MAIN_BRANCH`, and
+committing there is exactly what this skill promises never to do.
 
 ---
 
@@ -142,8 +147,9 @@ default context for depth on demand, and whether that trade is worth it is knowl
 the human has. If the split is chosen, perform it on this same branch so one PR carries the
 whole change.
 
-Then commit with explicit paths (never `git add -A`) and a conventional subject, push, and
-open the PR:
+The diff is documentation-only, so no testing gate runs here; Step 5's validation — links
+resolve, diagrams parse, onboarding survives — is the pre-PR check. Commit with explicit
+paths (never `git add -A`) and a conventional subject, push, and open the PR:
 
 ```bash
 git push -u origin docs/compact-architecture
@@ -159,4 +165,4 @@ droppable but a reader might miss.
 Then **stop**. Do not merge. "Restore some detail" and "too aggressive" are review
 comments now: they arrive on the PR, and addressing them — restoring detail in one section,
 compensating by compressing a less critical one — happens on this branch like any other
-review round. The human's merge is the approval.
+review round at the Boundary.
