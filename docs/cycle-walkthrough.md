@@ -57,6 +57,13 @@ flaw is cheapest to fix while the spec is still prose (§ *Execution*).
 3. **Fixes land in the issue body in place; only the final verdict is posted as a comment.**
    The spec stays readable — a reader sees the current spec, not an archaeology of rounds.
 
+4. **Approval files retirements as `backlog`.** An approved spec can leave an in-tree
+   document untrue in whole — a proposal it replaces, an ADR it overturns. The skill files
+   one ticket per such document, carrying the path, the reason, and the retire command, and
+   reports the filing on its way out. Nothing in the spec path merges, so no PR body can
+   name the filing — it enters the frontier only through an explicit human label flip
+   (§ *Step 7: Retirement Filing*, ADR 0007).
+
 The skill also applies the `spec` label, since Matt's `to-spec` applies only the triage
 label.
 
