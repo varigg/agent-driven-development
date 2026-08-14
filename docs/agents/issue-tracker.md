@@ -53,8 +53,9 @@ ADDW drives these same issues through its own seam at
   never creates or modifies it — the label is Matt's. ADDW creates only `spec`
   and `backlog`.
 - **Unparented tickets are workable.** `addw-implement` reads `## Parent` "when
-  present but never required"; `addw-maintain`, `addw-release`, and
-  `codex-spec-review` all file `ready-for-agent` tickets with no parent.
+  present but never required"; ADDW's own detached filings — audit findings,
+  retirement tickets, hotfix follow-ups — carry no parent and reach
+  `ready-for-agent` through graduation (ADR 0007).
 - **`wayfinder:*` issues never enter ADDW's frontier**, which requires
   `ready-for-agent`.
 - **The seam rule binds ADDW's own skills**, not Matt's — these call `gh`
