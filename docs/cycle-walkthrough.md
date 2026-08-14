@@ -20,8 +20,8 @@ Skills are never edited per project; everything project-specific lives in those 
 
 **Where the work lives**: on the tracker, as GitHub issues — not in this tree. There are no
 plan documents and no backlog file. A spec issue carries the `spec` label; its tickets cite
-it in a `## Parent` section and list their blocking issues under `## Blocked by`; undesigned
-ideas carry `backlog` and no parent.
+it in a `## Parent` section and list their blocking issues under `## Blocked by`;
+not-yet-graduated proposals carry `backlog` and no parent.
 
 ---
 
@@ -62,7 +62,7 @@ flaw is cheapest to fix while the spec is still prose (§ *Execution*).
    one ticket per such document, carrying the path, the reason, and the retire command, and
    reports the filing on its way out. Nothing in the spec path merges, so no PR body can
    name the filing — it enters the frontier only through an explicit human label flip
-   (§ *Step 7: Retirement Filing*, ADR 0007).
+   (§ *Execution* step 7, *Retirement filing*, ADR 0007).
 
 The skill also applies the `spec` label, since Matt's `to-spec` applies only the triage
 label.
@@ -236,7 +236,7 @@ Not part of the cycle, but reachable from it:
 |---|---|---|
 | Spec | A `spec`-labeled GitHub issue | `to-spec`, reviewed by `codex-spec-review` |
 | Tickets | GitHub issues with `## Parent` / `## Blocked by` | `to-tickets` |
-| Undesigned ideas | `backlog`-labeled issues, no parent | you, or `addw-maintain` |
+| Backlog proposals | `backlog`-labeled issues, no parent | you, or a detached detection (`addw-maintain`, `codex-spec-review`, `addw-hotfix`) |
 | Implementation | One squash-merged PR per ticket | `addw-implement` |
 | Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR`, `active` for as long as they are there — a superseded one departs to a closed `archived` issue | the ticket's own PR, or alignment (origin `design session`); retired by the superseding PR |
 | Glossary / domain docs | The layout `docs/agents/domain.md` declares | `domain-modeling`, during alignment |

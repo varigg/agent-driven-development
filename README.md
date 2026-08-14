@@ -65,7 +65,7 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | `/codex-ask` | A grounded second opinion on anything — architecture calls, debugging hypotheses. Advisory only: no verdicts, nothing gated. |
 | `skills/lib/` | Not a skill: the shared script layer — the tracker seam (every `gh` tracker call routes through it), the deterministic gate, the release derivations, and the Codex runner every `codex-*` adapter sits on. |
 
-Retired: planning and research moved to Matt's skills (`grill-with-docs` + `to-spec` for planning; `research` + `wayfinder` for research), and the standalone test skill's role now lives in the deterministic gate and `tdd`. In-repo plan documents and the backlog file went with them — work state lives on the tracker, where undesigned ideas are `backlog`-labeled issues the frontier skips. [`UPGRADING.md`](UPGRADING.md) has the full list and the migration steps.
+Retired: planning and research moved to Matt's skills (`grill-with-docs` + `to-spec` for planning; `research` + `wayfinder` for research), and the standalone test skill's role now lives in the deterministic gate and `tdd`. In-repo plan documents and the backlog file went with them — work state lives on the tracker, where not-yet-graduated proposals are `backlog`-labeled issues the frontier skips. [`UPGRADING.md`](UPGRADING.md) has the full list and the migration steps.
 
 ## Swapping agents
 

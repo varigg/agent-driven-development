@@ -17,9 +17,9 @@ bash skills/lib/tracker/tracker.sh frontier
 That script is also the tracker **seam**: every `gh` call for tracker work
 routes through it, so reach for it rather than `gh issue` directly.
 
-Issues labeled **`backlog`** are undesigned ideas, not tickets — nothing there
-is workable until it graduates into a spec and the tickets decomposed from it,
-and the frontier skips them. They carry no `## Parent`.
+Issues labeled **`backlog`** are proposed work not yet human-graduated — the
+frontier skips them until a human act admits them (an explicit re-label, or the
+merge of a PR whose body names the filing; ADR 0007). They carry no `## Parent`.
 
 
 ## Conventions that bite
