@@ -116,8 +116,11 @@ The fresh-build path (§ *Mode B: Fresh Build*):
 4. **Implementation via a role key.** `ADDW_IMPLEMENT_SKILL` in `docs/addw.env` names the
    adapter — `codex-implement` by default — or the reserved value `inline`, meaning the main
    agent drives `tdd` itself (§ *Step 6: Implementation*). Either way the main agent reads
-   the full diff afterwards and fixes problems directly, never ping-ponging fixes back to the
-   adapter.
+   the full diff afterwards: findings against the ticket's own Deliverable are fixed
+   in-branch — never ping-ponged back to the adapter — while discovered work outside the
+   acceptance criteria files as a `backlog` ticket rather than riding the PR, with
+   graduation an explicit human label flip (§ *Step 6: Implementation*, ADR 0005 gate 3,
+   ADR 0006).
 
 5. **Cold pre-filter review** — a two-axis `code-review` over the branch diff, run before
    spending codex rounds, to break the ownership bias of reviewing your own work
