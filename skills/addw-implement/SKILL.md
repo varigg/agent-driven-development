@@ -149,7 +149,10 @@ external request shape — write those tests **now**, before any implementation:
 
 They are **off-limits to the implementer** — say so in its instructions. If an interface
 mismatch surfaces later, you fix the test yourself and say why in the PR body. Work outside
-the critical-path floor skips this step; its tests are authored in Step 9.
+the critical-path floor skips this step; its tests are authored in Step 9. Freezing is an
+agent discipline against implementer drift, not a human gate: test code receives **no
+pre-Boundary approval** — PR review is where tests are judged, like every other part of the
+diff (ADR 0005).
 
 ### Step 6: Implementation
 
