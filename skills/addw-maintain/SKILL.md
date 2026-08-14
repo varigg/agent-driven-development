@@ -15,6 +15,10 @@ This audit covers what the rest of the toolchain doesn't: the living docs, the c
 
 Maintenance: $ARGUMENTS
 
+Run all three sweeps unless the arguments above narrow the scope. The
+invocation is the intent — there is no opening ask; a human wanting a narrower
+audit says so when invoking.
+
 ## Prerequisites - Read First
 
 1. @docs/ARCHITECTURE.md - Current as-built architecture
@@ -26,11 +30,7 @@ Maintenance: $ARGUMENTS
 
 ---
 
-## Step 1: Choose Sweeps
-
-**Use the `AskUserQuestion` tool** (multiSelect): which sweeps to run this audit? All three by default; each is independently skippable.
-
-## Step 2: Run the Sweeps
+## Step 1: Run the Sweeps
 
 ### Sweep A: Docs Drift
 
@@ -86,7 +86,7 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
   retired rather than corrected. The test is whether a reader can act on it: a
   document whose reader must diff it against something else to learn which half
   still holds is one of these. Do not delete, edit or archive it here; file it
-  under **Retirement filing** in Step 4.
+  under **Retirement filing** in Step 3.
 - Accretion has a cheap measurement:
   `bash .claude/skills/lib/docs/check-doc-accretion.sh <file>...`
   counts a document's version references against its copy at the previous tag.
@@ -97,7 +97,7 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
   `bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md`
   estimates the document's token count. Over 20,000 tokens it has outgrown
   its budget. Detection ends the sweep's job — compress nothing here; file
-  the finding under **Compaction filing** in Step 4. This audit is the
+  the finding under **Compaction filing** in Step 3. This audit is the
   watchdog, `addw-compact` is the surgeon: the check is mechanical, so a
   script owns it (the ADR 0004 pattern), while the compression is judgment
   and gets its own session.
@@ -117,16 +117,16 @@ testing doc): is each line still valid? Is its escape plan still right?
 
 - Outdated packages, security advisories, pin/lockfile hygiene
 
-## Step 3: Keep the Findings List
+## Step 2: Keep the Findings List
 
-Keep a findings list as working scratch for this run. It exists because Step 4
+Keep a findings list as working scratch for this run. It exists because Step 3
 files one issue per theme, and a theme across three findings is only visible
 with the list in front of you. It is not a committed artifact, and nothing in
 `docs/` carries it.
 
 Per finding: severity (trivial / substantive), evidence (file:line or command output), disposition (fixed here / routed to tracker / accepted).
 
-## Step 4: Triage & Apply
+## Step 3: Triage & Apply
 
 - **Trivial mechanical fixes** (typo, dead import, stale doc line): apply directly and list them in the audit commit's message.
 - **Substantive findings**: never fix here. File a tracker issue per theme through the tracker layer — never the tracker CLI directly — and record the issue number in the audit commit's message as the finding's disposition:
@@ -135,14 +135,14 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
   bash .claude/skills/lib/tracker/tracker.sh create "<conventional subject>" <body-file> backlog
   ```
 
-  `backlog` unless the human wants it worked now, in which case use `ready-for-agent`. A `backlog` issue is an undesigned idea: it carries no `## Parent`, and the frontier skips it until it graduates into a spec. **Retirement filing**, below, is the one standing exception to that default.
+  `backlog` unless the human wants it worked now, in which case use `ready-for-agent`. A `backlog` issue is an undesigned idea: it carries no `## Parent`, and the frontier skips it until it graduates into a spec.
 - **Retirement filing**: a document Sweep A found untrue in whole leaves the tree rather than being corrected — and leaves it through a ticket like any other substantive finding, since deleting a file is substantive by any reading. One ticket per document:
 
   ```bash
-  bash .claude/skills/lib/tracker/tracker.sh create "docs: retire <path>" <body-file> ready-for-agent
+  bash .claude/skills/lib/tracker/tracker.sh create "docs: retire <path>" <body-file> backlog
   ```
 
-  The body carries the path, the kind (`adr` or `proposal`), why the document stopped being true, and the command that retires it — `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` — so whoever picks the ticket rediscovers none of the finding. `ready-for-agent` is deliberate here: `backlog` means an undesigned idea awaiting a human's decision to design it, and a retirement is the opposite, since target, reason and command are all fixed at detection and nothing remains to graduate. The sign-off is not lost, only moved to the retirement PR's merge, where every other ticket's happens. The ticket carries **no `## Parent`**, so it gates no spec's completion and no release. Another detector may file the same document; the duplicate costs one close, which is cheaper than a tracker query to prevent it.
+  The body carries the path, the kind (`adr` or `proposal`), why the document stopped being true, and the command that retires it — `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` — so whoever picks the ticket rediscovers none of the finding. The filing is `backlog` however determined the work: frontier entry is a spending decision that stays human (ADR 0007). The audit record already lists every filing, so the merge of the audit PR is the naming act that graduates these tickets to the frontier — the same mechanic the compaction filing below rides. The ticket carries **no `## Parent`**, so it gates no spec's completion and no release. Another detector may file the same document; the duplicate costs one close, which is cheaper than a tracker query to prevent it.
 - **Compaction filing**: an oversize ARCHITECTURE.md (Sweep A's size check) files one ticket, carrying its recipe the way retirement tickets carry their `archive-doc.sh` command — the picker rediscovers nothing:
 
   ```bash
@@ -152,7 +152,7 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
   The body carries the measured count, the 20k threshold it crossed, and the recipe: run `/addw-compact`. The filing is `backlog`, and its number goes in the audit record like every other filing — which is exactly what graduates it: the merge of the audit PR whose record lists the filing is the human act that admits it to the frontier (ADR 0007's graduation mechanic). Another audit may find the document still oversize and file again; the duplicate costs one close.
 - **Process findings** (a skill is wrong): file separately against the ADDW repo — skills change via dedicated process commits, never inside an audit fix.
 
-## Step 5: Ship the Audit
+## Step 4: Ship the Audit
 
 The audit ships like everything else: as a PR. On a branch off the main branch,
 review `git status`, stage any trivial-fix paths **explicitly** (never `git add -A`),

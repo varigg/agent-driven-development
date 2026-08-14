@@ -194,12 +194,14 @@ listing also surfaces release-ready specs so you notice at your next session
 Not part of the cycle, but reachable from it:
 
 - **`addw-maintain`** — the periodic audit, on cadence rather than as a pipeline phase. Three
-  skippable sweeps (living-docs drift, coverage debt, dependencies); substantive findings are
-  never fixed in place but filed as tracker issues (§ *Step 4: Triage & Apply*), and the
-  audit itself ships as a PR (§ *Step 5: Ship the Audit*). The docs sweep also size-checks
-  ARCHITECTURE.md mechanically (`addw-compact`'s `count-tokens.sh`, 20k threshold) and files
-  an overflow as a `backlog` compaction ticket carrying the `/addw-compact` recipe — the
-  audit PR's merge graduates it (§ *Step 4: Triage & Apply*, ADR 0007). Maintain is the
+  sweeps (living-docs drift, coverage debt, dependencies), all run by default with no opening
+  ask — the invocation's arguments are what narrows scope. Substantive findings are
+  never fixed in place but filed as tracker issues (§ *Step 3: Triage & Apply*), and the
+  audit itself ships as a PR (§ *Step 4: Ship the Audit*). The docs sweep also detects
+  documents untrue in whole and size-checks ARCHITECTURE.md mechanically (`addw-compact`'s
+  `count-tokens.sh`, 20k threshold); retirement and compaction filings alike land as
+  `backlog` tickets carrying their recipe, and the merge of the audit PR whose record lists
+  them graduates them (§ *Step 3: Triage & Apply*, ADR 0007). Maintain is the
   watchdog; `addw-compact` is the surgeon.
 - **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
   immediately (§ *Step 7: Open the Expedited PR*). Even an emergency rides a PR a human
