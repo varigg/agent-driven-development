@@ -80,12 +80,13 @@ the retirement tickets of Step 7 — goes through the tracker layer at
    ```bash
    S=.claude/skills/codex-spec-review/state
    bash .claude/skills/lib/tracker/tracker.sh create \
-     "docs: retire <path>" "$S/issue-<N>.retire-<k>.md" ready-for-agent
+     "docs: retire <path>" "$S/issue-<N>.retire-<k>.md" backlog
    ```
 
-   `ready-for-agent` rather than `backlog`: target, reason and command are all fixed here,
-   so nothing remains to design, and the human's sign-off arrives at the retirement PR's
-   merge. **No `## Parent`** — the ticket belongs to no spec, so it gates no spec's
+   `backlog` per ADR 0007: this is a detached detection — approving a spec endorses its
+   design, not the side-detection that some old document is stale — and nothing in the
+   spec path merges, so no PR exists whose body could name the filing. Graduation is an
+   explicit human label flip; report "filed as backlog" on the way out. **No `## Parent`** — the ticket belongs to no spec, so it gates no spec's
    completion and no release. Another detector may later file the same document; the
    duplicate costs one close, which is cheaper than a tracker query to prevent it.
 
@@ -113,5 +114,5 @@ turn 2: resume.sh --notes "Fixed A B. Pushed back on C because …" 42
          edit + push
 turn 3: resume.sh --notes "…" 42 -> APPROVED
          tracker.sh comment 42 state/issue-42.verdict.md
-         tracker.sh create "docs: retire …" … ready-for-agent   (one per superseded doc)
+         tracker.sh create "docs: retire …" … backlog   (one per superseded doc)
 ```
