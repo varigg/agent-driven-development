@@ -180,9 +180,27 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
   small leftovers yourself.
 
 Either way, **read the full diff yourself** afterwards against the ticket, ARCHITECTURE.md
-patterns, and project conventions, and fix problems directly — never ping-pong fixes back to
-the adapter. Commit with explicit paths (never `git add -A`, never "wip") and a conventional
-subject.
+patterns, and project conventions. What happens to a problem depends on whether the ticket
+covers it:
+
+- **In scope** — a finding against the ticket's own Deliverable: fix it in-branch yourself,
+  never ping-pong fixes back to the adapter.
+- **Discovered work** — work outside the ticket's acceptance criteria, however small it
+  feels mid-flight: it does not ride the PR. File it and move on:
+
+  ```bash
+  bash .claude/skills/lib/tracker/tracker.sh create "<conventional subject>" <body-file> backlog
+  ```
+
+  `backlog` because frontier entry is a spending decision that stays human (ADR 0005
+  gate 3) and the PR ships one Deliverable (ADR 0006). Deliberately no merge-graduation
+  via the PR body naming the filing: a mid-implementation discovery has no prior
+  authorizing act, unlike the hotfix follow-up — graduation is an explicit human label
+  flip.
+- **Mechanical drive-bys** — formatting on a line the diff already touches — are not
+  "work"; just do them.
+
+Commit with explicit paths (never `git add -A`, never "wip") and a conventional subject.
 
 ### Step 7: Cold Pre-Filter Review
 
