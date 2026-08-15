@@ -68,6 +68,9 @@ assert_eq "sha256:bbbbbbbbbbbb" "$(bash "$PARSE" approval-hash "$FIX/approval-co
   "approval-hash: last marker line wins; prose, quoted, indented, malformed ignored"
 assert_eq "sha256:bbbbbbbbbbbb" "$(bash "$PARSE" approval-hash < "$FIX/approval-comments.md")" \
   "approval-hash: comments on stdin"
+assert_eq "sha256:eeeeeeeeeeee" \
+  "$(printf 'Approved-body: sha256:eeeeeeeeeeee\r\n' | bash "$PARSE" approval-hash)" \
+  "approval-hash: a CRLF marker (web-edited comment) still records, CR stripped"
 assert_eq "" "$(bash "$PARSE" approval-hash "$FIX/approval-comments-none.md")" \
   "approval-hash: no marker yields empty"
 assert_exit 0 "approval-hash: no marker still exits zero" \

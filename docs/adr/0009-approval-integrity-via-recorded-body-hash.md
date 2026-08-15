@@ -37,7 +37,8 @@ marker, which last-wins scanning then honors.
 
 ## Gate
 
-The marker grammar — a line of exactly `Approved-body: sha256:<12 hex>` — is
-a cross-skill contract between the recorder (`codex-spec-review`) and every
-checker. A change to it is coordinated across recorder, `parse.sh`, and the
+The marker grammar — a line of exactly `Approved-body: sha256:<12 hex>`,
+tolerating only a trailing carriage return because web-edited comments come
+back CRLF and a CR-blind anchor would fail open — is a cross-skill contract
+between the recorder (`codex-spec-review`) and every checker. A change to it is coordinated across recorder, `parse.sh`, and the
 contract tests in the same PR, never piecemeal.

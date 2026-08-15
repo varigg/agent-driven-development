@@ -58,8 +58,11 @@ approval_hash() { # [file]
   # last marker wins, so a re-approval shadows the hash it replaces.
   # `|| true` because no marker at all is an answer (empty, exit 0), and
   # pipefail would otherwise turn grep's no-match exit into a failure.
-  body "$@" | { grep -E '^Approved-body: sha256:[0-9a-f]{12}$' || true; } \
-    | tail -n 1 | sed 's/^Approved-body: //'
+  # A trailing CR is tolerated and stripped: a comment edited in the web UI
+  # comes back CRLF, and a CR-blind anchor would fail open — the marker would
+  # read as "never recorded" and silently disable the drift check.
+  body "$@" | { grep -E $'^Approved-body: sha256:[0-9a-f]{12}\r?$' || true; } \
+    | tail -n 1 | sed $'s/^Approved-body: //; s/\r$//'
 }
 
 body() { # [file]

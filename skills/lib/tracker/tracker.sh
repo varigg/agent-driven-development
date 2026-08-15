@@ -26,7 +26,7 @@
 #   tracker.sh frontier                          live frontier listing
 #   tracker.sh spec-complete <n>                 live spec-completion query
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
-#   tracker.sh approval-drift <n>                compare approved and live body hashes
+#   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
 #
 # `snapshot` means "the issues the workflow reasons about", not "every issue":
 # `archived` issues are dropped immediately after the fetch, so no consumer can
@@ -104,8 +104,12 @@ branches() {
   git ls-remote --heads origin | sed 's|.*refs/heads/||'
 }
 
+issue_body() { # issue-number
+  gh issue view "$1" --json body --jq .body
+}
+
 issue_body_hash() { # issue-number
-  gh issue view "$1" --json body --jq .body | bash "$PARSE" body-hash
+  issue_body "$1" | bash "$PARSE" body-hash
 }
 
 approval_drift() { # issue-number
@@ -136,7 +140,7 @@ case "$cmd" in
     ;;
   body)
     [ "$#" -eq 1 ] || usage
-    gh issue view "$1" --json body --jq .body
+    issue_body "$1"
     ;;
   body-hash)
     [ "$#" -eq 1 ] || usage
