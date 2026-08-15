@@ -10,6 +10,8 @@
 #   parse.sh parent [file]            -> spec issue number, or empty (exit 0)
 #   parse.sh blockers [file]          -> blocker numbers one per line (exit 0)
 #   parse.sh classify-reason <reason> -> "completed" | "not-planned" (else exit 2)
+#   parse.sh body-hash [file]         -> truncated body sha256 (exit 0)
+#   parse.sh approval-hash [file]     -> last recorded body hash, or empty (exit 0)
 #
 # parent/blockers read the issue body from <file> or stdin.
 set -euo pipefail
@@ -40,6 +42,27 @@ section_refs() { # section-name
       }
     }
   '
+}
+
+body_hash() { # [file]
+  local contents
+  # Command substitution removes every trailing newline before the bytes are
+  # hashed, matching the review buffer's normalization guard.
+  contents="$(body "$@")"
+  printf '%s' "$contents" | sha256sum | cut -c1-12 | sed 's/^/sha256:/'
+}
+
+approval_hash() { # [file]
+  # Strict marker grammar: anchored, lowercase hex, nothing after the hash —
+  # prose mentions, quoted replies, and indented copies never re-record. The
+  # last marker wins, so a re-approval shadows the hash it replaces.
+  # `|| true` because no marker at all is an answer (empty, exit 0), and
+  # pipefail would otherwise turn grep's no-match exit into a failure.
+  # A trailing CR is tolerated and stripped: a comment edited in the web UI
+  # comes back CRLF, and a CR-blind anchor would fail open — the marker would
+  # read as "never recorded" and silently disable the drift check.
+  body "$@" | { grep -E $'^Approved-body: sha256:[0-9a-f]{12}\r?$' || true; } \
+    | tail -n 1 | sed $'s/^Approved-body: //; s/\r$//'
 }
 
 body() { # [file]
@@ -75,6 +98,12 @@ case "$cmd" in
         exit 2
         ;;
     esac
+    ;;
+  body-hash)
+    body_hash "$@"
+    ;;
+  approval-hash)
+    approval_hash "$@"
     ;;
   *)
     usage

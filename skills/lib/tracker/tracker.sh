@@ -25,6 +25,8 @@
 #   tracker.sh branches                          remote branch names, one per line
 #   tracker.sh frontier                          live frontier listing
 #   tracker.sh spec-complete <n>                 live spec-completion query
+#   tracker.sh body-hash <n>                     truncated sha256 of the issue body
+#   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
 #
 # `snapshot` means "the issues the workflow reasons about", not "every issue":
 # `archived` issues are dropped immediately after the fetch, so no consumer can
@@ -39,6 +41,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOLVE="$here/resolve.sh"
+PARSE="$here/parse.sh"
 
 # The resolver's snapshot shape. --limit raises gh's default of 30.
 FIELDS='number,title,state,stateReason,labels,assignees,body'
@@ -101,6 +104,31 @@ branches() {
   git ls-remote --heads origin | sed 's|.*refs/heads/||'
 }
 
+issue_body() { # issue-number
+  gh issue view "$1" --json body --jq .body
+}
+
+issue_body_hash() { # issue-number
+  issue_body "$1" | bash "$PARSE" body-hash
+}
+
+approval_drift() { # issue-number
+  local issue=$1 current recorded
+  current="$(issue_body_hash "$issue")"
+  recorded="$(gh api "repos/{owner}/{repo}/issues/$issue/comments" --paginate \
+    --jq '.[].body' | bash "$PARSE" approval-hash)"
+
+  if [ -z "$recorded" ]; then
+    printf 'approval-drift: no approval hash recorded on issue #%s\n' "$issue"
+  elif [ "$recorded" = "$current" ]; then
+    printf 'approval-drift: match %s\n' "$current"
+  else
+    printf 'approval-drift: issue #%s body has drifted from its approved content: approved %s, current %s\n' \
+      "$issue" "$recorded" "$current"
+    return 1
+  fi
+}
+
 [ "$#" -ge 1 ] || usage
 cmd=$1
 shift
@@ -112,7 +140,15 @@ case "$cmd" in
     ;;
   body)
     [ "$#" -eq 1 ] || usage
-    gh issue view "$1" --json body --jq .body
+    issue_body "$1"
+    ;;
+  body-hash)
+    [ "$#" -eq 1 ] || usage
+    issue_body_hash "$1"
+    ;;
+  approval-drift)
+    [ "$#" -eq 1 ] || usage
+    approval_drift "$1"
     ;;
   title)
     [ "$#" -eq 1 ] || usage

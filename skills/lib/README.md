@@ -41,6 +41,20 @@ lives inside `skills/` rather than at the repo root.
     containing commas, and the body file is checked before the call because a
     body-file failure mid-create leaves a titled, bodyless issue that cannot
     be un-created.
+    `body-hash` and `approval-drift` are the approval-integrity reads
+    (ADR 0009): the first prints the truncated sha256 of an issue's live body —
+    the value an approval records — and the second compares that against the
+    last `Approved-body:` marker in the issue's comments, exiting 1 on drift.
+    The hash computation and the marker scan live in `parse.sh` (`body-hash`,
+    `approval-hash`) because both are text-in/conclusion-out; `tracker.sh` only
+    wires them to the live body and the comment stream. The comments read pages
+    through the whole thread because the scan is last-marker-wins — a
+    re-approval records a new marker that must shadow the old one, so a
+    truncated read could resurrect a stale approval. An absent marker reports
+    itself and exits 0, because approvals predating the mechanism must read as
+    unrecorded rather than as drift. Unit-tested (`tests/tracker-drift.test.sh`,
+    the parsers in `tests/tracker-parse.test.sh`) because normalization and the
+    three-way verdict are logic rather than passthrough.
     The branch half of the frontier's in-progress annotation comes from
     `git ls-remote --heads origin` — remote branches, never local ones — so a
     ticket reads as in progress exactly while its branch is visible to

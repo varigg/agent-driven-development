@@ -48,6 +48,34 @@ assert_exit 2 "classify: unknown reason refuses loudly" \
 assert_exit 2 "classify: empty reason refuses loudly" \
   bash "$PARSE" classify-reason ""
 
+# --- body-hash ---
+# The contract: sha256 of the body with every trailing newline stripped,
+# truncated to the first 12 hex digits, printed as "sha256:<12hex>".
+assert_eq "sha256:$(printf '%s' 'spec body' | sha256sum | cut -c1-12)" \
+  "$(printf 'spec body\n\n' | bash "$PARSE" body-hash)" \
+  "body-hash: truncated sha256 of the trailing-newline-stripped body"
+assert_eq "$(printf 'spec body' | bash "$PARSE" body-hash)" \
+  "$(printf 'spec body\n' | bash "$PARSE" body-hash)" \
+  "body-hash: a trailing newline is not a difference"
+assert_eq "$(bash "$PARSE" body-hash < "$FIX/blockers.md")" \
+  "$(bash "$PARSE" body-hash "$FIX/blockers.md")" \
+  "body-hash: file argument matches stdin"
+[ "$(printf 'a' | bash "$PARSE" body-hash)" != "$(printf 'b' | bash "$PARSE" body-hash)" ] \
+  || fail "body-hash: different bodies must hash differently"
+
+# --- approval-hash ---
+assert_eq "sha256:bbbbbbbbbbbb" "$(bash "$PARSE" approval-hash "$FIX/approval-comments.md")" \
+  "approval-hash: last marker line wins; prose, quoted, indented, malformed ignored"
+assert_eq "sha256:bbbbbbbbbbbb" "$(bash "$PARSE" approval-hash < "$FIX/approval-comments.md")" \
+  "approval-hash: comments on stdin"
+assert_eq "sha256:eeeeeeeeeeee" \
+  "$(printf 'Approved-body: sha256:eeeeeeeeeeee\r\n' | bash "$PARSE" approval-hash)" \
+  "approval-hash: a CRLF marker (web-edited comment) still records, CR stripped"
+assert_eq "" "$(bash "$PARSE" approval-hash "$FIX/approval-comments-none.md")" \
+  "approval-hash: no marker yields empty"
+assert_exit 0 "approval-hash: no marker still exits zero" \
+  bash "$PARSE" approval-hash "$FIX/approval-comments-none.md"
+
 # --- CLI seam hygiene ---
 assert_exit 2 "unknown subcommand refuses loudly" \
   bash "$PARSE" frobnicate

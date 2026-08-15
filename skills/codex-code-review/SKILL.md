@@ -29,8 +29,10 @@ Every tracker operation — the ticket read, the parent lookup, the spec read �
 tracker layer at `.claude/skills/lib/tracker/tracker.sh`. Never call the tracker CLI for
 tracker work here.
 
-No review artifact is produced. What survives the loop is the PR body's verdict line: the tag,
-the round count, and the commit SHA the verdict covers.
+No review artifact is produced. What survives the loop is the PR body's verdict line — the
+tag, the round count, the commit SHA the verdict covers, and the ticket-body hash it was
+judged against — plus the `Approved-body:` marker comment `addw-implement` posts on the
+ticket at the final round, which is what `tracker.sh approval-drift <n>` checks (ADR 0009).
 
 ## Arguments
 
@@ -60,8 +62,9 @@ the round count, and the commit SHA the verdict covers.
    ```
 
 5. **Parse trailing tag**:
-   - `APPROVED` — record the verdict, round count, and the commit it covers; continue with
-     the PR.
+   - `APPROVED` — record the verdict, round count, the commit it covers, and the
+     ticket-body hash captured before the round; continue with the PR, which posts that
+     hash as the ticket's `Approved-body:` marker (`addw-implement` § Step 10).
    - `REQUEST_CHANGES` — surface the review verbatim, engage critically (read the actual code
      at `file:line`, fix the legitimate findings, push back on the incorrect ones in the next
      resume's `--notes`), then resume.
@@ -73,8 +76,10 @@ the round count, and the commit SHA the verdict covers.
 ## After Convergence
 
 The final round must run against a **fully committed HEAD** — commit everything before the
-round you expect to be the last. Record `git rev-parse HEAD`: that SHA is what the verdict
-covers, and `addw-implement` writes it into the PR body. A change made after the verdict
+round you expect to be the last. Record `git rev-parse HEAD` and
+`tracker.sh body-hash <n>` at that moment: the SHA is the diff the verdict covers, the hash
+is the ticket it was judged against, and `addw-implement` writes both into the PR body and
+posts the hash as the ticket's `Approved-body:` marker. A change made after the verdict
 either earns another round or is disclosed in the PR body as uncovered.
 
 ## Notes
