@@ -9,12 +9,14 @@
 #   tracker.sh title <n>                         issue title
 #   tracker.sh state <n>                         OPEN | CLOSED
 #   tracker.sh edit-body <n> <file>              replace the body from a file
+#   tracker.sh edit-title <n> <file>             replace the title with the file's first line
 #   tracker.sh label <n> <label>                 add a label
 #   tracker.sh unlabel <n> <label>               remove a label
 #   tracker.sh comment <n> <file>                comment from a file
 #   tracker.sh close <n> <completed|not-planned> [comment-file]
 #   tracker.sh assign <n>                        self-assign (@me)
 #   tracker.sh create <title> <body-file> [label...]  open an issue
+#   tracker.sh create --title-file <file> <body-file> [label...]  title from the file's first line
 #   tracker.sh auth                              tracker CLI installed and authenticated
 #   tracker.sh issues-enabled                    repository issues are enabled
 #   tracker.sh labels                            label names, one per line
@@ -127,6 +129,13 @@ case "$cmd" in
     [ "$#" -eq 2 ] || usage
     gh issue edit "$1" --body-file "$2"
     ;;
+  edit-title)
+    # The title rides a file like edit-body's body, so punctuation never has to
+    # survive a shell quoting round-trip. Only the first line is the title.
+    [ "$#" -eq 2 ] || usage
+    title="$(head -n 1 "$2")"
+    gh issue edit "$1" --title "$title"
+    ;;
   label)
     [ "$#" -eq 2 ] || usage
     gh issue edit "$1" --add-label "$2"
@@ -164,10 +173,19 @@ case "$cmd" in
     # the issues ADDW works on. It is here for the paths that do originate one —
     # addw-maintain routing a substantive finding to a `backlog` issue, and the
     # schema-4 backlog migration.
-    [ "$#" -ge 2 ] || usage
-    title=$1
-    body_file=$2
-    shift 2
+    # The title comes positionally, or from a file's first line as in
+    # edit-title — the file form spares punctuation a shell quoting round-trip.
+    if [ "${1:-}" = "--title-file" ]; then
+      [ "$#" -ge 3 ] || usage
+      title="$(head -n 1 "$2")"
+      shift 2
+    else
+      [ "$#" -ge 2 ] || usage
+      title=$1
+      shift
+    fi
+    body_file=$1
+    shift
     # Checked before the call, not by gh: a body-file failure mid-create leaves
     # a titled, bodyless issue behind, and issues cannot be un-created.
     if [ ! -f "$body_file" ]; then
