@@ -56,6 +56,10 @@ flaw is cheapest to fix while the spec is still prose (§ *Execution*).
 
 3. **Fixes land in the issue body in place; only the final verdict is posted as a comment.**
    The spec stays readable — a reader sees the current spec, not an archaeology of rounds.
+   The verdict comment also records a truncated hash of the approved body, so any later
+   consumer can detect a spec edited after its approval with
+   `tracker.sh approval-drift <n>` — `addw-implement` runs that check whenever it reads a
+   parent spec (ADR 0009).
 
 4. **Approval files retirements as `backlog`.** An approved spec can leave an in-tree
    document untrue in whole — a proposal it replaces, an ADR it overturns. The skill files
@@ -148,7 +152,9 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    ticket and its parent spec as context, capped at five rounds (§ *Step 10: Codex Code
    Review Loop*; adapter mechanics in `skills/codex-code-review/SKILL.md` § *Loop Shape*,
    findings judged against `skills/codex-code-review/checklist.md`). **The final round runs
-   against a fully committed HEAD**, and that SHA is what the verdict covers.
+   against a fully committed HEAD**, and that SHA is what the verdict covers — recorded
+   alongside the ticket-body hash, which pins the ticket the diff was judged against
+   (ADR 0009).
 
 9. **Open the PR and stop** (§ *Step 11: Open the PR*). The agent does not merge and does not
    start another ticket. The title must parse as a conventional-commit subject, because it
@@ -156,8 +162,8 @@ The fresh-build path (§ *Mode B: Fresh Build*):
 
 **You review and merge on GitHub.** The PR body carries seven things so you can judge without
 archaeology: the `Closes #n` link, the gate summary verbatim, the codex verdict with round
-count and covered SHA, any skip disclosures, the doc-impact note, a prose summary, and a merge
-recommendation (§ *PR Body Contract*). Squash is the default; rebase-merge is recommended only
+count, covered SHA, and ticket-body hash, any skip disclosures, the doc-impact note, a prose
+summary, and a merge recommendation (§ *PR Body Contract*). Squash is the default; rebase-merge is recommended only
 when the branch's commits are each individually substantive *and* conventionally titled.
 
 If you leave feedback, invoking the skill on that ticket again resumes into
