@@ -20,8 +20,8 @@ PARSE="$REPO/skills/lib/tracker/parse.sh"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
-# The stub answers the body read (issue view --json body) and the comments
-# read (gh api …/comments) from the files the cases below point it at.
+# The stub answers the body read (issue view --json body) and the paginated
+# REST comments read from the files the cases below point it at.
 mkdir -p "$work/bin"
 cat > "$work/bin/gh" <<'SH'
 #!/usr/bin/env bash

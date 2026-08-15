@@ -54,13 +54,19 @@ the retirement tickets of Step 7 — goes through the tracker layer at
 
 6. **Verdict comment** — when the loop converges (or is capped), post **only the final
    verdict** to the issue; round-by-round findings and implementer notes stay in adapter
-   state so the issue remains readable:
+   state so the issue remains readable. Hash the state buffer — the reviewed bytes — with
+   `parse.sh`, not the remote body:
 
    ```bash
    S=.claude/skills/codex-spec-review/state
-   printf 'Codex spec review: APPROVED after <R> round(s).\n' > "$S/issue-<N>.verdict.md"
+   printf 'Codex spec review: APPROVED after <R> round(s).\nApproved-body: %s\n' \
+     "$(bash .claude/skills/lib/tracker/parse.sh body-hash "$S/issue-<N>.md")" \
+     > "$S/issue-<N>.verdict.md"
    bash .claude/skills/lib/tracker/tracker.sh comment <N> "$S/issue-<N>.verdict.md"
    ```
+
+   Consumers compare this against the live body via `tracker.sh approval-drift` to detect
+   a spec edited after its approval.
 
 7. **Retirement filing** — an approved spec supersedes what it replaces. For each
    in-tree document the spec has left untrue *in whole* — a proposal it replaces, an ADR

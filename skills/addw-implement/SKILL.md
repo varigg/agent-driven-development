@@ -68,6 +68,10 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    optional. Skipping it produces the worst failure this mode has: reporting feedback
    addressed while never having seen it.
 
+   Also compare `bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>`
+   against the hash recorded in the PR body. If they differ, surface that the ticket body
+   changed after the recorded verdict.
+
 2. **Address the feedback.** Push back in a PR reply where a comment is mistaken — agreement
    is not the goal, resolution is. Commit with explicit paths and a conventional subject.
 
@@ -133,9 +137,13 @@ somebody, possibly you in an earlier session, has already started.
 ### Step 4: Read the Ticket and Its Spec
 
 Read the ticket body in full, then the parent spec when the ticket names one
-(`tracker.sh body <parent>`) — the spec carries the decisions the ticket assumes. Then read
-`docs/ARCHITECTURE.md`, and the glossary and ADRs at the locations the domain-layout contract
-(`docs/agents/domain.md`) declares. Never hardcode those paths.
+(`tracker.sh body <parent>`) — the spec carries the decisions the ticket assumes. After
+reading the parent spec, run
+`bash .claude/skills/lib/tracker/tracker.sh approval-drift <parent>`. If it reports drift,
+surface it to the human before building — the tickets may descend from content the spec
+reviewer never saw. `no approval hash recorded` needs no action; it identifies a pre-feature
+approval. Then read `docs/ARCHITECTURE.md`, and the glossary and ADRs at the locations the
+domain-layout contract (`docs/agents/domain.md`) declares. Never hardcode those paths.
 
 ### Step 5: Frozen Contract Tests
 
@@ -302,9 +310,11 @@ bash ".claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/scripts/start.
 4. **Cap at 5 rounds** unless the human says otherwise; surface whatever remains open.
 
 **The final round must run against a fully committed HEAD.** Commit everything before the
-round you expect to be the last, and record `git rev-parse HEAD` — that SHA is what the
-verdict covers, and the PR body states it. Any change made after that verdict either earns
-another round or is disclosed as uncovered.
+round you expect to be the last, and record `git rev-parse HEAD` plus
+`bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>` at that moment — the
+verdict SHA pins the diff, and the body hash pins the ticket it was judged against. The PR
+body states both. Any change made after that verdict either earns another round or is
+disclosed as uncovered.
 
 ### Step 11: Open the PR
 
@@ -332,7 +342,8 @@ human has to do by archaeology:
 
 1. **Closure link** — `Closes #<issue-number>`, so the merge closes the ticket as completed.
 2. **Gate summary** — the gate's line, verbatim.
-3. **Codex verdict** — the tag, the round count, and the commit SHA it covers.
+3. **Codex verdict** — the tag, the round count, the commit SHA it covers, and the ticket-body
+   hash the verdict covers.
 4. **Disclosures** — a skipped pre-filter, a skipped review round, an edited contract test,
    an accepted open finding. If there are none, say none.
 5. **Doc-impact note** — which living docs this changed, or that none needed changing. A
