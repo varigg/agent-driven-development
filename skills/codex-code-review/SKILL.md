@@ -29,8 +29,10 @@ Every tracker operation — the ticket read, the parent lookup, the spec read �
 tracker layer at `.claude/skills/lib/tracker/tracker.sh`. Never call the tracker CLI for
 tracker work here.
 
-No review artifact is produced. What survives the loop is the PR body's verdict line: the tag,
-the round count, and the commit SHA the verdict covers.
+No review artifact is produced. What survives the loop is the PR body's verdict line — the
+tag, the round count, the commit SHA the verdict covers, and the ticket-body hash it was
+judged against — plus the `Approved-body:` marker comment `addw-implement` posts on the
+ticket at the final round, which is what `tracker.sh approval-drift <n>` checks (ADR 0009).
 
 ## Arguments
 

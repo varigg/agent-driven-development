@@ -10,10 +10,11 @@ decomposing it, a ticket between the code-review verdict and the merge — and
 nothing structural prevents it, because issue bodies are mutable and the
 consumers are partly third-party skills ADDW cannot modify. The decision:
 approval writes a truncated SHA-256 of the approved body (`sha256:` plus the
-first 12 hex digits, trailing newlines stripped) into the durable approval
-artifact itself — the verdict comment for a spec, the PR body for a ticket —
-and ADDW's own consumers compare it against the live body and **warn** on
-drift. Detection over prevention: the tracker offers no immutability to build
+first 12 hex digits, trailing newlines stripped) as an `Approved-body:` marker
+in a durable comment on the issue itself — the spec-review verdict comment for
+a spec, a code-review verdict comment for a ticket, echoed in the PR body —
+and any consumer, ADDW's skills or the merging human, compares it against the
+live body with one command and **warns** on drift. Detection over prevention: the tracker offers no immutability to build
 on, so the mechanism is a recorded fact plus a mechanical comparison
 (`tracker.sh approval-drift`), which ADR 0004's conditions admit as a script.
 

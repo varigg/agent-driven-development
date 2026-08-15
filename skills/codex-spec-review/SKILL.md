@@ -55,13 +55,15 @@ the retirement tickets of Step 7 — goes through the tracker layer at
 6. **Verdict comment** — when the loop converges (or is capped), post **only the final
    verdict** to the issue; round-by-round findings and implementer notes stay in adapter
    state so the issue remains readable. Hash the state buffer — the reviewed bytes — with
-   `parse.sh`, not the remote body:
+   `parse.sh`, not the remote body. The hash is computed as its own checked command, never
+   inline in the `printf`: a failed substitution there would post an empty marker, which
+   reads as never-recorded and silently disables the drift check.
 
    ```bash
    S=.claude/skills/codex-spec-review/state
+   hash="$(bash .claude/skills/lib/tracker/parse.sh body-hash "$S/issue-<N>.md")"
    printf 'Codex spec review: APPROVED after <R> round(s).\nApproved-body: %s\n' \
-     "$(bash .claude/skills/lib/tracker/parse.sh body-hash "$S/issue-<N>.md")" \
-     > "$S/issue-<N>.verdict.md"
+     "$hash" > "$S/issue-<N>.verdict.md"
    bash .claude/skills/lib/tracker/tracker.sh comment <N> "$S/issue-<N>.verdict.md"
    ```
 

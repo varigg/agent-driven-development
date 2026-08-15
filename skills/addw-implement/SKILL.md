@@ -68,9 +68,10 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    optional. Skipping it produces the worst failure this mode has: reporting feedback
    addressed while never having seen it.
 
-   Also compare `bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>`
-   against the hash recorded in the PR body. If they differ, surface that the ticket body
-   changed after the recorded verdict.
+   Also run `bash .claude/skills/lib/tracker/tracker.sh approval-drift <issue-number>` —
+   the final review round posted the ticket's approval marker, so drift from the body the
+   verdict judged is one command. Surface drift before addressing anything: the feedback
+   may be responding to a ticket the verdict never saw.
 
 2. **Address the feedback.** Push back in a PR reply where a comment is mistaken — agreement
    is not the goal, resolution is. Commit with explicit paths and a conventional subject.
@@ -313,8 +314,22 @@ bash ".claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/scripts/start.
 round you expect to be the last, and record `git rev-parse HEAD` plus
 `bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>` at that moment — the
 verdict SHA pins the diff, and the body hash pins the ticket it was judged against. The PR
-body states both. Any change made after that verdict either earns another round or is
-disclosed as uncovered.
+body states both. Then post the hash as the ticket's approval marker, so anyone — the
+merging human included — can re-check the ticket with one command
+(`tracker.sh approval-drift <issue-number>`) for as long as the PR sits unmerged. The hash
+is computed as its own checked command, never inline in the `printf`: a failed substitution
+there would post an empty marker, which reads as never-recorded and silently disables the
+check.
+
+```bash
+f="$(mktemp)"
+hash="$(bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>)"
+printf 'Codex code review: <TAG> after <R> round(s).\nApproved-body: %s\n' "$hash" > "$f"
+bash .claude/skills/lib/tracker/tracker.sh comment <issue-number> "$f"
+```
+
+Any change made after that verdict either earns another round or is disclosed as
+uncovered.
 
 ### Step 11: Open the PR
 

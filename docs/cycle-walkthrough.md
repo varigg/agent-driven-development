@@ -153,7 +153,8 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    Review Loop*; adapter mechanics in `skills/codex-code-review/SKILL.md` § *Loop Shape*,
    findings judged against `skills/codex-code-review/checklist.md`). **The final round runs
    against a fully committed HEAD**, and that SHA is what the verdict covers — recorded
-   alongside the ticket-body hash, which pins the ticket the diff was judged against
+   alongside the ticket-body hash, which pins the ticket the diff was judged against and is
+   posted as the ticket's `Approved-body:` marker, so drift stays one command away
    (ADR 0009).
 
 9. **Open the PR and stop** (§ *Step 11: Open the PR*). The agent does not merge and does not
@@ -163,7 +164,9 @@ The fresh-build path (§ *Mode B: Fresh Build*):
 **You review and merge on GitHub.** The PR body carries seven things so you can judge without
 archaeology: the `Closes #n` link, the gate summary verbatim, the codex verdict with round
 count, covered SHA, and ticket-body hash, any skip disclosures, the doc-impact note, a prose
-summary, and a merge recommendation (§ *PR Body Contract*). Squash is the default; rebase-merge is recommended only
+summary, and a merge recommendation (§ *PR Body Contract*). If time has passed since the
+verdict, `tracker.sh approval-drift <n>` re-checks the ticket against its marker before you
+merge. Squash is the default; rebase-merge is recommended only
 when the branch's commits are each individually substantive *and* conventionally titled.
 
 If you leave feedback, invoking the skill on that ticket again resumes into
