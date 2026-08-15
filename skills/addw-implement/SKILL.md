@@ -312,18 +312,19 @@ bash ".claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/scripts/start.
 
 **The final round must run against a fully committed HEAD.** Commit everything before the
 round you expect to be the last, and record `git rev-parse HEAD` plus
-`bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>` at that moment — the
-verdict SHA pins the diff, and the body hash pins the ticket it was judged against. The PR
-body states both. Then post the hash as the ticket's approval marker, so anyone — the
-merging human included — can re-check the ticket with one command
-(`tracker.sh approval-drift <issue-number>`) for as long as the PR sits unmerged. The hash
-is computed as its own checked command, never inline in the `printf`: a failed substitution
-there would post an empty marker, which reads as never-recorded and silently disables the
-check.
+`hash="$(bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>)"` at that
+moment — before invoking the round, when the ticket the reviewer is handed is the ticket
+the hash pins. The verdict SHA pins the diff, the body hash pins the ticket it was judged
+against, and the PR body states both. After the verdict, post that **recorded** hash as the
+ticket's approval marker — never recompute it here, which would hash bytes the reviewer may
+never have seen — so anyone, the merging human included, can re-check the ticket with one
+command (`tracker.sh approval-drift <issue-number>`) for as long as the PR sits unmerged.
+The empty-hash guard is what keeps a failed capture from posting an empty marker, which
+would read as never-recorded and silently disable the check:
 
 ```bash
+[ -n "$hash" ] || exit 1     # the hash recorded before the final round
 f="$(mktemp)"
-hash="$(bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>)"
 printf 'Codex code review: <TAG> after <R> round(s).\nApproved-body: %s\n' "$hash" > "$f"
 bash .claude/skills/lib/tracker/tracker.sh comment <issue-number> "$f"
 ```
