@@ -132,7 +132,9 @@ location the domain-layout contract declares:
 
 Remove:
 
-- `ADDW_TUTORIALS` — tutorials have no consumer left in the skill set.
+- `ADDW_TUTORIALS` — tutorials have no consumer left in the skill set. The
+  same is true of `docs/5-tuto/` itself: nothing reads or writes it any more,
+  so keep or delete a surviving one at your leisure.
 - `ADDW_PLAN_REVIEW_SKILL` — the role retired with the plan skill. Doctor fails
   on a survivor by name, so it cannot be mistaken for a missing adapter.
 
@@ -242,6 +244,11 @@ is a working install rather than a silent one, and an operator meets it through
 the seam's refusal message at the moment it starts to matter.
 
 ## Within schema 5
+
+`docs/6-memo/` is retired: `addw-research`, its only writer, left the skill
+set when the research role passed upstream, so init stops creating the
+directory and doctor stops checking it. No install has content there, so a
+surviving empty directory can be deleted at leisure.
 
 `docs/7-maintenance/` and the `MAINT_*.md` class are retired; the audit record
 is now the audit commit's message, dated by its subject
