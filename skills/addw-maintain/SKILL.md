@@ -136,7 +136,7 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
   bash .claude/skills/lib/tracker/tracker.sh create "<conventional subject>" <body-file> backlog
   ```
 
-  `backlog` unless the human wants it worked now, in which case use `ready-for-agent`. A `backlog` issue is an undesigned idea: it carries no `## Parent`, and the frontier skips it until it graduates into a spec.
+  `backlog` unless the human wants it worked now, in which case use `ready-for-agent`. A `backlog` issue is proposed work not yet human-graduated — whether it lacks design, authorization, or both: it carries no `## Parent`, and the frontier skips it until a human act admits it (an explicit re-label, or the merge of a PR naming the filing).
 - **Retirement filing**: a document Sweep A found untrue in whole leaves the tree rather than being corrected — and leaves it through a ticket like any other substantive finding, since deleting a file is substantive by any reading. One ticket per document:
 
   ```bash
