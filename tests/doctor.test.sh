@@ -99,7 +99,7 @@ mkdir -p "$BASE/project" "$BASE/home"
   # backtick belongs, and an expanding one would corrupt it silently. The one
   # interpolated value is appended instead.
   cat > docs/addw.env <<'ENV'
-ADDW_SCHEMA=5
+ADDW_SCHEMA=6
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
@@ -287,6 +287,20 @@ assert_eq 1 "$RUN_STATUS" "role: a retired role key left in the config is unheal
 assert_contains "$RUN_OUT" "FAIL: ADDW_PLAN_REVIEW_SKILL" \
   "role: the failing line names the retired key"
 assert_contains "$RUN_OUT" "ADDW_PLAN_REVIEW_SKILL is retired" \
+  "role: the failing line says the key is retired, not that an adapter is missing"
+
+# The ask role retired differently: its skill (/codex-ask) survives, invoked by
+# name — the key was declared and validated but read by nothing, so a survivor
+# names a seam no flow step calls. Left to the adapter loop, it would even
+# *pass* wherever codex-ask is installed, which is worse than the missing-
+# adapter misdirection above: a green check for a dead seam.
+d="$(case_dir retiredask)"
+printf 'ADDW_ASK_SKILL=codex-ask\n' >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "role: a retired ask key left in the config is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_ASK_SKILL" \
+  "role: the failing line names the retired key"
+assert_contains "$RUN_OUT" "ADDW_ASK_SKILL is retired" \
   "role: the failing line says the key is retired, not that an adapter is missing"
 
 # The plans directory is the opposite case: transient, safe to delete, but the
