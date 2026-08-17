@@ -119,6 +119,10 @@ origins are historical provenance, exempt from liveness checking and expected
 to outlive their targets. Retro-editing a dated record to point somewhere
 tidier is precisely what the ADR rules forbid.
 
+`docs/5-tuto/` is in the same position: tutorials retired with this
+generation, nothing reads or writes the directory, and keeping or deleting a
+surviving one is equally yours to call.
+
 ### 4. Reconcile `docs/addw.env`
 
 Add, filling the values from `TESTING.md`'s Verification Recipes and the ADR
@@ -132,9 +136,7 @@ location the domain-layout contract declares:
 
 Remove:
 
-- `ADDW_TUTORIALS` — tutorials have no consumer left in the skill set. The
-  same is true of `docs/5-tuto/` itself: nothing reads or writes it any more,
-  so keep or delete a surviving one at your leisure.
+- `ADDW_TUTORIALS` — tutorials have no consumer left in the skill set.
 - `ADDW_PLAN_REVIEW_SKILL` — the role retired with the plan skill. Doctor fails
   on a survivor by name, so it cannot be mistaken for a missing adapter.
 
@@ -245,10 +247,11 @@ the seam's refusal message at the moment it starts to matter.
 
 ## Within schema 5
 
-`docs/6-memo/` is retired: `addw-research`, its only writer, left the skill
-set when the research role passed upstream, so init stops creating the
-directory and doctor stops checking it. No install has content there, so a
-surviving empty directory can be deleted at leisure.
+`docs/6-memo/` left the docs contract (2026-08-11): `addw-research`, its only
+writer, had already left the skill set, so init stops creating the directory
+and doctor stops checking it. Nothing fails on a stale install and nothing
+migrates — the note is here so the disposition is on record: no install has
+content there, and a surviving empty directory can be deleted at leisure.
 
 `docs/7-maintenance/` and the `MAINT_*.md` class are retired; the audit record
 is now the audit commit's message, dated by its subject

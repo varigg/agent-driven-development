@@ -104,9 +104,9 @@ docs/4-unit-tests/     # the testing guide and the coverage-debt ledger
 There is no plans directory and no tutorial directory: work items live on the
 tracker, and tutorials have no consumer in the skill set. Directories this
 contract no longer names may survive in historical installs. Leave them alone
-and leave the numbering gaps; never recreate one, and never assume a surviving
-one holds anything. Deleting them is the human's call, and `UPGRADING.md` owns
-their disposition.
+and leave the numbering gaps; never recreate one, and treat a surviving one as
+frozen history, never as a live input. Deleting them is the human's call, and
+`UPGRADING.md` owns their disposition.
 
 ### 2.2 The ADDW labels
 
