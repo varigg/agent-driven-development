@@ -281,6 +281,14 @@ ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
 # agent drives `tdd` itself.
 # ADDW_IMPLEMENT_SKILL=codex-implement
 # ADDW_CODE_REVIEW_SKILL=codex-code-review
+# Optional addw-compact token budgets — unset, the defaults below apply. The
+# threshold triggers compaction (addw-maintain's size check watches it too);
+# the target range is where a compaction aims, and its upper bound doubles as
+# the split trigger. Rule of thumb for choosing a threshold: ARCHITECTURE.md
+# should stay around ~10% of the context window.
+# ADDW_COMPACT_THRESHOLD=20000
+# ADDW_COMPACT_TARGET_MIN=10000
+# ADDW_COMPACT_TARGET_MAX=15000
 ```
 
 Fill every value (audit nudge 5 unless the user chooses otherwise). Do not

@@ -95,8 +95,9 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
   runs it on ARCHITECTURE.md only.
 - Size has one too:
   `bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md`
-  estimates the document's token count. Over 20,000 tokens it has outgrown
-  its budget. Detection ends the sweep's job — compress nothing here; file
+  estimates the document's token count. Over the project's threshold
+  (`${ADDW_COMPACT_THRESHOLD:-20000}` tokens, from `docs/addw.env`) it has
+  outgrown its budget. Detection ends the sweep's job — compress nothing here; file
   the finding under **Compaction filing** in Step 3. This audit is the
   watchdog, `addw-compact` is the surgeon: the check is mechanical, so a
   script owns it (the ADR 0004 pattern), while the compression is judgment
@@ -149,7 +150,7 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
   bash .claude/skills/lib/tracker/tracker.sh create "docs: compact ARCHITECTURE.md" <body-file> backlog
   ```
 
-  The body carries the measured count, the 20k threshold it crossed, and the recipe: run `/addw-compact`. The filing is `backlog`, and its number goes in the audit record like every other filing — which is exactly what graduates it: the merge of the audit PR whose record lists the filing is the human act that admits it to the frontier (ADR 0007's graduation mechanic). Another audit may find the document still oversize and file again; the duplicate costs one close.
+  The body carries the measured count, the threshold it crossed, and the recipe: run `/addw-compact`. The filing is `backlog`, and its number goes in the audit record like every other filing — which is exactly what graduates it: the merge of the audit PR whose record lists the filing is the human act that admits it to the frontier (ADR 0007's graduation mechanic). Another audit may find the document still oversize and file again; the duplicate costs one close.
 - **Process findings** (a skill is wrong): file separately against the ADDW repo — skills change via dedicated process commits, never inside an audit fix.
 
 ## Step 4: Ship the Audit
