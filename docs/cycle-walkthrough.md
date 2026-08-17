@@ -245,7 +245,7 @@ Not part of the cycle, but reachable from it:
 |---|---|---|
 | Spec | A `spec`-labeled GitHub issue | `to-spec`, reviewed by `codex-spec-review` |
 | Tickets | GitHub issues with `## Parent` / `## Blocked by` | `to-tickets` |
-| Backlog proposals | `backlog`-labeled issues, no parent | you, or a detached detection (`addw-maintain`, `codex-spec-review`, `addw-hotfix`) |
+| Backlog proposals | `backlog`-labeled issues, no parent | you, or a detached detection (`addw-maintain`, `codex-spec-review`, `addw-hotfix`, `addw-release`) |
 | Implementation | One squash-merged PR per ticket | `addw-implement` |
 | Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR`, `active` for as long as they are there — a superseded one departs to a closed `archived` issue | the ticket's own PR, or alignment (origin `design session`); retired by the superseding PR |
 | Glossary / domain docs | The layout `docs/agents/domain.md` declares | `domain-modeling`, during alignment |

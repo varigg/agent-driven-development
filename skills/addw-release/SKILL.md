@@ -238,10 +238,13 @@ bash .claude/skills/lib/docs/check-doc-accretion.sh docs/ARCHITECTURE.md
 
   ```bash
   bash .claude/skills/lib/tracker/tracker.sh create \
-    "docs: retire <path>" <body-file> ready-for-agent
+    "docs: retire <path>" <body-file> backlog
   ```
 
-  The body carries the path, the kind (`adr` or `proposal`), why the document
+  `backlog` per ADR 0007: this sweep is a detached detection — the release PR
+  has already merged, so no PR body can name the filing. Graduation is an
+  explicit human label flip; report "filed as backlog" on the way out. The body
+  carries the path, the kind (`adr` or `proposal`), why the document
   stopped being true, and the command that retires it —
   `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` —
   so the ticket is workable without rediscovering the finding. It carries **no
