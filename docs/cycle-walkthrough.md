@@ -218,7 +218,7 @@ Not part of the cycle, but reachable from it:
   never fixed in place but filed as tracker issues (§ *Step 3: Triage & Apply*), and the
   audit itself ships as a PR (§ *Step 4: Ship the Audit*). The docs sweep also detects
   documents untrue in whole and size-checks ARCHITECTURE.md mechanically (`addw-compact`'s
-  `count-tokens.sh`, 20k threshold); retirement and compaction filings alike land as
+  `count-tokens.sh`, `ADDW_COMPACT_THRESHOLD` — 20k default); retirement and compaction filings alike land as
   `backlog` tickets carrying their recipe, and the merge of the audit PR whose record lists
   them graduates them (§ *Step 3: Triage & Apply*, ADR 0007). Maintain is the
   watchdog; `addw-compact` is the surgeon.

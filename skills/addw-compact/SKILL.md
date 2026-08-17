@@ -13,7 +13,10 @@ here asks permission to proceed, and nothing here lands a commit on the main bra
 
 ## Why Compact?
 
-ARCHITECTURE.md should not exceed _~20k tokens_. A bloated ARCHITECTURE.md:
+ARCHITECTURE.md should not exceed its token budget —
+`${ADDW_COMPACT_THRESHOLD:-20000}` tokens, a per-project value from
+`docs/addw.env` (rule of thumb for choosing one: ~10% of the context window).
+A bloated ARCHITECTURE.md:
 
 - Consumes tokens that could be used for actual work
 - Slows down every command that reads it
@@ -28,17 +31,20 @@ Compact: @docs/ARCHITECTURE.md
 
 ## Step 1: Assess & Triage
 
-First, measure the actual token count using the bundled script:
+First, load the project's budgets and measure the actual token count using the
+bundled script:
 
 ```bash
+source docs/addw.env
 bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md
 ```
 
-**If token count <= 20,000**, the document is within range: report the count and **stop**.
-There is nothing to land, so no branch and no PR. Compacting a within-range document is
-work nobody asked for.
+**If the count is at or below `${ADDW_COMPACT_THRESHOLD:-20000}`**, the document is
+within range: report the count and **stop**. There is nothing to land, so no branch and
+no PR. Compacting a within-range document is work nobody asked for.
 
-**If token count > 20,000**, read the full ARCHITECTURE.md and identify the bloat sources:
+**If the count exceeds `${ADDW_COMPACT_THRESHOLD:-20000}`**, read the full
+ARCHITECTURE.md and identify the bloat sources:
 
 - Verbose explanations where concise would suffice
 - Redundant information repeated across sections
@@ -46,7 +52,8 @@ work nobody asked for.
 - Overly detailed file listings
 - Excessive examples
 
-Report the assessment — the count, the target (~10,000-15,000), and the top bloat sources —
+Report the assessment — the count, the target range
+(`${ADDW_COMPACT_TARGET_MIN:-10000}`–`${ADDW_COMPACT_TARGET_MAX:-15000}`), and the top bloat sources —
 then **use the `AskUserQuestion` tool** for the one thing only the human knows: the
 **bloat-triage intent fork**. Which sections are load-bearing (their detail must survive)
 and which are compressible? Build the options from the sections you identified, with
@@ -138,7 +145,8 @@ Run the script again on the compacted file:
 bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md
 ```
 
-**If the result is still over 15k tokens after honest compression**, one intent fork
+**If the result is still over `${ADDW_COMPACT_TARGET_MAX:-15000}` tokens after honest
+compression** — the target's upper bound is also the split trigger — one intent fork
 remains before the PR: propose splitting the document — `ARCHITECTURE.md` (core, read by
 default) + `ARCHITECTURE-detailed.md` (deep dives, read on demand) — and **use the
 `AskUserQuestion` tool** to let the human choose between the split and accepting the
