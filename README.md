@@ -69,7 +69,7 @@ Retired: planning and research moved to Matt's skills (`grill-with-docs` + `to-s
 
 ## Swapping agents
 
-The process skills don't hard-code Codex — they call **roles**, resolved from `docs/addw.env` (`ADDW_IMPLEMENT_SKILL`, `ADDW_CODE_REVIEW_SKILL`, `ADDW_ASK_SKILL`, …). To plug in a different agent CLI, write one adapter skill per role and point the key at it. The contract is small:
+The process skills don't hard-code Codex — they call **roles**, resolved from `docs/addw.env` (`ADDW_IMPLEMENT_SKILL`, `ADDW_CODE_REVIEW_SKILL`). To plug in a different agent CLI, write one adapter skill per role and point the key at it. The contract is small:
 
 - `scripts/start.sh <target> [instructions…]` — start a fresh session for the target; prompts and state are the adapter's own business.
 - `scripts/resume.sh [--notes "…"] <target> [instructions…]` — continue the same session with context retained (exit code 2 when no session exists).

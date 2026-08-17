@@ -247,7 +247,7 @@ syntax error here breaks skills far from the edit.
 # docs/addw.env — ADDW project configuration. Created by addw-init.
 # Skills read this at runtime; never edit a skill to change these values.
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=5
+ADDW_SCHEMA=6
 ADDW_PROJECT_NAME="<project name>"
 # The file a release writes the version into. Empty is valid and means the
 # project has no version manifest to write — the release then carries the
@@ -283,7 +283,6 @@ ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
 # agent drives `tdd` itself.
 # ADDW_IMPLEMENT_SKILL=codex-implement
 # ADDW_CODE_REVIEW_SKILL=codex-code-review
-# ADDW_ASK_SKILL=codex-ask
 ```
 
 Fill every value (audit nudge 5 unless the user chooses otherwise). Do not

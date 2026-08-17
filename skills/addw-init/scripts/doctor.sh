@@ -21,7 +21,7 @@ set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
 # UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
-EXPECTED_SCHEMA=5
+EXPECTED_SCHEMA=6
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
@@ -35,8 +35,8 @@ bad() {
 unset ADDW_SCHEMA ADDW_PROJECT_NAME ADDW_VERSION_FILE ADDW_MAIN_BRANCH \
     ADDW_AUDIT_NUDGE_N ADDW_ADR_DIR ADDW_ADR_TEMPLATE ADDW_RECIPE_LINT \
     ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED \
-    ADDW_PLAN_REVIEW_SKILL ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL \
-    ADDW_ASK_SKILL
+    ADDW_PLAN_REVIEW_SKILL ADDW_ASK_SKILL \
+    ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL
 
 # The config decides where half the later checks look, so an unusable one is
 # the only failure that stops the run: continuing would bury one actionable
@@ -146,15 +146,20 @@ else
     ok "no retired docs/backlog.md"
 fi
 
-# The retired *key*, checked here beside the retired file rather than in the
-# adapter loop below, where it would sit in the list only to be branched out of
-# it. ADDW_TUTORIALS retired at the same boundary and is deliberately not
+# The retired *keys*, checked here beside the retired file rather than in the
+# adapter loop below, where they would sit in the list only to be branched out
+# of it. ADDW_TUTORIALS retired at the same boundary and is deliberately not
 # checked: a dead boolean nothing reads is inert, while a dead key naming a
 # skill folder gets read as a live adapter by the loop below.
 if [ -n "${ADDW_PLAN_REVIEW_SKILL:-}" ]; then
     bad "ADDW_PLAN_REVIEW_SKILL is retired — the plan-review role no longer exists; delete the key from docs/addw.env (see UPGRADING.md)"
 else
     ok "no retired ADDW_PLAN_REVIEW_SKILL"
+fi
+if [ -n "${ADDW_ASK_SKILL:-}" ]; then
+    bad "ADDW_ASK_SKILL is retired — /codex-ask is invoked by name and nothing resolves the ask role; delete the key from docs/addw.env (see UPGRADING.md)"
+else
+    ok "no retired ADDW_ASK_SKILL"
 fi
 
 adr_template="${ADDW_ADR_TEMPLATE:-}"
@@ -275,9 +280,10 @@ if [ -n "${ADDW_MAIN_BRANCH:-}" ]; then
 fi
 
 # --- role adapters (checked only when overridden in addw.env) -------------
-# Live roles only. The retired plan-review key is handled above, so a survivor
-# is never mistaken here for an adapter whose scripts went missing.
-for key in ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_ASK_SKILL; do
+# Live roles only. Retired role keys are handled above, so a survivor is never
+# mistaken here for an adapter whose scripts went missing — or, worse, blessed
+# as a live one wherever its skill folder happens to survive.
+for key in ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL; do
     value="${!key:-}"
     [ -z "$value" ] && continue
     # `inline` is the reserved non-adapter value: the main agent drives `tdd`

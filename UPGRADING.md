@@ -250,3 +250,32 @@ at leisure; old reports stay readable in git history. Until the first
 post-retirement audit commit exists, `audit-nudge.sh` finds no audit commit,
 counts every `v*` tag, and over-nudges — a loud, self-announcing state, not a
 silent one, and the first audit shipped under the new contract quiets it.
+
+## Schema 5 → 6
+
+`ADDW_ASK_SKILL` retires. The key was declared, doctor-validated, and read by
+nothing — `/codex-ask` is invoked by name, and the ask role is advisory and
+ungated, so there is no flow step an adapter swap would change. An install that
+pointed the key at a custom adapter was getting a passing doctor check for a
+seam no skill calls. `/codex-ask` itself is unchanged.
+
+### 1. Delete the key
+
+Remove `ADDW_ASK_SKILL` from `docs/addw.env` if it is set — the generated
+config only ever carried it commented out, so most installs have nothing to do.
+Doctor fails on a survivor by name, so it cannot be mistaken for a missing
+adapter. A custom ask adapter you wrote keeps working exactly as before: it was
+only ever invocable by name, and still is.
+
+### 2. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=6
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.
