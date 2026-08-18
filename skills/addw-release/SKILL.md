@@ -137,7 +137,8 @@ editing either is the drift this whole design exists to prevent.
 git checkout -b "release/<version>"
 ```
 
-Two mechanical edits, and nothing else:
+Two mechanical edits — three when the project configures a lockfile sync —
+and nothing else:
 
 1. **Write the changelog entry** with the generator — never by hand:
 
@@ -155,11 +156,27 @@ Two mechanical edits, and nothing else:
 2. **Write the version** to `$ADDW_VERSION_FILE` if that key is set, changing
    nothing else in that file. Projects without a version file skip this.
 
+3. **Regenerate the lockfile**, if `ADDW_RECIPE_LOCKFILE_SYNC` is set: run
+   that command now, immediately after the version write. The pair exists for
+   ecosystems whose lockfile embeds the project's own version — uv, Cargo,
+   npm — where skipping it would ship a lockfile still recording the
+   *previous* version at every tag. A non-zero exit **aborts the release**
+   before anything is committed, the same posture as a gate failure; there is
+   no skip-and-warn. Projects without the key skip this edit entirely.
+
+   Then read the diff of `$ADDW_LOCKFILE` before committing. The recipe is a
+   mechanical projection of the version write, so the hunk is the project's
+   own version line and nothing more. Anything beyond that is pre-existing
+   drift this release did not create: stop and file it as its own ticket
+   rather than folding it into the release — a lockfile hunk the human cannot
+   approve at a glance defeats the point of the mode being mechanical.
+
 Commit them with a subject the changelog generator excludes from future ranges,
 so releases never narrate themselves:
 
 ```bash
-git add CHANGELOG.md ${ADDW_VERSION_FILE:+"$ADDW_VERSION_FILE"}
+git add CHANGELOG.md ${ADDW_VERSION_FILE:+"$ADDW_VERSION_FILE"} \
+    ${ADDW_LOCKFILE:+"$ADDW_LOCKFILE"}
 git commit -m "chore(release): <version>"
 ```
 

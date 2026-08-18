@@ -35,6 +35,7 @@ bad() {
 unset ADDW_SCHEMA ADDW_PROJECT_NAME ADDW_VERSION_FILE ADDW_MAIN_BRANCH \
     ADDW_AUDIT_NUDGE_N ADDW_ADR_DIR ADDW_ADR_TEMPLATE ADDW_RECIPE_LINT \
     ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED \
+    ADDW_RECIPE_LOCKFILE_SYNC ADDW_LOCKFILE \
     ADDW_PLAN_REVIEW_SKILL ADDW_ASK_SKILL \
     ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL
 
@@ -250,6 +251,32 @@ if [ -n "${ADDW_VERSION_FILE:-}" ]; then
         ok "version file $ADDW_VERSION_FILE exists"
     else
         bad "version file $ADDW_VERSION_FILE missing"
+    fi
+fi
+
+# The optional lockfile-sync pair (addw-release Step 3). Both keys absent is
+# the common case — most projects have no lockfile embedding their own version
+# — and gets no line at all. Once either key appears, the two configure one
+# mechanism between them, and that mechanism is by definition a projection of
+# the version write: half a pair, a named lockfile that is not there, or a
+# pair beside an empty ADDW_VERSION_FILE is a contradiction, not a skip.
+if [ -n "${ADDW_RECIPE_LOCKFILE_SYNC:-}" ] || [ -n "${ADDW_LOCKFILE:-}" ]; then
+    if [ -z "${ADDW_LOCKFILE:-}" ]; then
+        bad "ADDW_RECIPE_LOCKFILE_SYNC set without ADDW_LOCKFILE — the release cannot stage a file the config does not name"
+    elif [ -z "${ADDW_RECIPE_LOCKFILE_SYNC:-}" ]; then
+        bad "ADDW_LOCKFILE set without ADDW_RECIPE_LOCKFILE_SYNC — nothing would regenerate the file the release stages"
+    else
+        ok "lockfile-sync pair configured"
+    fi
+    if [ -n "${ADDW_LOCKFILE:-}" ]; then
+        if [ -f "$ADDW_LOCKFILE" ]; then
+            ok "lockfile $ADDW_LOCKFILE exists"
+        else
+            bad "lockfile $ADDW_LOCKFILE missing"
+        fi
+    fi
+    if [ -z "${ADDW_VERSION_FILE:-}" ]; then
+        bad "lockfile sync configured but ADDW_VERSION_FILE is empty — the recipe projects a version write this project skips"
     fi
 fi
 if [ -n "${ADDW_MAIN_BRANCH:-}" ]; then

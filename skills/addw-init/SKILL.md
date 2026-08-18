@@ -270,6 +270,13 @@ ADDW_RECIPE_LINT="<command or empty>"
 ADDW_RECIPE_TYPECHECK="<command or empty>"
 # {paths} is replaced by the affected test paths; a recipe without it runs as-is:
 ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
+# Optional lockfile sync, for ecosystems whose lockfile embeds the project's
+# own version (uv, Cargo, npm): addw-release Step 3 runs the recipe right
+# after the version write and stages the named file in the release commit.
+# Set both keys or neither, and only beside a non-empty ADDW_VERSION_FILE —
+# doctor checks the pair exactly when it is set:
+# ADDW_RECIPE_LOCKFILE_SYNC="uv lock"
+# ADDW_LOCKFILE="uv.lock"
 # Optional codex model/effort overrides — unset, the shared codex runner's own
 # defaults apply:
 # ADDW_CODEX_MODEL_IMPL="..."
