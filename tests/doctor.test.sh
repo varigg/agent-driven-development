@@ -13,7 +13,10 @@
 #      — the three recipes and ADDW_VERSION_FILE — must be *defined*, where an
 #      empty value is a deliberate skip and an absent key is a gap. Values come
 #      from the config alone — an exported ADDW_RECIPE_* must not stand in for a
-#      key the config doesn't set.
+#      key the config doesn't set. The lockfile-sync pair (#126) is optional
+#      and validated only when set: half a pair, a named lockfile that is not
+#      there, or a pair beside an empty ADDW_VERSION_FILE fails; with both
+#      keys absent, doctor says nothing about it at all.
 #   2. Docs contract. The directories and living docs, the ADR template at the
 #      location ADDW_ADR_TEMPLATE names — the shipped one under
 #      `.claude/skills/lib/templates/` by default, a project's own when it
@@ -245,6 +248,80 @@ run "$d"
 assert_eq 1 "$RUN_STATUS" "version: a named-but-missing version file is unhealthy"
 assert_contains "$RUN_OUT" "version file Cargo.toml missing" \
   "version: the failing line names the file the config points at"
+
+# --- the lockfile-sync pair (#126) ----------------------------------------
+
+# Fully configured beside a version file, the pair is healthy — and the named
+# lockfile gets the same existence check ADDW_VERSION_FILE does.
+d="$(case_dir lockfilepair)"
+(
+  cd "$d/project"
+  printf 'ADDW_RECIPE_LOCKFILE_SYNC="true"\nADDW_LOCKFILE="uv.lock"\n' \
+    >> docs/addw.env
+  printf 'stub lock\n' > uv.lock
+) >/dev/null
+run "$d"
+assert_eq 0 "$RUN_STATUS" "lockfile: a fully configured pair is healthy"
+assert_contains "$RUN_OUT" "lockfile-sync pair configured" \
+  "lockfile: the pair is acknowledged, not silently accepted"
+assert_contains "$RUN_OUT" "lockfile uv.lock exists" \
+  "lockfile: the named file is existence-checked like the version file"
+
+# The two keys configure one mechanism, so half a pair is a contradiction —
+# each half missing gets a line naming the key that must join it.
+d="$(case_dir lockfilerecipeonly)"
+printf 'ADDW_RECIPE_LOCKFILE_SYNC="true"\n' >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "lockfile: a recipe without ADDW_LOCKFILE is unhealthy"
+assert_contains "$RUN_OUT" "ADDW_RECIPE_LOCKFILE_SYNC set without ADDW_LOCKFILE" \
+  "lockfile: the failing line names the missing half"
+
+d="$(case_dir lockfilepathonly)"
+(
+  cd "$d/project"
+  printf 'ADDW_LOCKFILE="uv.lock"\n' >> docs/addw.env
+  printf 'stub lock\n' > uv.lock
+) >/dev/null
+run "$d"
+assert_eq 1 "$RUN_STATUS" "lockfile: a lockfile without the recipe is unhealthy"
+assert_contains "$RUN_OUT" "ADDW_LOCKFILE set without ADDW_RECIPE_LOCKFILE_SYNC" \
+  "lockfile: the failing line names the missing half"
+
+# A named-but-missing lockfile is the same fault as a missing version file:
+# the release would run a recipe and stage a path that resolves to nothing.
+d="$(case_dir lockfilemissing)"
+printf 'ADDW_RECIPE_LOCKFILE_SYNC="true"\nADDW_LOCKFILE="uv.lock"\n' \
+  >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "lockfile: a named-but-missing lockfile is unhealthy"
+assert_contains "$RUN_OUT" "lockfile uv.lock missing" \
+  "lockfile: the failing line names the file the config points at"
+
+# The recipe is a projection of the version write, so configuring it in a
+# project that skips the version write is a contradiction, not a combination.
+d="$(case_dir lockfilenoversion)"
+(
+  cd "$d/project"
+  sed -i 's|^ADDW_VERSION_FILE=.*|ADDW_VERSION_FILE=""|' docs/addw.env
+  printf 'ADDW_RECIPE_LOCKFILE_SYNC="true"\nADDW_LOCKFILE="uv.lock"\n' \
+    >> docs/addw.env
+  printf 'stub lock\n' > uv.lock
+) >/dev/null
+run "$d"
+assert_eq 1 "$RUN_STATUS" \
+  "lockfile: the pair beside an empty ADDW_VERSION_FILE is unhealthy"
+assert_contains "$RUN_OUT" "ADDW_VERSION_FILE is empty" \
+  "lockfile: the failing line names the contradiction"
+
+# Absent keys are the common case and get no line at all — and the config is
+# the only source, so an exported recipe must not conjure a half-configured
+# pair out of a healthy install.
+d="$(case_dir lockfileenvleak)"
+run "$d" ADDW_RECIPE_LOCKFILE_SYNC="uv lock" ADDW_LOCKFILE="uv.lock"
+assert_eq 0 "$RUN_STATUS" \
+  "lockfile: exported lockfile keys never substitute for absent config"
+assert_not_contains "$RUN_OUT" "lockfile" \
+  "lockfile: with both keys absent doctor says nothing about the pair"
 
 d="$(case_dir noconfig)"
 rm "$d/project/docs/addw.env"
