@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.2.0 — 2026-08-18
+
+### Features
+- feat(addw-release): add a project-supplied lockfile-sync recipe (#132)
+- feat(addw-compact): promote token budgets to ADDW_* config keys (#130)
+- feat(tracker): detect approved specs and tickets edited after approval (#124)
+- feat(tracker): add edit-title, let create take its title from a file (#123)
+- feat(addw-implement): scope Step 6 — discovered work files as backlog (#117)
+- feat(codex-spec-review): file retirement tickets as backlog per ADR 0007 (#116)
+- feat(addw-maintain): backlog retirement filings per ADR 0007, drop the sweep-selection ask (#115)
+- feat(addw-hotfix): file a deferred-scrutiny follow-up ticket on every expedited merge (#114)
+- feat(addw-hotfix): remove the direct-push escape hatch (#113)
+- feat(addw-maintain): size-check ARCHITECTURE.md and file a compact ticket (#112)
+- feat(addw-compact): end compaction on a branch with a PR, drop the approval asks (#111)
+- feat: move the maintenance-audit record into the audit commit's message (#97)
+- feat: judge ticket breadth at pickup, route bundles to rescoping (#93)
+
+### Fixes
+- fix(addw-release): file retirement tickets as backlog per ADR 0007 (#129)
+- fix(addw-init): retire ADDW_ASK_SKILL role key (schema 6) (#127)
+- fix: ADDW_VERSION_FILE may be empty, as addw-release already assumes (#75)
+
+### Other
+- docs(addw-maintain): describe backlog in the glossary's terms (#131)
+- process: trim retired-directory history from addw-init's docs-contract note (#128)
+- chore: maintenance audit 2026-08-13 (#121)
+- docs(addw-implement): state that test code gets no pre-Boundary approval (#118)
+- docs: record the two-posture retirement rule as ADR 0007 (#99)
+- docs: record same-day schema bumps as ADR 0008 (#109)
+- docs: commit the agent-skills layout config (#95)
+- docs: record the one-Deliverable decomposition rule as ADR 0006 (#92)
+- docs: record the autonomy rubric as ADR 0005, seed CONTEXT.md (#90)
+- chore: drop the 6-memo doctor case, a migration artifact in a permanent suite (#81)
+- docs: retire docs/6-memo/, orphaned when addw-research was deleted (#79)
+
 ## v0.1.0 — 2026-08-10
 
 ### Features
