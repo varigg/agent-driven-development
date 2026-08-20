@@ -3,40 +3,35 @@
 # ladder is shaped this way, and where its summary line is consumed:
 # ../README.md.
 #
-# Usage: gate.sh [--config <file>] [test-path...]
+# Usage: gate.sh [test-path...]   (run from the project root)
 #
-#   --config <file>   project config to source (default: docs/addw.env)
 #   test-path...      affected-test selection; replaces every {paths}
 #                     occurrence in the tests recipe, shell-quoted and
 #                     space-joined. A recipe without {paths} runs as-is.
+#
+# Recipes come from docs/addw.env through the shared config reader — the
+# reader answers from the file alone, so an exported ADDW_RECIPE_* never
+# stands in for a key the config doesn't set.
 #
 # Rung order is fixed: lint (ADDW_RECIPE_LINT), typecheck
 # (ADDW_RECIPE_TYPECHECK), tests (ADDW_RECIPE_TESTS_AFFECTED). Every rung runs
 # even after an earlier one fails, and a missing or empty key reports
 # "skipped (no recipe)". Stdout carries exactly one summary line; recipe output
 # goes to stderr. Exit 0 iff no rung failed, 1 on any failure, 2 on usage
-# errors or an unreadable config.
+# errors; a missing, unreadable, or invalid config exits 66, 77, or 78
+# (EX_CONFIG) with the reader's diagnostic.
 set -euo pipefail
 
-config="docs/addw.env"
-if [ "${1:-}" = "--config" ]; then
-  if [ "$#" -lt 2 ]; then
-    printf 'gate.sh: --config requires a file argument\n' >&2
+case "${1:-}" in
+  -*)
+    printf 'gate.sh: unknown option %s — usage: gate.sh [test-path...]\n' "$1" >&2
     exit 2
-  fi
-  config="$2"
-  shift 2
-fi
+    ;;
+esac
 
-if [ ! -r "$config" ]; then
-  printf 'gate.sh: cannot read config: %s\n' "$config" >&2
-  exit 2
-fi
-# Recipes come from the config alone — an exported ADDW_RECIPE_* must not
-# stand in for a key the config doesn't set.
-unset ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED
-# shellcheck disable=SC1090
-. "$config"
+# shellcheck source=../config/config.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/config.sh"
+config_source ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED
 
 quoted_paths=""
 sep=""

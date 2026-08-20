@@ -289,3 +289,59 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Schema 6 → 7
+
+`docs/addw.env` stops being executable shell and becomes **data**: a
+restricted `KEY=value` grammar read by one shared parser
+(`.claude/skills/lib/config/config.sh`), which every skill now goes through —
+nothing sources the file anymore. Why, and the full grammar rationale:
+`skills/lib/README.md`, the `config/` section.
+
+For a conforming config this is a **no-op**: the grammar is a strict subset of
+shell with identical semantics, so a file of plain `KEY=value` assignments,
+blank lines, and full-line comments — which is what addw-init has always
+generated — parses to exactly what sourcing yielded. There is nothing to
+reorder and no step ordering to respect.
+
+### 1. Make the config conform, if it ever stopped
+
+Run the parser's own check; it names every offending line:
+
+```bash
+bash -c '. .claude/skills/lib/config/config.sh && config_get ADDW_SCHEMA'
+```
+
+What a hand-edited file might carry that the grammar rejects, and the fix:
+
+- **Shell logic** (conditionals, command substitution, `export`) — the config
+  can no longer compute; move the logic out and write the literal value.
+- **Trailing comments** (`KEY=value  # why`) — give the comment its own line.
+- **`$`, backtick, or backslash inside double quotes** — single-quote the
+  value instead; it was literal-in-effect either way, because nothing expands
+  a parsed value (a `$` inside a *recipe* still expands when the recipe runs).
+- **Values outside the bare charset left unquoted** — quote them.
+
+A grammar violation now exits 78 (`EX_CONFIG`) in every skill that needs the
+config, with the file:line diagnostic; doctor reports each violation as its
+own FAIL line.
+
+### 2. Note the retired `--config` flag
+
+`gate.sh` and `next-adr-number.sh` no longer take `--config` — both always
+read `docs/addw.env` from the working directory, and 2 is now unambiguously
+their usage-error exit code (bad config is 78). Only their own tests ever
+used the flag; a stale caller gets a usage error, not a misread.
+
+### 3. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=7
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.

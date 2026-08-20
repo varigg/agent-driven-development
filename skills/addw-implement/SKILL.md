@@ -125,7 +125,7 @@ The branch and the assignment are the **in-progress marker** the frontier listin
 not a lock. Push before building, so a second session sees the work exists.
 
 ```bash
-source docs/addw.env
+. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b <type>/<issue-number>-<slug>       # feat/ fix/ docs/ — the type the work will carry
 git push -u origin <type>/<issue-number>-<slug>
@@ -176,7 +176,7 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
   scope**, because the adapter cannot read the tracker:
 
   ```bash
-  source docs/addw.env
+  . .claude/skills/lib/config/config.sh && config_source ADDW_IMPLEMENT_SKILL
   bash ".claude/skills/${ADDW_IMPLEMENT_SKILL:-codex-implement}/scripts/start.sh" \
       <issue-number> "<what to build, from the ticket and the spec's decisions>. \
   Make the tests in <paths> pass. Do NOT modify any test file."
@@ -290,7 +290,7 @@ merge-base-to-working-tree diff** — everything the PR will deliver, not the la
 the ticket and parent spec as context, which the adapter fetches for itself.
 
 ```bash
-source docs/addw.env
+. .claude/skills/lib/config/config.sh && config_source ADDW_CODE_REVIEW_SKILL
 bash ".claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/scripts/start.sh" \
     <issue-number> "$GATE_SUMMARY"
 ```
@@ -337,7 +337,7 @@ uncovered.
 Push the branch and open the PR against `$ADDW_MAIN_BRANCH`:
 
 ```bash
-source docs/addw.env
+. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH
 git push
 gh pr create --base "$ADDW_MAIN_BRANCH" --title "<conventional subject>" --body-file <file>
 ```

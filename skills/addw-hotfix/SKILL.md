@@ -35,7 +35,7 @@ Before proceeding, confirm this is a genuine hotfix:
 ## Step 2: Create Hotfix Branch
 
 ```bash
-source docs/addw.env
+. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b hotfix/[short-description]
 ```

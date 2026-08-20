@@ -76,6 +76,45 @@ lives inside `skills/` rather than at the repo root.
     configuration because the remedy would otherwise mean editing a skill,
     which must stay byte-identical across installs.
 
+- `config/config.sh` — the shared reader for `docs/addw.env`, and the only
+  code that opens it: every consumer — scripts and SKILL.md snippets alike —
+  goes through `config_get` (line-per-key stdout) or `config_source`
+  (set-in-the-caller, unset-first). The config is **data** in a restricted
+  `KEY=value` grammar, never sourced; the grammar itself lives in the
+  script's header, and this section owns the why.
+  Parse-don't-execute is the design. A config that nothing executes has no
+  exit status, no stdout, no way to `exit` the tool, no partial application
+  on a mid-file error — and unset-first means an exported environment value
+  can never stand in for a key the file does not set. That deletes five
+  defect classes at once instead of defending against them at every site.
+  The defect history is why the seam exists: #46 and #56 fixed the same
+  exit-status conflation twice (`.` returns the status of the config's *last
+  command*, which under `set -e` reads a shell-clean config ending on a
+  false conditional as a failure), and the per-site defensive idiom —
+  `bash -n`, subshell isolation, stdout discard, unset-first, `|| true` —
+  kept growing new copies as read sites multiplied, with per-key
+  absent-value policies diverging between them (#57, absorbed into #58).
+  Centralizing those defenses instead would have treated the symptom: the
+  execution threat model survives, one layer deeper. Removing execution
+  removes it.
+  The strictness rule: anything whose shell reading and parsed reading could
+  diverge is rejected with its line number, so every *accepted* file is a
+  strict subset of shell with identical semantics — which is what made the
+  schema-7 migration a no-op for conforming configs, guarantees single-line
+  values (the soundness of the line-per-key protocol), and keeps `KEY=`
+  distinguishable from an absent key, the distinction doctor's
+  deliberate-skip checks stand on.
+  The error contract: 66 (EX_NOINPUT) missing, 77 (EX_NOPERM) unreadable,
+  78 (EX_CONFIG) grammar violation. Whether a *missing* config is fatal
+  stays per-caller — runtime scripts fall back to their defaults, gate and
+  next-adr refuse, doctor FAILs — while a present-but-invalid config is
+  fatal in every caller at 78, except doctor, which keeps its
+  report-don't-abort style: one FAIL line per violation, then stop before
+  the checks that depend on the config. Rejected alternatives: dotenv-style
+  loose quoting, which accepts files whose shell and parsed readings
+  silently diverge, and a Python reader, a new runtime dependency for a job
+  this small.
+
 - `templates/` — shipped, project-agnostic templates that ride along with the
   wholesale skills copy. `adr.md` holds the ADR format and its authoring rules;
   it belongs with the skills because the format is not project state and a
@@ -176,11 +215,10 @@ lives inside `skills/` rather than at the repo root.
   the key derivation, the prompt-template substitution, and the model/effort
   resolution (`ADDW_CODEX_MODEL_IMPL` / `ADDW_CODEX_MODEL_REVIEW` /
   `ADDW_CODEX_EFFORT` from the project config, `CODEX_MODEL` / `CODEX_EFFORT`
-  as per-run overrides). Those three are read in a subshell, so neither the
-  config's exit status nor an `exit` inside it can stop an adapter: `.` returns
-  the status of the config's *last command*, and a shell-clean config ending on
-  a false conditional is no defect. A config that fails to *parse* is one, and
-  exits 78 with the parser's diagnostic.
+  as per-run overrides). Those three come through `config/config.sh` like
+  every other config read: a missing config just means the defaults, and a
+  config that fails to parse exits 78 with the reader's line-numbered
+  diagnostic.
   The exception: model *class* is chosen by matching the caller's `STATE_DIR`
   against `*codex-implement*`, so implementation gets the implementation-class
   model and everything else the review-class one. That is the layer knowing one

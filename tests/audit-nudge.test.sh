@@ -85,6 +85,20 @@ out="$(run_in "$d")"
 assert_contains "$out" "NUDGE: 1 release tags since the last maintenance audit (threshold 1)" \
   "threshold: ADDW_AUDIT_NUDGE_N=1 nudges on the first post-audit tag"
 
+# --- an invalid config is a real error, never a silent default --------------
+#
+# The line is advice, but a docs/addw.env the grammar rejects must not be
+# read as "no threshold configured": that would advise from a config the
+# project never wrote. 78 (EX_CONFIG), like every fatal config reader.
+
+d="$(make_repo badconfig)"
+mkdir -p "$d/docs"
+printf 'ADDW_AUDIT_NUDGE_N=$THRESHOLD\n' >"$d/docs/addw.env"
+commit_at "$d" 1000 "chore: init"
+status=0
+run_in "$d" >/dev/null 2>&1 || status=$?
+assert_eq 78 "$status" "badconfig: a grammar-rejected config exits 78"
+
 # --- a mention of the subject mid-line is not an audit commit ---------------
 
 d="$(make_repo mention)"

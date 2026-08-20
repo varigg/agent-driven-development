@@ -238,14 +238,26 @@ so there is one place to change them.
 ### 2.7 `docs/addw.env`
 
 The project config, and the reason skills stay byte-identical across
-installs. It must be shell-sourceable — scripts `source` it directly, so a
-syntax error here breaks skills far from the edit.
+installs. It is **data, not shell**: a restricted `KEY=value` grammar parsed
+by the shared reader in `.claude/skills/lib/config/`, never sourced. Write
+the file with the header below verbatim — it teaches the grammar to whoever
+edits the file next, and the parser rejects a violating line by number.
 
 ```bash
 # docs/addw.env — ADDW project configuration. Created by addw-init.
 # Skills read this at runtime; never edit a skill to change these values.
+#
+# This file is DATA, not shell: one KEY=value per line, parsed by the shared
+# reader in .claude/skills/lib/config/ — never sourced. Blank lines and
+# full-line # comments are fine; trailing comments, `export`, and line
+# continuations are not. Values are bare (letters, digits, . _ - / only),
+# 'single-quoted' (fully literal, no embedded single quote), or
+# "double-quoted" (literal; embedded single quotes fine; $, backtick, and
+# backslash are rejected — single-quote those instead). KEY= means
+# deliberately empty, which is distinct from deleting the key.
+#
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=6
+ADDW_SCHEMA=7
 ADDW_PROJECT_NAME="<project name>"
 # The file a release writes the version into. Empty is valid and means the
 # project has no version manifest to write — the release then carries the

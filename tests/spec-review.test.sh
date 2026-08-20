@@ -46,7 +46,7 @@ mkdir -p "$INSTALL/skills/codex-spec-review" \
          "$INSTALL/bin" \
          "$INSTALL/state"
 cp -R "$SKILL/scripts" "$SKILL/prompts" "$INSTALL/skills/codex-spec-review/"
-cp -R "$REPO/skills/lib/codex" "$INSTALL/skills/lib/"
+cp -R "$REPO/skills/lib/codex" "$REPO/skills/lib/config" "$INSTALL/skills/lib/"
 
 # Recording stand-in for the tracker layer: appends every call to
 # $TRACKER_LOG and serves the canned body/title the test wrote.

@@ -6,11 +6,17 @@
 #
 # Usage: audit-nudge.sh          (run from the repo root)
 # Prints one line: "NUDGE: ..." when the threshold is reached, else "OK: ...".
-# Exit 0 either way; nonzero only on real errors.
+# Exit 0 either way; nonzero only on real errors — an invalid docs/addw.env is
+# one, and exits 78 (EX_CONFIG); a missing config just means the default.
 
 set -euo pipefail
 
-[ -f docs/addw.env ] && source docs/addw.env
+# shellcheck source=../config/config.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/config.sh"
+config_source ADDW_AUDIT_NUDGE_N || {
+    config_status=$?
+    [ "$config_status" -eq 66 ] || exit "$config_status"
+}
 THRESHOLD="${ADDW_AUDIT_NUDGE_N:-5}"
 
 # Reference point: the last maintenance audit commit, found by its mandated

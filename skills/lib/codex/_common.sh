@@ -15,39 +15,19 @@ mkdir -p "$STATE_DIR"
 # codex skills: the fallbacks in that resolution are the defaults, a project
 # overrides them from docs/addw.env, and CODEX_MODEL / CODEX_EFFORT override
 # both per run.
-# The three config keys come from the config alone. Clearing them first stops
-# a value inherited from the environment from making an unconfigured project
-# look configured, which is the property the other config readers hold too. The
-# subshell below inherits the cleared state, so it needs no unset of its own.
-unset ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT
-if [ -f "docs/addw.env" ]; then
-    # A config that cannot be parsed is a defect and stays fatal; only the
-    # sourcing's exit status is forgiven below. The parser's own diagnostic
-    # is relayed because this runs mid-workflow, where the line number is
-    # the whole remedy.
-    if ! config_error="$(bash -n "docs/addw.env" 2>&1)"; then
-        echo "error: docs/addw.env is not shell-sourceable" >&2
-        [ -z "$config_error" ] || printf '%s\n' "$config_error" >&2
-        exit 78
-    fi
-
-    # Read only the runner's keys in a subshell. The config's stdout is
-    # discarded, and its status or an exit inside it cannot reach this shell.
-    # One read per key, in the order printed, so no index has to be kept in
-    # step with the printf below.
-    {
-        IFS= read -r ADDW_CODEX_MODEL_IMPL || true
-        IFS= read -r ADDW_CODEX_MODEL_REVIEW || true
-        IFS= read -r ADDW_CODEX_EFFORT || true
-    } < <(
-        # shellcheck disable=SC1091
-        . "docs/addw.env" >/dev/null || true
-        printf '%s\n' \
-            "${ADDW_CODEX_MODEL_IMPL:-}" \
-            "${ADDW_CODEX_MODEL_REVIEW:-}" \
-            "${ADDW_CODEX_EFFORT:-}"
-    )
-fi
+# The config is read through the shared reader, whose config_source keys come
+# from the file alone (unset-first, so a value inherited from the environment
+# cannot make an unconfigured project look configured). A missing config is an
+# unconfigured project and the defaults below apply; an invalid one is a
+# defect and stays fatal (78, EX_CONFIG), with the parser's line-numbered
+# diagnostic relayed because this runs mid-workflow, where the line number is
+# the whole remedy.
+# shellcheck source=../config/config.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/config.sh"
+config_source ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT || {
+    config_status=$?
+    [ "$config_status" -eq 66 ] || exit "$config_status"
+}
 case "$STATE_DIR" in
     *codex-implement*) CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_IMPL:-gpt-5.6-luna}}" ;;
     *)                 CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_REVIEW:-gpt-5.6-sol}}" ;;

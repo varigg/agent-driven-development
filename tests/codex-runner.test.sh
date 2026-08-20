@@ -160,16 +160,14 @@ done
 [ ! -e "$INSTALL/skills/lib/state" ] \
   || fail "adapters: state leaked into the shared layer"
 
-# --- 5. the project config cannot take the runner down ---------------------
+# --- 5. the project config is data, parsed by the shared reader ------------
 
-# `.` returns the exit status of the config's LAST command, not of the
-# sourcing. Under `set -e` that conflates two events the runner must keep
-# apart: a config that FAILS TO PARSE is a real defect and stays fatal, while
-# a shell-clean config whose last command happens to return false is not a
-# defect at all and must not stop anything. The runner is on the path of all
-# four adapters, so this is asserted through each entry point rather than
-# against the sourced helper — the helper can be correct while the adapters
-# still die.
+# The config is never sourced: the shared reader parses it as data, so a
+# config has no exit status, no stdout, and no way to stop an adapter — the
+# only config failure left is a file the grammar rejects, which is a real
+# defect and fatal (78). The runner is on the path of all four adapters, so
+# both halves are asserted through each entry point rather than against the
+# sourced helper — the helper can be correct while the adapters still die.
 #
 # Each case gets its own project root, because the config is read from the
 # working directory, exactly as a session would.
@@ -190,10 +188,9 @@ start_in() { # <project-root> <state-dir> <skill> <target...>
 # The two model keys carry distinct values so that each adapter is shown to
 # read its OWN key rather than whichever one happens to be set: the impl flow
 # runs ADDW_CODEX_MODEL_IMPL, every review flow runs ADDW_CODEX_MODEL_REVIEW.
-trailing_false="$(new_project trailing-false 'ADDW_CODEX_MODEL_IMPL="impl-from-config"
+configured="$(new_project configured 'ADDW_CODEX_MODEL_IMPL="impl-from-config"
 ADDW_CODEX_MODEL_REVIEW="review-from-config"
 ADDW_CODEX_EFFORT="effort-from-config"
-[ -n "${ADDW_NOT_SET:-}" ]
 ')"
 
 for case in "codex-ask a-topic review" "codex-implement 42 impl" \
@@ -201,15 +198,15 @@ for case in "codex-ask a-topic review" "codex-implement 42 impl" \
   # shellcheck disable=SC2086
   set -- $case
   skill="$1" target="$2" flow="$3"
-  out="$(start_in "$trailing_false" "$work/tf-$skill" "$skill" "$target" 2>&1)" \
-    || fail "$skill: a config ending on a false conditional stopped the adapter: $out"
+  out="$(start_in "$configured" "$work/cfg-$skill" "$skill" "$target" 2>&1)" \
+    || fail "$skill: a conforming config stopped the adapter: $out"
   assert_contains "$out" "$flow-from-config" \
-    "$skill: config ending false — the model key is still read"
+    "$skill: the flow's own model key is read from the config"
   assert_contains "$out" "effort-from-config" \
-    "$skill: config ending false — the effort key is still read"
+    "$skill: the effort key is read from the config"
 done
 
-# A config that cannot be parsed is the defect CLAUDE.md deliberately keeps
+# A config that cannot be parsed is the defect the config contract deliberately keeps
 # fatal. Whatever makes the case above survivable must not swallow it: it
 # fails, it names the config, and it exits 78 (EX_CONFIG) so a caller can tell
 # a config defect from a Codex failure (1) or a live thread (2).
@@ -262,4 +259,4 @@ assert_contains "$out" "effort-from-config" \
 assert_not_contains "$out" "model-from-the-environment" \
   "config silent on the key: an inherited key never stands in for it"
 
-echo "codex runner: shared-layer home, required state/prompt, adapter wiring, config sourcing, inventory"
+echo "codex runner: shared-layer home, required state/prompt, adapter wiring, config parsing, inventory"
