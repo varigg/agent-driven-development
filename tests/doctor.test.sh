@@ -102,7 +102,7 @@ mkdir -p "$BASE/project" "$BASE/home"
   # backtick belongs, and an expanding one would corrupt it silently. The one
   # interpolated value is appended instead.
   cat > docs/addw.env <<'ENV'
-ADDW_SCHEMA=6
+ADDW_SCHEMA=7
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
@@ -329,6 +329,22 @@ run "$d"
 assert_eq 1 "$RUN_STATUS" "config: a missing docs/addw.env is unhealthy"
 assert_contains "$RUN_OUT" "docs/addw.env" \
   "config: the failing line names the config file"
+
+# A config the grammar rejects: each violation becomes its own FAIL line
+# carrying the parser's file:line diagnostic, and doctor stops before the
+# dependent checks so the actionable line is not buried under a cascade of
+# consequences.
+d="$(case_dir badconfig)"
+printf 'export ADDW_EXTRA=1\nADDW_ALSO="a$b"\n' >> "$d/project/docs/addw.env"
+badline=$(( $(wc -l < "$d/project/docs/addw.env") - 1 ))
+run "$d"
+assert_eq 1 "$RUN_STATUS" "grammar: a rejected config is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: docs/addw.env:$badline:" \
+  "grammar: each violation is a FAIL line with its line number"
+assert_contains "$RUN_OUT" "FAIL: docs/addw.env:$((badline + 1)):" \
+  "grammar: every violation is reported, not just the first"
+assert_not_contains "$RUN_OUT" "ADDW_SCHEMA" \
+  "grammar: doctor stops before the checks that depend on the config"
 
 # --- the generation marker and the migrated state (#13) --------------------
 

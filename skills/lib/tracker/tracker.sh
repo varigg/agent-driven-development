@@ -42,6 +42,8 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOLVE="$here/resolve.sh"
 PARSE="$here/parse.sh"
+# shellcheck source=../config/config.sh
+. "$here/../config/config.sh"
 
 # The resolver's snapshot shape. --limit raises gh's default of 30.
 FIELDS='number,title,state,stateReason,labels,assignees,body'
@@ -59,19 +61,15 @@ usage() {
 # It assigns a global rather than printing one, so the refusals below exit the
 # script instead of a command substitution's subshell.
 resolve_fetch_limit() {
+  # The shared reader answers from the file alone, so a value inherited from
+  # the environment cannot make an unconfigured project look configured. A
+  # missing config means the default; an invalid one is a defect and takes
+  # the seam down with the parser's diagnostic (78, EX_CONFIG).
   local configured=""
-  if [ -r "$CONFIG" ]; then
-    # Read in a subshell: many scripts source this config, and neither a
-    # non-zero status nor an `exit` inside it may take the seam down with it.
-    # The key is cleared first so a value inherited from the environment
-    # cannot make an unconfigured project look configured.
-    configured="$(
-      unset ADDW_TRACKER_FETCH_LIMIT
-      # shellcheck disable=SC1090,SC1091
-      . "$CONFIG" >/dev/null 2>&1 || true
-      printf '%s' "${ADDW_TRACKER_FETCH_LIMIT:-}"
-    )"
-  fi
+  configured="$(config_get ADDW_TRACKER_FETCH_LIMIT)" || {
+    local config_status=$?
+    [ "$config_status" -eq 66 ] || exit "$config_status"
+  }
   [ -n "$configured" ] || configured=$FETCH_LIMIT_DEFAULT
   # Checked here rather than by the tracker CLI, which would reject it with its
   # own diagnostic several layers from the config line that caused it.

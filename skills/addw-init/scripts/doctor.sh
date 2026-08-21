@@ -21,7 +21,7 @@ set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
 # UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
-EXPECTED_SCHEMA=6
+EXPECTED_SCHEMA=7
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
@@ -30,31 +30,36 @@ bad() {
     doctor_fail=1
 }
 
-# Config values come from docs/addw.env alone. In particular, an exported
-# recipe must not make an absent recipe key look defined.
-unset ADDW_SCHEMA ADDW_PROJECT_NAME ADDW_VERSION_FILE ADDW_MAIN_BRANCH \
+# The config is data read through the shared parser, which answers from the
+# file alone — in particular, an exported recipe cannot make an absent recipe
+# key look defined, because config_source unsets every requested key first.
+# shellcheck source=../../lib/config/config.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../lib" && pwd)/config/config.sh"
+
+# The config decides where half the later checks look, so an unusable one is
+# the only failure that stops the run: continuing would bury one actionable
+# line under a cascade of consequences. Grammar violations become one FAIL
+# line each, carrying the parser's file:line diagnostic.
+config_diag="$(config_get ADDW_SCHEMA 2>&1 >/dev/null)"
+config_status=$?
+if [ "$config_status" -ne 0 ]; then
+    case "$config_status" in
+        66) bad "docs/addw.env missing (generation-2 install? see UPGRADING.md)" ;;
+        77) bad "docs/addw.env exists but cannot be read" ;;
+        *) while IFS= read -r diag_line; do
+               [ -n "$diag_line" ] && bad "$diag_line"
+           done <<< "$config_diag" ;;
+    esac
+    echo "UNHEALTHY: fix the FAIL lines above"
+    exit 1
+fi
+ok "docs/addw.env parses"
+config_source ADDW_SCHEMA ADDW_PROJECT_NAME ADDW_VERSION_FILE ADDW_MAIN_BRANCH \
     ADDW_AUDIT_NUDGE_N ADDW_ADR_DIR ADDW_ADR_TEMPLATE ADDW_RECIPE_LINT \
     ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED \
     ADDW_RECIPE_LOCKFILE_SYNC ADDW_LOCKFILE \
     ADDW_PLAN_REVIEW_SKILL ADDW_ASK_SKILL \
     ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL
-
-# The config decides where half the later checks look, so an unusable one is
-# the only failure that stops the run: continuing would bury one actionable
-# line under a cascade of consequences.
-if [ ! -f docs/addw.env ]; then
-    bad "docs/addw.env missing (generation-2 install? see UPGRADING.md)"
-    echo "UNHEALTHY: fix the FAIL lines above"
-    exit 1
-fi
-if ! bash -n docs/addw.env 2>/dev/null; then
-    bad "docs/addw.env is not shell-sourceable"
-    echo "UNHEALTHY: fix the FAIL lines above"
-    exit 1
-fi
-ok "docs/addw.env parses"
-# shellcheck disable=SC1091
-. docs/addw.env
 
 required_keys=(
     ADDW_SCHEMA

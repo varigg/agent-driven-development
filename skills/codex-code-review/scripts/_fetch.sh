@@ -34,6 +34,8 @@ if [ ! -f "$TRACKER" ] || [ ! -f "$PARSE" ]; then
     echo "       skills/lib must be installed alongside the skills." >&2
     exit 1
 fi
+# shellcheck source=../../lib/config/config.sh
+. "$LIB/config/config.sh"
 
 require_issue_number() {
     case "${1:-}" in
@@ -50,26 +52,16 @@ build_context() {
     mkdir -p "$(dirname "$file")"
     body="$(bash "$TRACKER" body "$issue")"
 
-    # Command substitution is already a subshell, so the config's other keys
-    # never reach the caller. Unsetting first keeps an exported value from
-    # making an unconfigured project look configured, and the source's own
-    # stdout is discarded so only the key's value is captured.
-    #
-    # The key is read after the source regardless of its exit status: `.`
-    # returns the status of the config's last command, so gating on it would
-    # report a correctly-configured project as unconfigured whenever its
-    # config happens to end on a conditional. A config that fails to parse
-    # says so on stderr and leaves the key unset, which the absent branch
-    # below already covers; one that calls `exit` takes the subshell with it,
-    # so the assignment itself falls back rather than aborting the review.
-    adr_dir="$(
-        unset ADDW_ADR_DIR
-        if [ -r "docs/addw.env" ]; then
-            # shellcheck disable=SC1091
-            . "docs/addw.env" >/dev/null || true
-        fi
-        printf '%s' "${ADDW_ADR_DIR:-}"
-    )" || adr_dir=""
+    # The shared reader answers from the file alone (unset-first inside), so
+    # an exported ADDW_ADR_DIR never makes an unconfigured project look
+    # configured. A missing config is the absent case the buffer already
+    # states explicitly; an invalid one is a defect and fatal (78,
+    # EX_CONFIG), with the parser's line-numbered diagnostic on stderr.
+    adr_dir="$(config_get ADDW_ADR_DIR)" || {
+        config_status=$?
+        [ "$config_status" -eq 66 ] || exit "$config_status"
+        adr_dir=""
+    }
 
     {
         printf '# Ticket #%s — %s\n\n' "$issue" "$(bash "$TRACKER" title "$issue")"

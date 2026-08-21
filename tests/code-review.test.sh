@@ -41,7 +41,7 @@ mkdir -p "$INSTALL/skills/codex-code-review" \
          "$INSTALL/skills/lib/tracker" \
          "$INSTALL/bin"
 cp -R "$SKILL/scripts" "$SKILL/prompts" "$INSTALL/skills/codex-code-review/"
-cp -R "$REPO/skills/lib/codex" "$INSTALL/skills/lib/"
+cp -R "$REPO/skills/lib/codex" "$REPO/skills/lib/config" "$INSTALL/skills/lib/"
 cp "$REPO/skills/lib/tracker/parse.sh" "$INSTALL/skills/lib/tracker/parse.sh"
 
 # Recording stand-in for the tracker layer: appends every call to $TRACKER_LOG
@@ -172,20 +172,21 @@ out="$(run_start "$project" "$state" 15 2>&1)" \
 assert_contains "$(cat "$state/issue-15.context.md")" "ADDW_ADR_DIR" \
   "empty ADR dir: reported as unresolved, not as a configured directory"
 
-# `.` returns the exit status of the config's LAST command, so a shell-clean
-# config ending on a false conditional must still yield its ADR directory —
-# gating the read on that status would report a configured project as
-# unconfigured, which is the silent pass this ticket exists to kill, one layer
-# down. Asserted through the adapter entry point, which covers this wrapper's
-# read and the shared runner's sourcing of the same config in one pass.
-project="$(new_project trailing-false 'ADDW_ADR_DIR="docs/decisions"
+# The config is data parsed by the shared reader, never sourced — so a file
+# the grammar rejects is a defect the review must not paper over as "no ADR
+# directory configured": it exits 78 (EX_CONFIG) with the parser's
+# line-numbered diagnostic. Asserted through the adapter entry point, which
+# covers this wrapper's read of the same config the shared runner parses.
+project="$(new_project rejected 'ADDW_ADR_DIR="docs/decisions"
 [ -n "${ADDW_NOT_SET:-}" ]
 ')"
-state="$work/state-trailing-false"
-out="$(run_start "$project" "$state" 16 2>&1)" \
-  || fail "start.sh (config ending false): exited non-zero: $out"
-assert_contains "$(cat "$state/issue-16.context.md")" "docs/decisions" \
-  "config ending on a false conditional: the directory still resolves"
+state="$work/state-rejected"
+status=0
+out="$(run_start "$project" "$state" 16 2>&1)" || status=$?
+assert_eq 78 "$status" \
+  "grammar-rejected config: fatal with 78, never read as unconfigured"
+assert_contains "$out" "docs/addw.env:2:" \
+  "grammar-rejected config: the diagnostic names the offending line"
 
 # --- the checklist names no directory --------------------------------------
 
