@@ -80,6 +80,21 @@ things:
 - **`no-children`** → refuse: decomposition never happened, so there is no
   completed intent to release.
 
+A spec that clears the child-completion check still owes one more read before
+it counts as ready — its own text can promise something no ticket carries.
+Verify it the same way for every spec this step considers, named or picked
+from `release-ready-specs` below:
+
+```bash
+bash .claude/skills/lib/tracker/tracker.sh body <n> | bash .claude/skills/lib/release/adr-check.sh
+```
+
+Silent output and exit 0 mean nothing is owed, or it is already satisfied —
+move on. A non-zero exit means the spec's Implementation Decisions promised an
+ADR that never landed in the commits this release is about to project: refuse
+exactly as the open-children case does, naming the spec and the unmet
+obligation printed on stderr, and stop.
+
 **The invocation names nothing** — decide from the `release-ready-specs`
 section:
 
@@ -104,8 +119,10 @@ section:
              | select(any(.labels[]; .name == "spec")) | .number'
   ```
 
-  Run `spec-complete` on each. Any spec whose children are all closed, with at
-  least one not planned, is a release candidate: name it and its abandoned
+  Run `spec-complete` on each, then the same ADR-obligation check above —
+  a not-planned waiver does not excuse a promised ADR. Any spec whose children
+  are all closed, with at least one not planned, and whose ADR obligation (if
+  any) is satisfied, is a release candidate: name it and its abandoned
   tickets, and offer it. If none qualifies, it is a **repository release** —
   it tags whatever the main branch has accumulated since the last tag and
   **closes nothing**. Say that explicitly, since it is the mode that silently

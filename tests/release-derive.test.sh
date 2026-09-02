@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # Contract: skills/lib/release/derive.sh — mechanical release derivations.
 #
-#   derive.sh <changelog|version>
+#   derive.sh <changelog|version|range>
 #
-# Both subcommands read the same commit range of the repository at the
-# current working directory: every commit since the last tag reachable from
-# HEAD (git describe --tags --abbrev=0), or the whole history when no tag
-# exists. A commit qualifies iff its subject parses as a conventional commit
+# All three read the same commit range of the repository at the current
+# working directory: every commit since the last tag reachable from HEAD
+# (git describe --tags --abbrev=0), or the whole history when no tag exists.
+# A commit qualifies iff its subject parses as a conventional commit
 # (`type(scope)?!?: description`) and is not a release commit (type
 # `release`, or type `chore` with scope `release` — excluded). Unclassifiable
 # subjects are warned and listed on stderr, never silently dropped.
+#
+#   range      stdout is that same range as `<last-tag>..HEAD`, or `HEAD`
+#              with no tag — for another script to reuse without recomputing
+#              which tag bounds it. Unlike version/changelog it never
+#              gathers commit subjects, so an empty range still exits zero.
 #
 #   version    stdout is exactly two lines:
 #                bump: <major|minor|patch>
@@ -198,6 +203,19 @@ assert_exit 2 "usage: missing subcommand → exit 2" \
   bash -c "cd '$mixed' && bash '$DERIVE'"
 assert_exit 2 "usage: unknown subcommand → exit 2" \
   bash -c "cd '$mixed' && bash '$DERIVE' bump"
+
+# --- range: the same tag boundary version/changelog derive from ------------
+
+out="$(cd "$mixed" && bash "$DERIVE" range 2>/dev/null)"
+assert_eq "v1.2.3..HEAD" "$out" "range: bounded by the last tag"
+out="$(cd "$untagged" && bash "$DERIVE" range 2>/dev/null)"
+assert_eq "HEAD" "$out" "range: no tag → the whole history"
+assert_exit 2 "range: unparseable last tag → exit 2, same as version/changelog" \
+  bash -c "cd '$badtag' && bash '$DERIVE' range"
+# range never gathers commit subjects, so a range with nothing qualifying
+# (or nothing at all) still prints rather than exiting 1 like changelog does.
+assert_exit 0 "range: an empty range still exits zero" \
+  bash -c "cd '$quiet' && bash '$DERIVE' range"
 
 plain="$work/plain"
 mkdir "$plain"

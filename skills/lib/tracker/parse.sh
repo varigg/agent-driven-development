@@ -6,14 +6,22 @@
 # items carry edges; prose references are never extracted. The none-sentinel
 # and an absent section both mean "no edges" and need no special-casing.
 #
+# adr-obligation reads to-spec's contract instead: a level-2
+# "## Implementation Decisions" section, whose list items are free prose. It
+# looks for the durable structural signal (a list item, in that section) that
+# something ADR-shaped was promised, rather than matching a specific phrase
+# anywhere in the body.
+#
 # Usage:
 #   parse.sh parent [file]            -> spec issue number, or empty (exit 0)
 #   parse.sh blockers [file]          -> blocker numbers one per line (exit 0)
+#   parse.sh adr-obligation [file]    -> matching Implementation Decisions
+#                                         list items, one per line, or empty (exit 0)
 #   parse.sh classify-reason <reason> -> "completed" | "not-planned" (else exit 2)
 #   parse.sh body-hash [file]         -> truncated body sha256 (exit 0)
 #   parse.sh approval-hash [file]     -> last recorded body hash, or empty (exit 0)
 #
-# parent/blockers read the issue body from <file> or stdin.
+# parent/blockers/adr-obligation read the issue body from <file> or stdin.
 set -euo pipefail
 
 usage() {
@@ -40,6 +48,28 @@ section_refs() { # section-name
         if (pre !~ /[[:alnum:]]/) print substr(rest, RSTART + 1, RLENGTH - 1)
         rest = substr(rest, RSTART + RLENGTH)
       }
+    }
+  '
+}
+
+# Print each list item's text within "## Implementation Decisions" that
+# mentions ADR as a standalone word: padding the lowercased item with a
+# leading/trailing space lets one regex catch the word at either edge, and
+# a plural ("ADRs") counts, but "quadrant" or "hadrian" do not.
+adr_obligations() {
+  awk '
+    /^#+[[:space:]]/ || /^#+$/ {
+      heading = $0
+      sub(/^#+[[:space:]]*/, "", heading)
+      gsub(/[[:space:]]+$/, "", heading)
+      insec = ($0 ~ /^##[^#]/) && (tolower(heading) == "implementation decisions")
+      next
+    }
+    insec && /^[[:space:]]*[-*+][[:space:]]/ {
+      item = $0
+      sub(/^[[:space:]]*[-*+][[:space:]]+/, "", item)
+      padded = " " tolower(item) " "
+      if (padded ~ /[^a-z]adrs?[^a-z]/) print item
     }
   '
 }
@@ -86,6 +116,9 @@ case "$cmd" in
     ;;
   blockers)
     body "$@" | section_refs "Blocked by" | awk '!seen[$0]++'
+    ;;
+  adr-obligation)
+    body "$@" | adr_obligations
     ;;
   classify-reason)
     [ "$#" -eq 1 ] || usage

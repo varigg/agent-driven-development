@@ -3,7 +3,7 @@
 # directory, from one commit-collection pass shared by every subcommand. Why
 # the derivations and the changelog write both live here: ../README.md.
 #
-# Usage: derive.sh <changelog|version|prepend>
+# Usage: derive.sh <changelog|version|prepend|range>
 #
 # Range: every commit since the last tag reachable from HEAD (git describe
 # --tags --abbrev=0), or the whole history when no tag exists. A commit
@@ -25,9 +25,14 @@
 #              when absent), and prints one `done:`/`skip:` line. Re-running
 #              skips an entry already present, so a re-attempted release
 #              branch does not double-write.
+#   range      stdout: the commit range above (`<last-tag>..HEAD`, or `HEAD`
+#              with no tag) as `git log`/`git diff` accept it — so another
+#              script can inspect the same commits without re-deriving which
+#              tag bounds them.
 #
-# Exit 0 on success; 1 when no commit in the range qualifies; 2 on usage
-# errors, outside a git work tree, in a shallow clone
+# Exit 0 on success; 1 when no commit in the range qualifies (version,
+# changelog, and prepend only — range has no such commit-qualifying step);
+# 2 on usage errors, outside a git work tree, in a shallow clone
 # (truncated history cannot be projected), when git log itself fails, or on
 # a last tag that is not X.Y.Z / vX.Y.Z.
 set -euo pipefail
@@ -36,9 +41,9 @@ CHANGELOG=CHANGELOG.md
 
 sub="${1:-}"
 case "$sub" in
-  changelog | version | prepend) ;;
+  changelog | version | prepend | range) ;;
   *)
-    printf 'derive.sh: usage: derive.sh <changelog|version|prepend>\n' >&2
+    printf 'derive.sh: usage: derive.sh <changelog|version|prepend|range>\n' >&2
     exit 2
     ;;
 esac
@@ -67,6 +72,11 @@ if [ -n "$last_tag" ]; then
   range="$last_tag..HEAD"
 else
   range="HEAD"
+fi
+
+if [ "$sub" = "range" ]; then
+  printf '%s\n' "$range"
+  exit 0
 fi
 
 if ! subjects="$(git log --format=%s "$range")"; then
