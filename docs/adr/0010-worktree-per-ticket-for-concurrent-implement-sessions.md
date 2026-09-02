@@ -9,15 +9,23 @@ sessions working different frontier tickets from the same clone could not each h
 own branch checked out at once — autonomous parallel execution of the frontier was blocked
 by shared-checkout collision, not by review capacity. The fix: a config-gated,
 default-on worktree-per-ticket mode. When `ADDW_IMPLEMENT_WORKTREE` is unset or `true`, Step
-3 fetches `$ADDW_MAIN_BRANCH` and runs
-`git worktree add -b <type>/<issue>-<slug> <path> "origin/$ADDW_MAIN_BRANCH"` — branching off
-the remote-tracking ref rather than this checkout's own branch, since a concurrent session's
-`checkout && pull` right here would recreate the exact shared-working-tree race this mode
-exists to remove — and every later Mode-B step runs from that worktree instead of the
-original checkout; any other value keeps the old in-place `git checkout -b`. `<path>` defaults
-to a sibling directory of the
-repo root (`../<repo-basename>-worktrees/<issue>-<slug>`), overridable via
-`ADDW_WORKTREE_ROOT`. Plain `git worktree` was chosen over Claude Code's Agent-tool
+3 runs `skills/lib/worktree/create.sh "$ADDW_MAIN_BRANCH" <type>/<issue>-<slug> <path>`,
+which fetches and branches off the **remote-tracking** ref rather than this checkout's own
+branch — a concurrent session's `checkout && pull` right here would recreate the exact
+shared-working-tree race this mode exists to remove, and a plain `git fetch` never touches
+this checkout's working tree or index — and every later Mode-B step runs from that worktree
+instead of the original checkout; any other value keeps the old in-place `git checkout -b`.
+`<path>` defaults to a sibling directory of the repo root
+(`../<repo-basename>-worktrees/<issue>-<slug>`), overridable via `ADDW_WORKTREE_ROOT`. Mode A
+(review-comments resume) gets a matching fix: `skills/lib/worktree/find.sh <branch>` locates
+the worktree, if any, already holding a ticket's branch, so a resume enters it instead of
+attempting a second checkout of a branch git refuses to check out twice. The mechanism is
+scripted rather than left as inline instructions because it meets ADR 0004's bar: fully
+specified by the project config and files on disk, project-agnostic, and a real
+multi-step-command failure mode — branching off the wrong ref, or a raw symlink copy that
+silently escapes the new worktree, are exactly the errors a passing skim of agent-authored
+shell would not catch; `tests/worktree.test.sh` exercises both scripts against real local git
+repositories. Plain `git worktree` was chosen over Claude Code's Agent-tool
 `isolation: "worktree"` option because `addw-implement` cannot assume it was launched via
 that tool — orchestrating how concurrent sessions get started stays out of scope — and a
 harness-native mechanism would make the skill non-portable to other invoking agents (e.g.
@@ -25,9 +33,9 @@ Codex); `codex-implement`'s `--sandbox workspace-write` is already cwd-scoped an
 cleanly with a plain `cd` into the worktree, so no isolation-stacking is needed. This repo's
 own dogfood setup keeps `.claude/skills` as a gitignored symlink to `skills/`, which `git
 worktree add` — checking out tracked files only — would otherwise leave the new worktree
-without; Step 3 recreates the symlink, pointed at the new worktree's own tracked `skills/`
-copy rather than the original symlink's target verbatim, whenever the main checkout has one
-— a no-op in a real install where `.claude/skills` is an ordinary tracked copy.
+without; `create.sh` recreates the symlink, pointed at the new worktree's own tracked
+`skills/` copy rather than the original symlink's target verbatim, whenever the main checkout
+has one — a no-op in a real install where `.claude/skills` is an ordinary tracked copy.
 
 ## Alternatives Considered
 
@@ -53,6 +61,8 @@ frontier-driven, so isolating them buys nothing and they are unaffected.
 
 ## Gate
 
-A change to Step 3's branch-creation sequence must keep both branches — worktree-enabled and
-disabled — behaving identically to what they replace in every later Mode-B step; a change
-that only updates one path leaves the other silently stale.
+A change to `worktree/create.sh` or `worktree/find.sh` must keep Step 3's two branches
+(worktree-enabled and disabled) and Mode A's resume path in agreement — Mode B decides where
+a ticket's branch lives, and Mode A must always be able to find it, or fall back cleanly when
+worktree mode was off. A change that updates one side and not the other leaves the other
+silently stale.
