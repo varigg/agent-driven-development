@@ -144,9 +144,10 @@ lives inside `skills/` rather than at the repo root.
   with no qualifying commit stops and asks the human, never releasing silently.
 
 - `release/tail.sh` — the re-runnable post-merge tail: the version tag, its
-  push, the GitHub Release, and for a spec release the spec issue's closure —
-  the last of those through `tracker/tracker.sh`, never the tracker CLI
-  directly, since closing an issue is a tracker operation while creating a
+  push, the GitHub Release, and for a spec release each named spec issue's
+  closure (`--spec` is repeatable, since one tag can close more than one
+  spec) — the last of those through `tracker/tracker.sh`, never the tracker
+  CLI directly, since closing an issue is a tracker operation while creating a
   GitHub Release is not.
   Each step skips what is already done, so running the tail twice is harmless
   and an interrupted run completes on the next invocation — the property that

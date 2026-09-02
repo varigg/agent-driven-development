@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 # Contract: skills/lib/release/tail.sh — the re-runnable post-merge tail.
 #
-#   tail.sh [--spec <n>] [--commit <sha>] <version>
+#   tail.sh [--spec <n>]... [--commit <sha>] <version>
 #
 # Run from the repo root after the release PR merged. --commit is that PR's
-# merge commit and is what gets tagged; HEAD is only the default. Four steps,
-# in order, each skipping what is already done so that running the tail twice
-# is harmless and an interrupted run completes on the next invocation:
+# merge commit and is what gets tagged; HEAD is only the default. Three fixed
+# steps, then one per named spec, each skipping what is already done so that
+# running the tail twice is harmless and an interrupted run completes on the
+# next invocation:
 #
 #   1. tag      lay <version> on the release commit, unless already there
 #   2. push     push the tag to origin, unless it is already there
 #   3. release  publish the GitHub Release from the CHANGELOG.md entry for
 #               <version>, unless a release for the tag already exists
-#   4. spec     close the --spec issue as completed, unless already closed;
-#               omitted entirely without --spec (a repository release closes
-#               nothing)
+#   4. spec     close each --spec issue as completed, unless already closed;
+#               --spec is repeatable, one occurrence per spec being closed, and
+#               a number named twice closes it once. Omitted entirely without
+#               --spec (a repository release closes nothing).
 #
 # Each step prints exactly one line to stdout, `done: ...` or `skip: ...`, so
 # the caller can see what an interrupted run had already accomplished.
@@ -314,6 +316,57 @@ assert_contains "$out" "skip: spec #5 already closed" \
   "an already-closed spec issue is skipped"
 assert_not_contains "$(cat "$work/closed-state/gh.log")" "issue close" \
   "a closed spec issue is not closed again"
+
+# --- --spec is repeatable: one tag can close more than one spec ------------
+
+# A fresh multi-spec close: one tag, every named spec closed, one done: line
+# each.
+setup multi
+set_issue multi 2 OPEN
+set_issue multi 3 OPEN
+out="$(run_tail multi --spec 2 --spec 3 v1.2.0)"
+assert_contains "$out" "done: closed spec #2" "the first named spec closes"
+assert_contains "$out" "done: closed spec #3" "the second named spec closes"
+assert_eq 5 "$(printf '%s\n' "$out" | grep -c .)" \
+  "three fixed steps plus one line per named spec"
+assert_eq 1 "$(grep -c 'issue close 2 --reason completed' "$work/multi-state/gh.log")" \
+  "spec 2 is closed exactly once"
+assert_eq 1 "$(grep -c 'issue close 3 --reason completed' "$work/multi-state/gh.log")" \
+  "spec 3 is closed exactly once"
+
+# A partial re-run: one of the two named specs already closed (by a prior
+# interrupted run, or independently) is skipped while the other still closes.
+setup multipartial
+set_issue multipartial 2 CLOSED
+set_issue multipartial 3 OPEN
+out="$(run_tail multipartial --spec 2 --spec 3 v1.2.0)"
+assert_contains "$out" "skip: spec #2 already closed" \
+  "the already-closed named spec is skipped"
+assert_contains "$out" "done: closed spec #3" \
+  "the still-open named spec closes"
+assert_not_contains "$(cat "$work/multipartial-state/gh.log")" "issue close 2" \
+  "the already-closed spec is never asked to close again"
+
+# The same spec named twice closes once, without an error.
+setup dupe
+set_issue dupe 2 OPEN
+out="$(run_tail dupe --spec 2 --spec 2 v1.2.0)"
+assert_eq 1 "$(printf '%s\n' "$out" | grep -c 'spec #2')" \
+  "a duplicated --spec produces one line for the issue, not two"
+assert_eq 1 "$(grep -c 'issue close' "$work/dupe-state/gh.log")" \
+  "a duplicated --spec closes the issue exactly once"
+
+# An invalid value among otherwise-valid ones aborts before anything mutates —
+# validation covers every --spec occurrence before the first git command runs.
+setup badmulti
+set_issue badmulti 2 OPEN
+status=0
+out="$(run_tail badmulti --spec 2 --spec abc v1.2.0 2>&1)" || status=$?
+assert_eq 2 "$status" "one invalid --spec among valid ones exits 2"
+assert_eq "" "$(git -C "$work/badmulti" tag -l)" \
+  "no tag is laid when a later --spec value is invalid"
+assert_eq "" "$(cat "$work/badmulti-state/gh.log")" \
+  "no external service is reached when a later --spec value is invalid"
 
 # --- the changelog entry ---------------------------------------------------
 
