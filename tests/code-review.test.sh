@@ -196,6 +196,12 @@ assert_not_contains "$checklist" "docs/adr" \
 assert_contains "$checklist" "guardrail ADRs" \
   "checklist: the guardrail-ADR item survives the de-hardcoding"
 
+# The prose-against-decisions read (#125) fires only on a diff touching a
+# write-once artifact — the same list, not a new surface, and conditioned so
+# rounds touching no ADR carry no added instruction.
+assert_contains "$checklist" "Only when the diff touches a write-once artifact" \
+  "checklist: the prose-against-decisions read is conditioned on a write-once artifact"
+
 # --- the implementation step carries an ADR Gate into the instruction block -
 
 implement_md="$(cat "$REPO/skills/addw-implement/SKILL.md")"
