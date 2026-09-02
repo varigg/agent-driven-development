@@ -22,7 +22,11 @@ if [ "$#" -ne 1 ]; then
 fi
 
 branch=$1
+# The path on a `worktree ` line is everything after the 9-character prefix,
+# not just its first field — ADDW_WORKTREE_ROOT or the repo basename may
+# contain spaces, and splitting on whitespace like the `branch` line below
+# would silently truncate such a path.
 git worktree list --porcelain | awk -v want="refs/heads/$branch" '
-    $1 == "worktree" { path = $2 }
+    /^worktree / { path = substr($0, 10) }
     $1 == "branch" && $2 == want { print path }
 '

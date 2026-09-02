@@ -104,6 +104,14 @@ assert_eq "$wt" "$found" "find: locates the worktree already holding the branch"
 found_none="$(cd "$work/clone" && "$FIND" no-such-branch)"
 assert_eq "" "$found_none" "find: prints nothing for a branch with no worktree"
 
+# A worktree path with a space (a plausible ADDW_WORKTREE_ROOT or repo
+# basename) must come back whole, not truncated at the first field.
+wt_spaced="$work/spaced dir/wt"
+( cd "$work/clone" && "$CREATE" main feat/4-spaced "$wt_spaced" ) >/dev/null 2>&1
+found_spaced="$(cd "$work/clone" && "$FIND" feat/4-spaced)"
+assert_eq "$wt_spaced" "$found_spaced" \
+  "find: a worktree path containing a space is reported in full"
+
 assert_exit 2 "find: usage error on wrong argument count" "$FIND"
 
 echo "worktree: all contract assertions passed"
