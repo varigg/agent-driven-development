@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # The re-runnable post-merge tail of the ADDW release flow: tag, push,
-# GitHub Release, and for a spec release the spec issue's closure. What each
-# step is for, why an interrupted run is finished by re-running it, and why
-# nothing is mutated before everything is validated: ../README.md.
+# GitHub Release, and for a spec release each named spec issue's closure.
+# What each step is for, why an interrupted run is finished by re-running it,
+# and why nothing is mutated before everything is validated: ../README.md.
 #
-# Usage: tail.sh [--spec <n>] [--commit <sha>] <version>
-#   --spec <n>       the spec issue to close as completed; omitted for a
-#                    repository release, which closes nothing
+# Usage: tail.sh [--spec <n>]... [--commit <sha>] <version>
+#   --spec <n>       a spec issue to close as completed; repeatable, once per
+#                    spec this release closes. A number named more than once
+#                    closes it once. Omitted entirely for a repository
+#                    release, which closes nothing.
 #   --commit <sha>   the release PR's merge commit (default HEAD). Callers
 #                    should always pass it: let it default once another PR has
 #                    merged, and the tag covers commits the changelog entry
@@ -35,7 +37,7 @@ usage() {
 # either has bigger divergences than a flag would paper over.
 changelog=CHANGELOG.md
 remote=origin
-spec=""
+specs=()
 commit=""
 version=""
 
@@ -43,8 +45,8 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --spec)
       [ "$#" -ge 2 ] || usage
-      spec=$2
-      [[ "$spec" =~ ^[1-9][0-9]*$ ]] || usage
+      [[ "$2" =~ ^[1-9][0-9]*$ ]] || usage
+      specs+=("$2")
       shift 2
       ;;
     --commit)
@@ -71,6 +73,20 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$version" ] || usage
+
+# Dedupe, preserving first-seen order: a spec named twice closes once, and the
+# done:/skip: lines below then name each spec exactly once.
+if [ "${#specs[@]}" -gt 0 ]; then
+  deduped=()
+  for s in "${specs[@]}"; do
+    seen=0
+    for d in "${deduped[@]+"${deduped[@]}"}"; do
+      [ "$d" = "$s" ] && { seen=1; break; }
+    done
+    [ "$seen" -eq 1 ] || deduped+=("$s")
+  done
+  specs=("${deduped[@]}")
+fi
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   printf 'tail.sh: not inside a git work tree\n' >&2
@@ -173,7 +189,8 @@ if remote_refs="$(git ls-remote --tags "$remote" \
   [ "$remote_tag" = "$target" ] || refuse_tag remote "$remote_tag"
 fi
 
-# --- mutation: four steps, each skipping what is already done --------------
+# --- mutation: tag, push, publish, then each named spec's closure — every
+# step skipping what is already done -----------------------------------------
 
 if [ -n "$local_tag" ]; then
   printf 'skip: tag %s already at %s\n' "$version" "$(git rev-parse --short "$target")"
@@ -199,11 +216,11 @@ else
   printf 'done: published GitHub Release %s\n' "$version"
 fi
 
-if [ -n "$spec" ]; then
+for spec in "${specs[@]+"${specs[@]}"}"; do
   if [ "$(bash "$tracker" state "$spec")" = CLOSED ]; then
     printf 'skip: spec #%s already closed\n' "$spec"
   else
     bash "$tracker" close "$spec" completed >/dev/null
     printf 'done: closed spec #%s as completed\n' "$spec"
   fi
-fi
+done
