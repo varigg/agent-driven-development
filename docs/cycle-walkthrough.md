@@ -77,7 +77,12 @@ label.
 
 `to-tickets` decomposes the reviewed spec into tracer-bullet issues with blocking edges. Its
 template's section encoding **is** ADDW's tracker contract, so his skills produce
-contract-valid tickets unmodified — nothing is post-processed.
+contract-valid tickets unmodified — nothing is post-processed. The one check worth running
+before moving on: `to-tickets`' `## Parent` section is prose by default and must read as a
+list item (`- #N`) for the parser to see it, so run `tracker.sh parent-check <ticket> <spec>`
+against each ticket it just created (`docs/agents/issue-tracker.md`, #136) — catching a
+bare-line parent here is far cheaper than discovering `spec-complete` reporting `no-children`
+at release time.
 
 From here on, the question "what can I work on?" has a deterministic answer, the **frontier**:
 open issues labeled `ready-for-agent`, not labeled `spec` or `backlog`, whose every blocker is

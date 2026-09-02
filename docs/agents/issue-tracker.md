@@ -60,3 +60,11 @@ ADDW drives these same issues through its own seam at
   `ready-for-agent`.
 - **The seam rule binds ADDW's own skills**, not Matt's — these call `gh`
   directly, as documented above.
+- **`## Parent` must be a list item.** ADDW's parser only extracts an edge from
+  a `#N` inside a list item — a deliberate rule so a prose mention never
+  becomes one — so `to-tickets`' `## Parent` section must read `- #N`, the same
+  form its `## Blocked by` section already uses. A bare `#N` on its own line
+  parses as no parent at all (#136). Right after `to-tickets` creates the
+  tickets for a spec, run `tracker.sh parent-check <ticket> <spec>` against
+  each one so a formatting regression surfaces immediately rather than at
+  release time.
