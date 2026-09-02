@@ -23,7 +23,7 @@ Formatting, import hygiene, unused imports, and naming casing are enforced deter
 
 - [ ] For each layer the diff touches, code conforms to the conventions ARCHITECTURE.md documents for it (derived at review time)
 - [ ] Nothing reintroduces what the project's guardrail ADRs rule out — the ticket-context file names the directory they live in, and a manual review resolves it from `ADDW_ADR_DIR`
-- [ ] **Only when the diff touches a write-once artifact** — an ADR or any other decision record that is frozen from the moment it merges: read the delivered *prose* against the guardrail ADRs and the decisions in the parent spec, not just against the ticket's acceptance criteria. A sentence no criterion points at can still contradict a decision the spec settled elsewhere, and once the artifact merges the contradiction is permanent. Cite the sentence and the decision it contradicts. A diff that touches no such artifact skips this item entirely.
+- [ ] Only when the diff touches a write-once artifact (an ADR or other decision record frozen from the moment it merges): its delivered prose contradicts nothing the guardrail ADRs or the parent spec decided, even in a sentence no acceptance criterion points at — a standalone ticket is read against the guardrail ADRs alone. A diff touching no such artifact skips this item.
 
 ### 4. Error Handling
 
