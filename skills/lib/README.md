@@ -55,6 +55,19 @@ lives inside `skills/` rather than at the repo root.
     unrecorded rather than as drift. Unit-tested (`tests/tracker-drift.test.sh`,
     the parsers in `tests/tracker-parse.test.sh`) because normalization and the
     three-way verdict are logic rather than passthrough.
+    `parent-check` is the same shape as `approval-drift` — a live read that
+    hands text to `parse.sh` and reports a verdict — but round-trips a ticket's
+    body through `parse.sh parent` and compares it against the parent the
+    caller expected, failing loudly (and non-zero) on a mismatch or an
+    unparseable edge. It exists because Matt's `to-tickets` can emit `## Parent`
+    as bare prose rather than a list item, which the parser's list-items-only
+    rule (deliberate, so prose mentions never become edges) then reads as no
+    parent at all — invisible until `spec-complete` reports `no-children` on a
+    fully decomposed spec (#136). Running it against every ticket right after
+    `to-tickets` creates them turns that into an immediate, clearly-worded
+    failure instead of a mid-release surprise. Unit-tested
+    (`tests/tracker-parent-check.test.sh`) for the same reason `approval-drift`
+    is: the three-way verdict is logic, not passthrough.
     The branch half of the frontier's in-progress annotation comes from
     `git ls-remote --heads origin` — remote branches, never local ones — so a
     ticket reads as in progress exactly while its branch is visible to

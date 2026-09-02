@@ -27,6 +27,7 @@
 #   tracker.sh spec-complete <n>                 live spec-completion query
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
 #   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
+#   tracker.sh parent-check <n> <expected>       fail loudly unless <n>'s parsed parent is <expected>
 #
 # `snapshot` means "the issues the workflow reasons about", not "every issue":
 # `archived` issues are dropped immediately after the fetch, so no consumer can
@@ -127,6 +128,23 @@ approval_drift() { # issue-number
   fi
 }
 
+parent_check() { # issue-number expected-parent
+  local issue=$1 expected=$2 parsed
+  parsed="$(issue_body "$issue" | bash "$PARSE" parent)"
+
+  if [ -z "$parsed" ]; then
+    printf 'parent-check: issue #%s has no parseable parent edge; expected #%s\n' \
+      "$issue" "$expected" >&2
+    return 1
+  elif [ "$parsed" != "$expected" ]; then
+    printf 'parent-check: issue #%s parent edge parses as #%s, expected #%s\n' \
+      "$issue" "$parsed" "$expected" >&2
+    return 1
+  else
+    printf 'parent-check: issue #%s parent #%s confirmed\n' "$issue" "$expected"
+  fi
+}
+
 [ "$#" -ge 1 ] || usage
 cmd=$1
 shift
@@ -147,6 +165,10 @@ case "$cmd" in
   approval-drift)
     [ "$#" -eq 1 ] || usage
     approval_drift "$1"
+    ;;
+  parent-check)
+    [ "$#" -eq 2 ] || usage
+    parent_check "$1" "$2"
     ;;
   title)
     [ "$#" -eq 1 ] || usage
