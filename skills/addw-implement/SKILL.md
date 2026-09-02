@@ -125,15 +125,49 @@ The branch and the assignment are the **in-progress marker** the frontier listin
 not a lock. Push before building, so a second session sees the work exists.
 
 ```bash
-. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH
+. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH \
+    ADDW_IMPLEMENT_WORKTREE ADDW_WORKTREE_ROOT
 git checkout "$ADDW_MAIN_BRANCH" && git pull
+```
+
+**`ADDW_IMPLEMENT_WORKTREE` unset or `true` (the default)** — every later Mode-B step (5
+through 11, including the Step 6 delegate call) runs from a dedicated worktree instead of
+this checkout, so a second session working a different frontier ticket from the same clone
+never collides on the checked-out branch:
+
+```bash
+toplevel="$(git rev-parse --show-toplevel)"
+root="${ADDW_WORKTREE_ROOT:-$(dirname "$toplevel")/$(basename "$toplevel")-worktrees}"
+wt_path="$root/<issue-number>-<slug>"
+git worktree add -b <type>/<issue-number>-<slug> "$wt_path" "$ADDW_MAIN_BRANCH"
+
+# Dogfood repos keep .claude/skills as a gitignored symlink to skills/; git
+# worktree only checks out tracked files, so recreate it — a no-op wherever
+# .claude/skills is an ordinary tracked copy, as in a real install.
+if [ -L .claude/skills ]; then
+    mkdir -p "$wt_path/.claude"
+    ln -s "$(readlink .claude/skills)" "$wt_path/.claude/skills"
+fi
+
+cd "$wt_path"
+git push -u origin <type>/<issue-number>-<slug>
+bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
+```
+
+Stay in `$wt_path` for the rest of this session — every later step assumes it is the working
+directory.
+
+**`ADDW_IMPLEMENT_WORKTREE` set to anything else** — behaves exactly as before worktree mode
+existed, in this checkout:
+
+```bash
 git checkout -b <type>/<issue-number>-<slug>       # feat/ fix/ docs/ — the type the work will carry
 git push -u origin <type>/<issue-number>-<slug>
 bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
 ```
 
-If the branch already exists on the remote, **surface that to the human before proceeding** —
-somebody, possibly you in an earlier session, has already started.
+Either way, if the branch already exists on the remote, **surface that to the human before
+proceeding** — somebody, possibly you in an earlier session, has already started.
 
 ### Step 4: Read the Ticket and Its Spec
 
