@@ -7,6 +7,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 PARSE=../skills/lib/tracker/parse.sh
 FIX=fixtures/tracker
+SPEC_FIX=fixtures/spec
 
 # --- parent ---
 assert_eq "2" "$(bash "$PARSE" parent "$FIX/parent-and-sentinel.md")" \
@@ -35,6 +36,19 @@ assert_eq "2" "$(bash "$PARSE" parent "$FIX/prose-refs.md")" \
   "parent: prose fixture still parses parent"
 assert_eq "$(printf '8\n9\n11')" "$(bash "$PARSE" blockers "$FIX/multi-ref-item.md")" \
   "blockers: multiple refs in one list item all count"
+
+# --- adr-obligation ---
+assert_eq "One ADR for the positive decision, losing alternatives as one-liners." \
+  "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-obligation.md")" \
+  "adr-obligation: a list item mentioning ADR is extracted"
+assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/no-adr-obligation.md")" \
+  "adr-obligation: no mention yields empty"
+assert_exit 0 "adr-obligation: no mention still exits zero" \
+  bash "$PARSE" adr-obligation "$SPEC_FIX/no-adr-obligation.md"
+assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-mentioned-elsewhere.md")" \
+  "adr-obligation: a mention outside Implementation Decisions is not an obligation"
+assert_eq "" "$(bash "$PARSE" adr-obligation "$FIX/no-parent.md")" \
+  "adr-obligation: absent section yields empty"
 
 # --- classify-reason ---
 assert_eq "completed" "$(bash "$PARSE" classify-reason COMPLETED)" \

@@ -191,7 +191,10 @@ listing also surfaces release-ready specs so you notice at your next session
    was never decomposed. Naming an incomplete spec is refused with its open tickets listed. A
    **repository release** tags whatever `main` has accumulated since the last tag and closes
    nothing. A child closed as *not planned* is surfaced by name and you decide whether to
-   proceed — your confirmation is the waiver.
+   proceed — your confirmation is the waiver. A spec whose Implementation Decisions declared an
+   ADR obligation still has to show one: `skills/lib/release/adr-check.sh` reads the spec body
+   and refuses, naming the unmet obligation, if no ADR landed in the commits about to be
+   released — closed tickets alone were never proof, as spec #84 showed (#137).
 
 2. **Version and changelog, both derived** (§ *Step 2: Derive the Version and the Entry*).
    `skills/lib/release/derive.sh` reads the conventional-commit subjects since the last tag —
