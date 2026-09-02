@@ -97,7 +97,7 @@ Create the directories the skills expect to find, so the contract holds
 before anything writes into it:
 
 ```
-docs/4-unit-tests/     # the testing guide and the coverage-debt ledger
+docs/testing/          # the testing guide and the coverage-debt ledger
 <ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.5
 ```
 
@@ -221,7 +221,7 @@ charter is never silently edited.
 
 **Get explicit approval before writing the file.**
 
-### 2.6 `docs/4-unit-tests/TESTING.md`
+### 2.6 `docs/testing/TESTING.md`
 
 Adapted from what exploration found, never generic: the real framework and
 version, how tests are run and organized, the project's own writing
@@ -257,7 +257,7 @@ edits the file next, and the parser rejects a violating line by number.
 # deliberately empty, which is distinct from deleting the key.
 #
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=7
+ADDW_SCHEMA=8
 ADDW_PROJECT_NAME="<project name>"
 # The file a release writes the version into. Empty is valid and means the
 # project has no version manifest to write — the release then carries the

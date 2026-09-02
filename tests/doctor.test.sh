@@ -17,13 +17,16 @@
 #      and validated only when set: half a pair, a named lockfile that is not
 #      there, or a pair beside an empty ADDW_VERSION_FILE fails; with both
 #      keys absent, doctor says nothing about it at all.
-#   2. Docs contract. The directories and living docs, the ADR template at the
-#      location ADDW_ADR_TEMPLATE names — the shipped one under
+#   2. Docs contract. The living docs, the ADR template at the location
+#      ADDW_ADR_TEMPLATE names — the shipped one under
 #      `.claude/skills/lib/templates/` by default, a project's own when it
 #      declares one, and never a path derived from ADDW_ADR_DIR or hardcoded
 #      here — and the project-instructions line that declares *that same path*
 #      authoritative over any skill-bundled ADR format. An absent key and a
-#      missing file are different faults and read differently.
+#      missing file are different faults and read differently. No bare
+#      directory is asserted: git tracks files, not directories, so a
+#      directory ADDW creates but never writes into (the ADR directory) would
+#      otherwise report a false FAIL on the next clone of a correct install.
 #   2b. The migrated state (#13). The generation marker must match the skills,
 #      and the retired artifacts must be gone — but only the ones ADDW's
 #      migration actually mandates removing. The backlog file is one: its
@@ -96,13 +99,13 @@ mkdir -p "$BASE/project" "$BASE/home"
 
 (
   cd "$BASE/project"
-  mkdir -p docs/agents docs/4-unit-tests docs/adr
+  mkdir -p docs/agents docs/testing docs/adr
 
   # Quoted heredoc: a config is exactly where a recipe carrying `$` or a
   # backtick belongs, and an expanding one would corrupt it silently. The one
   # interpolated value is appended instead.
   cat > docs/addw.env <<'ENV'
-ADDW_SCHEMA=7
+ADDW_SCHEMA=8
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
@@ -125,7 +128,7 @@ ENV
   printf '# Changelog\n' > CHANGELOG.md
   printf '{ "version": "0.1.0" }\n' > package.json
   printf '# Testing Guidelines\n\n## Verification Recipes\n\n## Integration / E2E Impact Rules\n' \
-    > docs/4-unit-tests/TESTING.md
+    > docs/testing/TESTING.md
 
   # The real shipped template, not a paraphrase of it. Copying is what makes
   # the healthy case assert that the file this repo actually ships satisfies
@@ -181,6 +184,21 @@ assert_contains "$RUN_OUT" "$SHIPPED_TEMPLATE" \
   "healthy: the template checks name the configured shipped path"
 assert_not_contains "$RUN_OUT" "docs/adr/template.md" \
   "healthy: no template path is derived from ADDW_ADR_DIR"
+
+# A fresh clone never carries directories ADDW created but left empty — git
+# does not track them. The ADR directory is exactly that: init creates it but
+# writes nothing into it, so an install that did nothing wrong reports it
+# missing on every machine but the one that ran init. Doctor must not assert
+# its existence.
+d="$(case_dir noadrdir)"
+rmdir "$d/project/docs/adr"
+run "$d"
+assert_eq 0 "$RUN_STATUS" \
+  "adr-dir: an install with no ADR directory on disk is still healthy"
+assert_contains "$RUN_OUT" "HEALTHY: all checks passed" \
+  "adr-dir: terminal line reports health with the directory absent"
+assert_not_contains "$RUN_OUT" "docs/adr/ missing" \
+  "adr-dir: doctor asserts no bare directory"
 
 # --- config keys -----------------------------------------------------------
 

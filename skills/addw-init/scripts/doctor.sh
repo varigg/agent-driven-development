@@ -21,7 +21,7 @@ set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
 # UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
-EXPECTED_SCHEMA=7
+EXPECTED_SCHEMA=8
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
@@ -108,23 +108,16 @@ else
 fi
 
 # --- docs contract ---------------------------------------------------------
-docs_dirs=(docs/4-unit-tests)
-if [ -n "${ADDW_ADR_DIR:-}" ]; then
-    docs_dirs+=("$ADDW_ADR_DIR")
-fi
-for directory in "${docs_dirs[@]}"; do
-    if [ -d "$directory" ]; then
-        ok "$directory/ exists"
-    else
-        bad "$directory/ missing"
-    fi
-done
-
+# No bare-directory existence check: git tracks files, not directories, so a
+# directory ADDW creates but never writes into (the ADR directory) exists only
+# in the working copy that ran init and reports a false FAIL on the next
+# clone. The testing directory needs no separate check either — it is proven
+# by the assertion on its TESTING.md below, which is a committed file.
 doc_files=(
     docs/ARCHITECTURE.md
     docs/ARCHITECTURE-rules.md
     docs/charter.md
-    docs/4-unit-tests/TESTING.md
+    docs/testing/TESTING.md
     CHANGELOG.md
 )
 for file in "${doc_files[@]}"; do
@@ -199,13 +192,13 @@ else
     bad "ADDW_ADR_TEMPLATE is unset, so neither the ADR template nor the project-instructions override could be checked"
 fi
 
-if [ -f docs/4-unit-tests/TESTING.md ]; then
-    if grep -q "Verification Recipes" docs/4-unit-tests/TESTING.md; then
+if [ -f docs/testing/TESTING.md ]; then
+    if grep -q "Verification Recipes" docs/testing/TESTING.md; then
         ok "TESTING.md has a Verification Recipes section"
     else
         bad "TESTING.md lacks a Verification Recipes section"
     fi
-    if grep -qi "Impact Rules" docs/4-unit-tests/TESTING.md; then
+    if grep -qi "Impact Rules" docs/testing/TESTING.md; then
         ok "TESTING.md has Integration/E2E Impact Rules"
     else
         bad "TESTING.md lacks an Integration/E2E Impact Rules section"

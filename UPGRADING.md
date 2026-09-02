@@ -345,3 +345,45 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Schema 7 → 8
+
+`docs/4-unit-tests/` becomes `docs/testing/` — the last numbered directory the
+docs contract still named. The number was a fossil of the retired
+`addw-4-maintain` skill name, and the noun was always narrower than the
+directory's contents: it holds the testing guide, the **Verification
+Recipes** every gate reads, the **Integration/E2E Impact Rules**, and the
+coverage-debt ledger, none of which is "unit tests" specifically.
+
+Separately, doctor stops asserting that any bare directory exists. It
+previously checked the testing directory and the configured ADR directory
+with `[ -d ... ]` — a working-copy question, not a repository one. Git tracks
+files, not directories, so an install whose ADR directory init created but
+never wrote into reported it missing on the next clone, in CI, or on a second
+machine, having done nothing wrong. The testing directory is proven instead
+by the assertion on its `TESTING.md`, which is a committed file; the ADR
+directory is not proven by doctor at all — a genuinely misconfigured one still
+surfaces at first use, when the next-ADR-number query refuses a missing or
+unreadable directory by name.
+
+### 1. Move the directory
+
+```bash
+git mv docs/4-unit-tests docs/testing
+```
+
+An install with no `docs/4-unit-tests/` — because a leftover fixture or a
+partial checkout never had it — has nothing to move.
+
+### 2. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=8
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.
