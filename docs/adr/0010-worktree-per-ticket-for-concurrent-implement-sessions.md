@@ -9,9 +9,13 @@ sessions working different frontier tickets from the same clone could not each h
 own branch checked out at once — autonomous parallel execution of the frontier was blocked
 by shared-checkout collision, not by review capacity. The fix: a config-gated,
 default-on worktree-per-ticket mode. When `ADDW_IMPLEMENT_WORKTREE` is unset or `true`, Step
-3 runs `git worktree add -b <type>/<issue>-<slug> <path> "$ADDW_MAIN_BRANCH"` and every
-later Mode-B step runs from that worktree instead of the original checkout; any other value
-keeps the old in-place `git checkout -b`. `<path>` defaults to a sibling directory of the
+3 fetches `$ADDW_MAIN_BRANCH` and runs
+`git worktree add -b <type>/<issue>-<slug> <path> "origin/$ADDW_MAIN_BRANCH"` — branching off
+the remote-tracking ref rather than this checkout's own branch, since a concurrent session's
+`checkout && pull` right here would recreate the exact shared-working-tree race this mode
+exists to remove — and every later Mode-B step runs from that worktree instead of the
+original checkout; any other value keeps the old in-place `git checkout -b`. `<path>` defaults
+to a sibling directory of the
 repo root (`../<repo-basename>-worktrees/<issue>-<slug>`), overridable via
 `ADDW_WORKTREE_ROOT`. Plain `git worktree` was chosen over Claude Code's Agent-tool
 `isolation: "worktree"` option because `addw-implement` cannot assume it was launched via
@@ -21,8 +25,9 @@ Codex); `codex-implement`'s `--sandbox workspace-write` is already cwd-scoped an
 cleanly with a plain `cd` into the worktree, so no isolation-stacking is needed. This repo's
 own dogfood setup keeps `.claude/skills` as a gitignored symlink to `skills/`, which `git
 worktree add` — checking out tracked files only — would otherwise leave the new worktree
-without; Step 3 recreates the same symlink in the new worktree when the main checkout has
-one, a no-op in a real install where `.claude/skills` is an ordinary tracked copy.
+without; Step 3 recreates the symlink, pointed at the new worktree's own tracked `skills/`
+copy rather than the original symlink's target verbatim, whenever the main checkout has one
+— a no-op in a real install where `.claude/skills` is an ordinary tracked copy.
 
 ## Alternatives Considered
 

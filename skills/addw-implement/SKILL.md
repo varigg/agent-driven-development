@@ -127,26 +127,34 @@ not a lock. Push before building, so a second session sees the work exists.
 ```bash
 . .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH \
     ADDW_IMPLEMENT_WORKTREE ADDW_WORKTREE_ROOT
-git checkout "$ADDW_MAIN_BRANCH" && git pull
 ```
 
 **`ADDW_IMPLEMENT_WORKTREE` unset or `true` (the default)** — every later Mode-B step (5
 through 11, including the Step 6 delegate call) runs from a dedicated worktree instead of
 this checkout, so a second session working a different frontier ticket from the same clone
-never collides on the checked-out branch:
+never collides on the checked-out branch. Update and branch off the **remote-tracking**
+ref, never this checkout's own `$ADDW_MAIN_BRANCH` — a concurrent session's `git checkout
+&& git pull` right here is exactly the shared-working-tree collision this mode exists to
+remove, and `git fetch` alone never touches this checkout's working tree or index, so it is
+safe with another session doing the same thing at once:
 
 ```bash
+git fetch origin "$ADDW_MAIN_BRANCH"
 toplevel="$(git rev-parse --show-toplevel)"
 root="${ADDW_WORKTREE_ROOT:-$(dirname "$toplevel")/$(basename "$toplevel")-worktrees}"
 wt_path="$root/<issue-number>-<slug>"
-git worktree add -b <type>/<issue-number>-<slug> "$wt_path" "$ADDW_MAIN_BRANCH"
+git worktree add -b <type>/<issue-number>-<slug> "$wt_path" "origin/$ADDW_MAIN_BRANCH"
 
 # Dogfood repos keep .claude/skills as a gitignored symlink to skills/; git
 # worktree only checks out tracked files, so recreate it — a no-op wherever
-# .claude/skills is an ordinary tracked copy, as in a real install.
+# .claude/skills is an ordinary tracked copy, as in a real install. Always
+# point it at this new worktree's own tracked copy (`../skills` relative to
+# `.claude/`) rather than copying the original symlink's target verbatim —
+# an absolute-path original would otherwise leave the worktree silently
+# reading the source checkout's skills/ instead of its own.
 if [ -L .claude/skills ]; then
     mkdir -p "$wt_path/.claude"
-    ln -s "$(readlink .claude/skills)" "$wt_path/.claude/skills"
+    ln -s ../skills "$wt_path/.claude/skills"
 fi
 
 cd "$wt_path"
@@ -161,6 +169,7 @@ directory.
 existed, in this checkout:
 
 ```bash
+git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b <type>/<issue-number>-<slug>       # feat/ fix/ docs/ — the type the work will carry
 git push -u origin <type>/<issue-number>-<slug>
 bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
