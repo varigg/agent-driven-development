@@ -387,3 +387,39 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Schema 8 → 9
+
+`addw-implement` gains a worktree-per-ticket mode (ADR 0010): Step 3 now creates a
+dedicated `git worktree` per ticket instead of checking its branch out in this checkout, so
+two sessions working different frontier tickets from the same clone don't collide. Two new
+optional keys, `ADDW_IMPLEMENT_WORKTREE` and `ADDW_WORKTREE_ROOT`, control it — unset
+behaves the same as `ADDW_IMPLEMENT_WORKTREE=true`, which is the one behavior change this
+boundary ships. Neither key is doctor-validated; nothing fails on their absence.
+
+### 1. Add the keys, or don't
+
+Nothing is required — an install with neither key already gets worktree mode, and doctor
+does not check for them. Add them to `docs/addw.env` only to record the choice explicitly,
+or to opt out:
+
+```bash
+# ADDW_IMPLEMENT_WORKTREE=true
+# ADDW_WORKTREE_ROOT="../<project>-worktrees"
+```
+
+Set `ADDW_IMPLEMENT_WORKTREE` to any other value (e.g. `false`) to keep the old in-place
+checkout.
+
+### 2. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=9
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.

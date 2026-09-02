@@ -274,5 +274,23 @@ lives inside `skills/` rather than at the repo root.
   rather than guessing. The adapters are the thin half: pin state, pin prompt,
   hand off.
 
+- `worktree/` — the concurrency-safety mechanism `addw-implement` drives (ADR 0010):
+  `create.sh <main-branch> <new-branch> <path>` fetches the main branch's remote-tracking ref
+  and branches a new ticket worktree off it, deliberately never running `git checkout` or
+  `git pull` in the caller's own checkout — a concurrent session doing the same thing would
+  otherwise contend for that checkout's working tree and index, exactly the collision
+  worktree mode exists to remove. It also recreates a symlinked `.claude/skills` (this repo's
+  own dogfood setup) inside the new worktree, pointed at its own tracked `skills/` copy
+  rather than the original symlink's raw target, so an absolute-path original never leaves
+  the worktree reading the source checkout's copy — a no-op in a real install, where
+  `.claude/skills` is an ordinary tracked copy. `find.sh <branch>` is Mode A's counterpart: it
+  locates the worktree, if any, already holding a ticket's branch checked out, so a
+  review-comments resume enters it instead of re-checking out a branch git refuses to check
+  out twice. Both meet ADR 0004's bar for a script over agent judgment — fully specified,
+  project-agnostic, and a real multi-step-command failure mode — and are unit-tested
+  (`tests/worktree.test.sh`) against real local git repositories rather than dogfood-verified,
+  because the branch-off-remote-tracking behavior and the symlink-recreation logic are exactly
+  the kind of thing a passing skim of the diff would not catch.
+
 Tested from the repo root via `tests/run.sh` against fixtures in
 `tests/fixtures/`.

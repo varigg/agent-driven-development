@@ -54,9 +54,25 @@ Getting this backwards restarts finished work, so resolve it before reading anyt
 
 The human has reviewed and left feedback. Same skill, not a separate procedure.
 
-1. **Check out the PR's branch** and read **all** the feedback. Two reads, not one — the
-   conversation timeline and the comments anchored to diff lines are different endpoints, and
-   inline comments are where most review feedback actually lands:
+1. **Check out the PR's branch** and read **all** the feedback. A Mode-B session may have
+   built this ticket in its own worktree (§ *Step 3*), which still holds the branch checked
+   out — git refuses to check it out a second time in this checkout, so look for that
+   worktree first and enter it rather than checking out in place:
+
+   ```bash
+   branch="$(gh pr view <n> --json headRefName -q .headRefName)"
+   wt_path="$(bash .claude/skills/lib/worktree/find.sh "$branch")"
+   if [ -n "$wt_path" ]; then
+       cd "$wt_path" && git pull
+   else
+       gh pr checkout <n>
+   fi
+   ```
+
+   Stay in that directory — `$wt_path` or this checkout, whichever it resolved to — for the
+   rest of this session. Two reads, not one, for the feedback itself — the conversation
+   timeline and the comments anchored to diff lines are different endpoints, and inline
+   comments are where most review feedback actually lands:
 
    ```bash
    gh pr view <n> --comments                                  # timeline + review summaries
@@ -125,15 +141,49 @@ The branch and the assignment are the **in-progress marker** the frontier listin
 not a lock. Push before building, so a second session sees the work exists.
 
 ```bash
-. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH
+. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH \
+    ADDW_IMPLEMENT_WORKTREE ADDW_WORKTREE_ROOT
+```
+
+**`ADDW_IMPLEMENT_WORKTREE` unset or `true` (the default)** — every later Mode-B step (5
+through 11, including the Step 6 delegate call) runs from a dedicated worktree instead of
+this checkout, so a second session working a different frontier ticket from the same clone
+never collides on the checked-out branch. `worktree/create.sh` fetches and branches off the
+**remote-tracking** ref, never this checkout's own `$ADDW_MAIN_BRANCH` — a concurrent
+session's `git checkout && git pull` right here would be exactly the shared-working-tree
+collision this mode exists to remove, and a plain `git fetch` never touches this checkout's
+working tree or index, so it is safe with another session doing the same thing at once. It
+also recreates a symlinked `.claude/skills` (this repo's own dogfood setup) inside the new
+worktree, pointed at its own tracked `skills/` copy — a no-op wherever `.claude/skills` is
+an ordinary tracked copy, as in a real install:
+
+```bash
+toplevel="$(git rev-parse --show-toplevel)"
+root="${ADDW_WORKTREE_ROOT:-$(dirname "$toplevel")/$(basename "$toplevel")-worktrees}"
+wt_path="$root/<issue-number>-<slug>"
+bash .claude/skills/lib/worktree/create.sh "$ADDW_MAIN_BRANCH" \
+    <type>/<issue-number>-<slug> "$wt_path"
+
+cd "$wt_path"
+git push -u origin <type>/<issue-number>-<slug>
+bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
+```
+
+Stay in `$wt_path` for the rest of this session — every later step assumes it is the working
+directory.
+
+**`ADDW_IMPLEMENT_WORKTREE` set to anything else** — behaves exactly as before worktree mode
+existed, in this checkout:
+
+```bash
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b <type>/<issue-number>-<slug>       # feat/ fix/ docs/ — the type the work will carry
 git push -u origin <type>/<issue-number>-<slug>
 bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
 ```
 
-If the branch already exists on the remote, **surface that to the human before proceeding** —
-somebody, possibly you in an earlier session, has already started.
+Either way, if the branch already exists on the remote, **surface that to the human before
+proceeding** — somebody, possibly you in an earlier session, has already started.
 
 ### Step 4: Read the Ticket and Its Spec
 

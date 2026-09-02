@@ -257,7 +257,7 @@ edits the file next, and the parser rejects a violating line by number.
 # deliberately empty, which is distinct from deleting the key.
 #
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=8
+ADDW_SCHEMA=9
 ADDW_PROJECT_NAME="<project name>"
 # The file a release writes the version into. Empty is valid and means the
 # project has no version manifest to write — the release then carries the
@@ -300,6 +300,13 @@ ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
 # agent drives `tdd` itself.
 # ADDW_IMPLEMENT_SKILL=codex-implement
 # ADDW_CODE_REVIEW_SKILL=codex-code-review
+# Worktree-per-ticket mode for addw-implement, so two sessions working
+# different frontier tickets from the same clone don't collide on a shared
+# checkout. Unset or true is on by default; any other value keeps the old
+# in-place checkout. ADDW_WORKTREE_ROOT, if set, names the directory each
+# ticket's worktree is created under in place of the sibling-directory default:
+# ADDW_IMPLEMENT_WORKTREE=true
+# ADDW_WORKTREE_ROOT="../<project>-worktrees"
 # Optional addw-compact token budgets — unset, the defaults below apply. The
 # threshold triggers compaction (addw-maintain's size check watches it too);
 # the target range is where a compaction aims, and its upper bound doubles as
