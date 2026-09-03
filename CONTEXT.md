@@ -41,3 +41,15 @@ _Avoid_: init special case
 **Deliverable**:
 The independently-checkable unit of work a ticket delivers; a ticket carries exactly one. Checkable means a reviewer can verify it passed or failed without reference to the ticket's other criteria.
 _Avoid_: feature, work item
+
+**Complete** (of a spec):
+A spec with children, none open, and any ADR it declared present on the main branch, derived at query time from its children and never stored. A childless spec is neither Complete nor Partial.
+_Avoid_: release-ready, done
+
+**Partial** (of a spec):
+A spec with at least one child closed as completed and not Complete — whether because a sibling is still open or a declared ADR is still missing. A tag would ship half its intent, so a release refuses it by default.
+_Avoid_: in process, in flight, mid-spec
+
+**Closure** (of a spec):
+The human act of closing a Complete spec's issue through a tracker-seam command, recording per child the PR that delivered it and the first tag that shipped it, or that it is still unreleased. Independent of any release.
+_Avoid_: release, completion
