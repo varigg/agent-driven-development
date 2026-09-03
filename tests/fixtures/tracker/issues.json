@@ -187,5 +187,23 @@
     "labels": [{ "name": "ready-for-agent" }],
     "assignees": [],
     "body": "## Parent\n\n- #27\n\n## What to build\n\nThe pending piece.\n\n## Blocked by\n\nNone — can start immediately.\n"
+  },
+  {
+    "number": 29,
+    "title": "Spec: ADR obligation",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "spec" }],
+    "assignees": [],
+    "body": "## Problem Statement\n\nA spec whose only child is closed as completed, with a declared ADR obligation.\n\n## Implementation Decisions\n\n- One ADR records the decision.\n"
+  },
+  {
+    "number": 30,
+    "title": "Decide the approach",
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Parent\n\n- #29\n\n## What to build\n\nThe approach.\n\n## Blocked by\n\nNone — can start immediately.\n"
   }
 ]

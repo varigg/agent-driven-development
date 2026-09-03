@@ -4,9 +4,9 @@
 # stateReason, labels, assignees, body). No network, no gh. Bodies are parsed
 # through parse.sh, so the section encoding contract is inherited, not restated.
 #
-#   resolve.sh frontier <issues.json> [branches-file]
-#   resolve.sh spec-complete <spec-number> <issues.json>
-#   resolve.sh specs <issues.json>
+#   resolve.sh frontier <issues.json> [branches-file] [deliveries-file]
+#   resolve.sh spec-complete <spec-number> <issues.json> [deliveries-file]
+#   resolve.sh specs <issues.json> [deliveries-file]
 #
 # Frontier output: four fixed section headers, always printed, each followed by
 # zero or more tab-separated entry lines, ascending by issue number:
@@ -21,7 +21,12 @@
 #   <completed|open|not-planned><TAB>#N<TAB>title
 # A childless spec prints no child lines (the verdict line already says
 # no-children). A number that is not a spec-labeled issue in the snapshot
-# exits 2.
+# exits 2. A declared ADR obligation (a spec body's "## Implementation
+# Decisions" list item mentioning ADR) additionally needs one child's delivery
+# — read from the optional deliveries-file, in tracker.sh's child-delivery
+# line shape — marked adr:yes; otherwise a spec with no open child still
+# reports partial rather than complete. No deliveries file (or none of the
+# spec's children in it) reads as unsatisfied, same as an explicit "no".
 #
 # specs output: one line per open spec-labeled issue, ascending by issue
 # number: #N<TAB>verdict<TAB>title
@@ -85,6 +90,12 @@ assert_not_contains "$specs_sec" "$(printf '#21\t')" \
   "complete-specs: partial spec (open child) not surfaced"
 assert_not_contains "$specs_sec" "$(printf '#27\t')" \
   "complete-specs: planned spec (no delivered child) not surfaced"
+assert_not_contains "$specs_sec" "$(printf '#29\t')" \
+  "complete-specs: unmet ADR obligation not surfaced without a deliveries file"
+
+out_deliveries="$(bash "$RESOLVE" frontier "$FIX/issues.json" "$FIX/branches.txt" "$FIX/deliveries-met.txt")"
+assert_contains "$out_deliveries" "$(printf '#29\tSpec: ADR obligation')" \
+  "complete-specs: satisfied ADR obligation surfaced given the deliveries file"
 
 out_nobranches="$(bash "$RESOLVE" frontier "$FIX/issues.json")"
 assert_contains "$out_nobranches" "$(printf '#10\tAdd the widget')" \
@@ -138,6 +149,33 @@ assert_exit 2 "spec-complete: non-spec issue refuses" \
 assert_exit 2 "spec-complete: unknown number refuses" \
   bash "$RESOLVE" spec-complete 999 "$FIX/issues.json"
 
+# --- spec-complete: ADR obligation folded into the verdict ---
+assert_exit 1 "spec-complete: all children closed but an unmet ADR obligation is partial" \
+  bash "$RESOLVE" spec-complete 29 "$FIX/issues.json" "$FIX/deliveries-unmet.txt"
+unmet="$(bash "$RESOLVE" spec-complete 29 "$FIX/issues.json" "$FIX/deliveries-unmet.txt" || true)"
+assert_eq "partial" "$(head -n 1 <<<"$unmet")" \
+  "spec-complete: unmet ADR obligation verdict line"
+assert_contains "$unmet" "$(printf 'completed\t#30\tDecide the approach')" \
+  "spec-complete: unmet-obligation spec's completed child still listed"
+
+assert_exit 0 "spec-complete: a child-delivering commit that touched the ADR directory is complete" \
+  bash "$RESOLVE" spec-complete 29 "$FIX/issues.json" "$FIX/deliveries-met.txt"
+met="$(bash "$RESOLVE" spec-complete 29 "$FIX/issues.json" "$FIX/deliveries-met.txt")"
+assert_eq "complete" "$(head -n 1 <<<"$met")" \
+  "spec-complete: satisfied ADR obligation verdict line"
+
+assert_exit 1 "spec-complete: an ADR obligation with no deliveries file at all is unsatisfied, not complete" \
+  bash "$RESOLVE" spec-complete 29 "$FIX/issues.json"
+no_deliveries="$(bash "$RESOLVE" spec-complete 29 "$FIX/issues.json" || true)"
+assert_eq "partial" "$(head -n 1 <<<"$no_deliveries")" \
+  "spec-complete: missing deliveries file reads as unsatisfied, not a guessed complete"
+
+assert_exit 0 "spec-complete: a spec with no obligation is unaffected by an unrelated deliveries file" \
+  bash "$RESOLVE" spec-complete 2 "$FIX/issues.json" "$FIX/deliveries-met.txt"
+no_obligation="$(bash "$RESOLVE" spec-complete 2 "$FIX/issues.json" "$FIX/deliveries-met.txt")"
+assert_eq "complete" "$(head -n 1 <<<"$no_obligation")" \
+  "spec-complete: no-obligation spec verdict unchanged by a deliveries file"
+
 # --- specs ---
 specs_out="$(bash "$RESOLVE" specs "$FIX/issues.json")"
 assert_exit 0 "specs: exits zero" bash "$RESOLVE" specs "$FIX/issues.json"
@@ -151,9 +189,15 @@ assert_contains "$specs_out" "$(printf '#24\tcomplete\tSpec: waived child')" \
   "specs: not-planned-only spec listed as complete"
 assert_contains "$specs_out" "$(printf '#27\tplanned\tSpec: planned only')" \
   "specs: planned spec listed with its verdict"
-assert_eq "2,20,21,24,27" \
+assert_contains "$specs_out" "$(printf '#29\tpartial\tSpec: ADR obligation')" \
+  "specs: unmet ADR obligation reads as partial without a deliveries file"
+assert_eq "2,20,21,24,27,29" \
   "$(grep -o '^#[0-9]*' <<<"$specs_out" | tr -d '#' | paste -sd,)" \
   "specs: entries ascend by issue number"
+
+specs_met="$(bash "$RESOLVE" specs "$FIX/issues.json" "$FIX/deliveries-met.txt")"
+assert_contains "$specs_met" "$(printf '#29\tcomplete\tSpec: ADR obligation')" \
+  "specs: satisfied ADR obligation reads as complete given the deliveries file"
 
 # --- CLI seam hygiene ---
 assert_exit 2 "no arguments refuses loudly" bash "$RESOLVE"
