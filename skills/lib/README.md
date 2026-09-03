@@ -104,6 +104,27 @@ lives inside `skills/` rather than at the repo root.
     and `specs` inherit the refusal as a non-zero exit. The bound is
     configuration because the remedy would otherwise mean editing a skill,
     which must stay byte-identical across installs.
+    `child-delivery <n>` answers, per closed child of spec `<n>`, how it was
+    delivered: the closing PR and its merge commit, whether that commit
+    touched `docs/adr/`, and the first tag containing it (or `unreleased`).
+    It lives here, in `tracker.sh` itself, rather than beside `frontier` and
+    `specs` as a `resolve.sh` query, because it is not pure: the child-to-PR
+    edge is one more tracker (`gh`) read — GraphQL's
+    `closedByPullRequestsReferences`, since no `gh pr` subcommand answers
+    "which PR closed this issue" (`gh issue view --json
+    closedByPullRequestsReferences` exists but omits the merge commit) — but
+    the ADR-touch and first-tag facts are `git show`/`git describe` reads
+    against the repository, and `resolve.sh`'s fixture-testability contract is
+    exactly "no network, no git". Folding a git-backed fact into that file
+    would mean every other resolver test loses the guarantee that a checked-in
+    snapshot is enough to run it. A not-planned child reports `abandoned` with
+    no delivery fields — guessing one would misrepresent work that was never
+    shipped. A completed child with no tracked closing PR (closed by hand)
+    reports `no-pr` rather than a guessed PR, for the same reason. This is
+    the seam a later ticket's `close-spec` and the resolver's own delivery
+    record consume as an optional input file — kept a plain live read here
+    rather than pulled into the resolver, so the resolver stays fixture-
+    testable and this stays testable against a real git fixture instead.
 
 - `config/config.sh` — the shared reader for `docs/addw.env`, and the only
   code that opens it: every consumer — scripts and SKILL.md snippets alike —
