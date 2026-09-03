@@ -132,6 +132,31 @@ lives inside `skills/` rather than at the repo root.
     an optional input file — kept a plain live read here rather than pulled
     into the resolver, so the resolver stays fixture-testable and this stays
     testable against a real git fixture instead.
+    `detach <n>` is deferral, not a `not-planned` close. Once release and spec
+    lifecycles split (#144), *not planned* means abandoned, permanently, and
+    only a human directs it — a maintainer setting a ticket aside for later
+    has no honest way to say so with that reason, and the spec it sits under
+    can never reach `complete` while it stays open under the old `## Parent`
+    edge. Detach resolves that: it removes the ticket's
+    `## Parent` section (`parse.sh strip-section`, which drops a named
+    level-2 section — heading, body, and its own trailing separator — while
+    leaving every other section untouched), swaps `ready-for-agent` for
+    `backlog`, and comments naming the former parent so the edge survives on
+    the ticket itself rather than vanishing with the section — posted
+    *before* the edit that removes the section, since the comment is the
+    edge's only surviving record and a step that can fail must not run
+    after the step it alone preserves; an edit failure after a successful
+    comment leaves an inert stray comment on an otherwise unchanged ticket,
+    safe to retry. The spec is
+    left alone: detaching its last child leaves it with none, which is a
+    `no-children` verdict a human resolves by closing the spec `not-planned`
+    by hand — `close-spec` (a later ticket) refuses `no-children` for exactly
+    this reason, so detach must never touch the parent. It refuses a closed
+    ticket (deferring finished work is not a thing) and a ticket with no
+    parseable parent (nothing to detach it from), both loudly and non-zero.
+    Unit-tested (`tests/tracker-detach.test.sh`) against a `gh` stub in the
+    existing style, because the body rewrite and the label swap are logic a
+    passthrough wrapper does not have.
 
 - `config/config.sh` — the shared reader for `docs/addw.env`, and the only
   code that opens it: every consumer — scripts and SKILL.md snippets alike —
