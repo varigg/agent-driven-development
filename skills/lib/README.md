@@ -142,7 +142,12 @@ lives inside `skills/` rather than at the repo root.
     level-2 section — heading, body, and its own trailing separator — while
     leaving every other section untouched), swaps `ready-for-agent` for
     `backlog`, and comments naming the former parent so the edge survives on
-    the ticket itself rather than vanishing with the section. The spec is
+    the ticket itself rather than vanishing with the section — posted
+    *before* the edit that removes the section, since the comment is the
+    edge's only surviving record and a step that can fail must not run
+    after the step it alone preserves; an edit failure after a successful
+    comment leaves an inert stray comment on an otherwise unchanged ticket,
+    safe to retry. The spec is
     left alone: detaching its last child leaves it with none, which is a
     `no-children` verdict a human resolves by closing the spec `not-planned`
     by hand — `close-spec` (a later ticket) refuses `no-children` for exactly

@@ -267,11 +267,18 @@ detach() { # issue-number
 
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "$tmpdir"' EXIT
+  # The comment is posted before the body/label edit, not after: it is the
+  # only surviving record of the former-parent edge once the edit removes
+  # the "## Parent" section, so a step that can fail must not run after the
+  # step it is the sole record of. Reversed, a comment failure would leave
+  # the ticket silently detached with no trace of what it detached from; this
+  # way, an edit failure after a successful comment leaves an inert stray
+  # comment on an otherwise unchanged ticket — safe to retry.
+  printf 'Detached from #%s.\n' "$parent" > "$tmpdir/comment.md"
+  gh issue comment "$issue" --body-file "$tmpdir/comment.md"
   printf '%s' "$body" | bash "$PARSE" strip-section Parent > "$tmpdir/body.md"
   gh issue edit "$issue" --body-file "$tmpdir/body.md" \
     --add-label backlog --remove-label ready-for-agent
-  printf 'Detached from #%s.\n' "$parent" > "$tmpdir/comment.md"
-  gh issue comment "$issue" --body-file "$tmpdir/comment.md"
 }
 
 child_delivery() { # spec-number issues.json
