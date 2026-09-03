@@ -14,6 +14,8 @@
 #   tracker.sh unlabel <n> <label>               remove a label
 #   tracker.sh comment <n> <file>                comment from a file
 #   tracker.sh close <n> <completed|not-planned> [comment-file]
+#   tracker.sh detach <n>                        move a ticket out of its
+#                                                 spec into the backlog
 #   tracker.sh assign <n>                        self-assign (@me)
 #   tracker.sh create <title> <body-file> [label...]  open an issue
 #   tracker.sh create --title-file <file> <body-file> [label...]  title from the file's first line
@@ -61,6 +63,13 @@
 # snapshot; 78 (EX_CONFIG) when ADDW_ADR_DIR is unset or empty; 1 when a
 # closing PR's merge commit is not resolvable in this checkout (a shallow or
 # stale clone) — never reported as a quiet "no" / "unreleased".
+#
+# detach <n> is deferral: it rewrites <n>'s body with its "## Parent" section
+# removed (parse.sh strip-section), swaps `ready-for-agent` for `backlog`,
+# and comments naming the former parent so the edge survives in the ticket's
+# own history. Why deferral is a detach rather than a not-planned close:
+# ../README.md. Refuses (1) a closed issue, and an issue with no parseable
+# parent — nothing to detach. It does not touch the former parent issue.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -235,6 +244,36 @@ first_tag() { # commit-sha
   fi
 }
 
+detach() { # issue-number
+  # tmpdir is deliberately not `local`: its cleanup trap fires on the whole
+  # process's EXIT, which runs after this function has returned and its
+  # locals have gone out of scope — under `set -u` that reads as unbound.
+  local issue=$1 state body parent
+
+  state="$(gh issue view "$issue" --json state --jq .state)"
+  if [ "$state" = "CLOSED" ]; then
+    printf 'detach: issue #%s is closed; detach only applies to open tickets\n' \
+      "$issue" >&2
+    return 1
+  fi
+
+  body="$(issue_body "$issue")"
+  parent="$(printf '%s' "$body" | bash "$PARSE" parent)"
+  if [ -z "$parent" ]; then
+    printf 'detach: issue #%s has no parseable parent; nothing to detach\n' \
+      "$issue" >&2
+    return 1
+  fi
+
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+  printf '%s' "$body" | bash "$PARSE" strip-section Parent > "$tmpdir/body.md"
+  gh issue edit "$issue" --body-file "$tmpdir/body.md" \
+    --add-label backlog --remove-label ready-for-agent
+  printf 'Detached from #%s.\n' "$parent" > "$tmpdir/comment.md"
+  gh issue comment "$issue" --body-file "$tmpdir/comment.md"
+}
+
 child_delivery() { # spec-number issues.json
   local spec=$1 file=$2 num state reason b64 body parent status pr_line pr sha adr tag
 
@@ -355,6 +394,10 @@ case "$cmd" in
     else
       gh issue close "$1" --reason "$reason"
     fi
+    ;;
+  detach)
+    [ "$#" -eq 1 ] || usage
+    detach "$1"
     ;;
   assign)
     [ "$#" -eq 1 ] || usage

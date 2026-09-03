@@ -17,11 +17,16 @@
 #   parse.sh blockers [file]          -> blocker numbers one per line (exit 0)
 #   parse.sh adr-obligation [file]    -> matching Implementation Decisions
 #                                         list items, one per line, or empty (exit 0)
+#   parse.sh strip-section <name> [file] -> body with that level-2 section
+#                                            removed entirely, or the body
+#                                            unchanged if the section is
+#                                            absent (exit 0)
 #   parse.sh classify-reason <reason> -> "completed" | "not-planned" (else exit 2)
 #   parse.sh body-hash [file]         -> truncated body sha256 (exit 0)
 #   parse.sh approval-hash [file]     -> last recorded body hash, or empty (exit 0)
 #
-# parent/blockers/adr-obligation read the issue body from <file> or stdin.
+# parent/blockers/adr-obligation/strip-section read the issue body from
+# <file> or stdin.
 set -euo pipefail
 
 usage() {
@@ -74,6 +79,28 @@ adr_obligations() {
   '
 }
 
+# Print the body with the named level-2 section — its heading and every line
+# up to (not including) the next level-2 heading, or end of body — removed.
+# The section's own trailing blank line is dropped with it, so the surviving
+# gap between neighboring sections is whatever separator the section *before*
+# the removed one already carried, rather than a doubled blank.
+strip_section() { # section-name
+  awk -v want="$1" '
+    /^##[^#]/ {
+      heading = $0
+      sub(/^##[[:space:]]*/, "", heading)
+      gsub(/[[:space:]]+$/, "", heading)
+      if (tolower(heading) == tolower(want)) {
+        insec = 1
+        next
+      } else {
+        insec = 0
+      }
+    }
+    !insec { print }
+  '
+}
+
 body_hash() { # [file]
   local contents
   # Command substitution removes every trailing newline before the bytes are
@@ -119,6 +146,12 @@ case "$cmd" in
     ;;
   adr-obligation)
     body "$@" | adr_obligations
+    ;;
+  strip-section)
+    [ "$#" -ge 1 ] || usage
+    name=$1
+    shift
+    body "$@" | strip_section "$name"
     ;;
   classify-reason)
     [ "$#" -eq 1 ] || usage
