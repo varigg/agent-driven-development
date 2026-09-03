@@ -29,6 +29,7 @@
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
 #   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
 #   tracker.sh parent-check <n> <expected>       fail loudly unless <n>'s parsed parent is <expected>
+#   tracker.sh child-delivery <n>                live per-spec closed-child delivery lookup
 #
 # `snapshot` means "the issues the workflow reasons about", not "every issue":
 # `archived` issues are dropped immediately after the fetch, so no consumer can
@@ -39,6 +40,27 @@
 # bound exits non-zero rather than answering, and every consumer inherits the
 # refusal. Why the filter is client-side and why the bound refuses rather than
 # truncating: ../README.md.
+#
+# child-delivery <n> is a live read over spec <n>'s closed children: the
+# parent edge is a tracker question (the same body-parsing contract
+# resolve.sh uses), but a child's delivery is answered from git — the merge
+# commit its closing PR left, whether that commit touched the project's ADR
+# directory, and the first tag that shipped it. It stays out of resolve.sh
+# because that script's fixture-testability contract forbids git and
+# network; this command needs both, so it lives in the seam instead. Why the
+# split: ../README.md. One line per closed child, ascending by issue number,
+# tab-separated:
+#   #<child>\tabandoned                     closed not-planned
+#   #<child>\tno-pr                         closed completed, no tracked PR
+#   #<child>\tcompleted\t#<PR>\t<sha>\t<adr:yes|no>\t<tag|unreleased>
+# <tag> is the first tag containing the merge commit (`git describe --tags
+# --contains`, bare tag name); <adr> is `yes` iff that commit added or
+# modified a file under the project's configured ADR directory
+# (ADDW_ADR_DIR). An open child of the spec is silent here — `spec-complete`
+# answers those. Exits 2 when <n> is not a spec-labeled issue in the
+# snapshot; 78 (EX_CONFIG) when ADDW_ADR_DIR is unset or empty; 1 when a
+# closing PR's merge commit is not resolvable in this checkout (a shallow or
+# stale clone) — never reported as a quiet "no" / "unreleased".
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,6 +75,26 @@ FIELDS='number,title,state,stateReason,labels,assignees,body'
 CONFIG="docs/addw.env"
 FETCH_LIMIT_DEFAULT=1000
 FETCH_LIMIT=""
+
+# Resolved from the project's own ADDW_ADR_DIR (docs/agents/domain.md,
+# skills/addw-init's Step 1.5) — the same key next-adr-number.sh and
+# codex-code-review's guardrail check already read, so a project that
+# configured a non-default ADR directory gets a correct answer here too.
+# Empty until resolve_adr_dir() runs, and only the child-delivery path needs
+# it — every other tracker.sh command must stay usable without an
+# ADDW_ADR_DIR at all.
+ADR_DIR=""
+
+CLOSING_PR_QUERY='
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    issue(number: $number) {
+      closedByPullRequestsReferences(first: 50) {
+        nodes { number mergeCommit { oid } }
+      }
+    }
+  }
+}'
 
 usage() {
   sed -n 's/^# \{0,1\}//p' "${BASH_SOURCE[0]}" | sed -n '/^Usage:/,/^$/p' >&2
@@ -81,6 +123,19 @@ resolve_fetch_limit() {
     exit 1
   fi
   FETCH_LIMIT=$configured
+}
+
+# Sets ADR_DIR from ADDW_ADR_DIR, the same key next-adr-number.sh requires.
+# No default: unlike the fetch limit, a wrong guess here would silently
+# mis-locate ADRs in a project that configured a non-default directory, so
+# an unset or empty key is a config defect (78, EX_CONFIG), not a fallback.
+resolve_adr_dir() {
+  config_source ADDW_ADR_DIR
+  ADR_DIR="${ADDW_ADR_DIR:-}"
+  if [ -z "$ADR_DIR" ]; then
+    printf 'tracker.sh: ADDW_ADR_DIR is unset or empty in %s\n' "$CONFIG" >&2
+    exit 78
+  fi
 }
 
 snapshot() {
@@ -144,6 +199,86 @@ parent_check() { # issue-number expected-parent
   else
     printf 'parent-check: issue #%s parent #%s confirmed\n' "$issue" "$expected"
   fi
+}
+
+# The PR that closed <issue>, if any: "<PR-number>\t<merge-commit-sha>", or
+# empty when no tracked PR closed it (closed by hand) or its merge commit is
+# unavailable. Takes the last reference when more than one PR closed the
+# issue (a reopen-and-reclose), the same "most recent wins" rule parse.sh's
+# approval-hash applies to its own last-marker-wins read.
+closing_pr() { # issue-number
+  gh api graphql -f query="$CLOSING_PR_QUERY" \
+    -F owner='{owner}' -F name='{repo}' -F number="$1" \
+    --jq '.data.repository.issue.closedByPullRequestsReferences.nodes
+      | map(select(.mergeCommit != null)) | last
+      | if . == null then "" else "\(.number)\t\(.mergeCommit.oid)" end'
+}
+
+adr_touched() { # commit-sha — the caller has already verified it resolves
+  if git show --format= --name-status "$1" -- "$ADR_DIR" \
+      | awk '$1 ~ /^[AM]/ { f = 1 } END { exit !f }'; then
+    echo yes
+  else
+    echo no
+  fi
+}
+
+first_tag() { # commit-sha
+  local t
+  t="$(git describe --tags --contains "$1" 2>/dev/null || true)"
+  if [ -z "$t" ]; then
+    echo unreleased
+  else
+    # --contains suffixes an exact match with ~N/^N when the commit predates
+    # the tag rather than being it; only the bare tag name is wanted.
+    printf '%s\n' "${t%%[~^]*}"
+  fi
+}
+
+child_delivery() { # spec-number issues.json
+  local spec=$1 file=$2 num state reason b64 body parent status pr_line pr sha adr tag
+
+  if ! jq -e --arg n "$spec" \
+      '.[] | select((.number | tostring) == $n) | any(.labels[]?; .name == "spec")' \
+      "$file" >/dev/null; then
+    printf 'tracker.sh: #%s is not a spec-labeled issue in the snapshot\n' "$spec" >&2
+    return 2
+  fi
+
+  while IFS=$'\x1f' read -r num state reason b64; do
+    [ "$state" = "CLOSED" ] || continue
+    body="$(printf '%s' "$b64" | base64 -d)"
+    parent="$(printf '%s' "$body" | bash "$PARSE" parent)"
+    [ "$parent" = "$spec" ] || continue
+
+    status="$(bash "$PARSE" classify-reason "$reason")" || return $?
+    if [ "$status" = "not-planned" ]; then
+      printf '#%s\tabandoned\n' "$num"
+      continue
+    fi
+
+    pr_line="$(closing_pr "$num")" || return $?
+    if [ -z "$pr_line" ]; then
+      printf '#%s\tno-pr\n' "$num"
+      continue
+    fi
+    pr="${pr_line%%$'\t'*}"
+    sha="${pr_line#*$'\t'}"
+    # Verified before either git read trusts it: a commit this checkout
+    # cannot see (a shallow or stale clone) must not read as a quiet "no" /
+    # "unreleased" — that would misrepresent a fact this command couldn't
+    # actually check.
+    if ! git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+      printf 'tracker.sh: #%s: merge commit %s (PR #%s) is not in this checkout — fetch full history and retry\n' \
+        "$num" "$sha" "$pr" >&2
+      return 1
+    fi
+    adr="$(adr_touched "$sha")"
+    tag="$(first_tag "$sha")"
+    printf '#%s\tcompleted\t#%s\t%s\t%s\t%s\n' "$num" "$pr" "$sha" "$adr" "$tag"
+  done < <(jq -r 'sort_by(.number)[] |
+      [(.number | tostring), .state, (.stateReason // ""), (.body // "" | @base64)]
+      | join("")' "$file")
 }
 
 [ "$#" -ge 1 ] || usage
@@ -303,6 +438,15 @@ case "$cmd" in
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
     bash "$RESOLVE" specs "$tmpdir/issues.json"
+    ;;
+  child-delivery)
+    [ "$#" -eq 1 ] || usage
+    case "$1" in *[!0-9]*|'') usage ;; esac
+    resolve_adr_dir
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf "$tmpdir"' EXIT
+    snapshot > "$tmpdir/issues.json"
+    child_delivery "$1" "$tmpdir/issues.json"
     ;;
   *)
     usage
