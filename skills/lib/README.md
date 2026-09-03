@@ -110,10 +110,11 @@ lives inside `skills/` rather than at the repo root.
     It lives here, in `tracker.sh` itself, rather than beside `frontier` and
     `specs` as a `resolve.sh` query, because it is not pure: the child-to-PR
     edge is one more tracker (`gh`) read — GraphQL's
-    `closedByPullRequestsReferences`, since no `gh pr` subcommand answers
-    "which PR closed this issue" (`gh issue view --json
-    closedByPullRequestsReferences` exists but omits the merge commit) — but
-    the ADR-touch and first-tag facts are `git show`/`git describe` reads
+    `closedByPullRequestsReferences`, the only source for "which PR closed
+    this issue" that also carries the merge commit (the tracker CLI's own
+    single-issue JSON view exposes the same reference list, but not the
+    commit) — but the ADR-touch and first-tag facts are `git show`/`git
+    describe` reads
     against the repository, and `resolve.sh`'s fixture-testability contract is
     exactly "no network, no git". Folding a git-backed fact into that file
     would mean every other resolver test loses the guarantee that a checked-in

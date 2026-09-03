@@ -194,7 +194,7 @@ closing_pr() { # issue-number
       | if . == null then "" else "\(.number)\t\(.mergeCommit.oid)" end'
 }
 
-adr_touched() { # commit-sha -> yes|no
+adr_touched() { # commit-sha
   if git show --format= --name-status "$1" -- "$ADR_DIR" 2>/dev/null \
       | awk '$1 ~ /^[AM]/ { f = 1 } END { exit !f }'; then
     echo yes
@@ -203,7 +203,7 @@ adr_touched() { # commit-sha -> yes|no
   fi
 }
 
-first_tag() { # commit-sha -> tag or unreleased
+first_tag() { # commit-sha
   local t
   t="$(git describe --tags --contains "$1" 2>/dev/null || true)"
   if [ -z "$t" ]; then
@@ -412,7 +412,7 @@ case "$cmd" in
     ;;
   child-delivery)
     [ "$#" -eq 1 ] || usage
-    case "$1" in *[!0-9]* | '') usage ;; esac
+    case "$1" in *[!0-9]*|'') usage ;; esac
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
