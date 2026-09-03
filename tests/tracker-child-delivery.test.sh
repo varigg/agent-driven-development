@@ -29,7 +29,7 @@ trap 'rm -rf "$work"' EXIT
 repo="$work/repo"
 git init -q "$repo"
 mkdir -p "$repo/docs"
-printf 'ADDW_MAIN_BRANCH="master"\n' > "$repo/docs/addw.env"
+printf 'ADDW_MAIN_BRANCH="master"\nADDW_ADR_DIR="docs/adr"\n' > "$repo/docs/addw.env"
 
 commit() { # subject
   git -C "$repo" -c user.name=t -c user.email=t@t \
@@ -92,6 +92,10 @@ issues="$work/issues.json"
   issue 107 CLOSED COMPLETED 200 ready-for-agent "Child of a different spec"
   printf ',\n'
   issue 200 OPEN "" "" spec "Spec: a different spec"
+  printf ',\n'
+  issue 300 OPEN "" "" spec "Spec: an unfetched merge commit"
+  printf ',\n'
+  issue 301 CLOSED COMPLETED 300 ready-for-agent "Delivered, but this checkout lacks the commit"
   printf '\n]\n'
 } > "$issues"
 export STUB_ISSUES="$issues"
@@ -105,6 +109,7 @@ case "$*" in
   *"number=102"*) printf '202\t%s\n' "$SHA_102" ;;
   *"number=103"*) printf '203\t%s\n' "$SHA_103" ;;
   *"number=105"*) printf '' ;;
+  *"number=301"*) printf '401\tdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n' ;;
   *) echo "gh stub: unexpected call: $*" >&2; exit 97 ;;
 esac
 SH
@@ -161,6 +166,31 @@ assert_exit 2 "non-spec number refuses" \
 err="$(cd "$repo" && bash "$TRACKER" child-delivery 999 2>&1 >/dev/null || true)"
 assert_contains "$err" "not a spec-labeled issue" \
   "unknown number: refusal names why"
+
+# --- a closing PR's merge commit that this checkout cannot resolve refuses,
+#     rather than reporting a quiet "no" / "unreleased" it never checked -----
+
+assert_exit 1 "unresolvable merge commit refuses the whole command" \
+  bash -c "cd '$repo' && bash '$TRACKER' child-delivery 300"
+err="$(cd "$repo" && bash "$TRACKER" child-delivery 300 2>&1 >/dev/null || true)"
+assert_contains "$err" "#301" "unresolvable commit: refusal names the child"
+assert_contains "$err" "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef" \
+  "unresolvable commit: refusal names the sha"
+assert_contains "$err" "#401" "unresolvable commit: refusal names the PR"
+out_300="$(cd "$repo" && bash "$TRACKER" child-delivery 300 2>/dev/null || true)"
+assert_eq "" "$out_300" \
+  "unresolvable commit: nothing partial reaches stdout"
+
+# --- ADDW_ADR_DIR unset or empty refuses rather than guessing docs/adr -----
+
+unconfigured="$work/unconfigured"
+mkdir -p "$unconfigured/docs"
+printf 'ADDW_MAIN_BRANCH="master"\n' > "$unconfigured/docs/addw.env"
+assert_exit 78 "unset ADDW_ADR_DIR refuses" \
+  bash -c "cd '$unconfigured' && bash '$TRACKER' child-delivery 100"
+err="$(cd "$unconfigured" && bash "$TRACKER" child-delivery 100 2>&1 >/dev/null || true)"
+assert_contains "$err" "ADDW_ADR_DIR" \
+  "unset ADDW_ADR_DIR: refusal names the key"
 
 # --- CLI hygiene --------------------------------------------------------------
 

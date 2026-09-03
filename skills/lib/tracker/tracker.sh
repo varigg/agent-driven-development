@@ -55,9 +55,12 @@
 #   #<child>\tcompleted\t#<PR>\t<sha>\t<adr:yes|no>\t<tag|unreleased>
 # <tag> is the first tag containing the merge commit (`git describe --tags
 # --contains`, bare tag name); <adr> is `yes` iff that commit added or
-# modified a file under docs/adr/. An open child of the spec is silent here —
-# `spec-complete` answers those. Exits 2 when <n> is not a spec-labeled issue
-# in the snapshot.
+# modified a file under the project's configured ADR directory
+# (ADDW_ADR_DIR). An open child of the spec is silent here — `spec-complete`
+# answers those. Exits 2 when <n> is not a spec-labeled issue in the
+# snapshot; 78 (EX_CONFIG) when ADDW_ADR_DIR is unset or empty; 1 when a
+# closing PR's merge commit is not resolvable in this checkout (a shallow or
+# stale clone) — never reported as a quiet "no" / "unreleased".
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -73,10 +76,14 @@ CONFIG="docs/addw.env"
 FETCH_LIMIT_DEFAULT=1000
 FETCH_LIMIT=""
 
-# Fixed by the domain-layout contract (docs/agents/domain.md), same as
-# release/adr-check.sh's own ADR_DIR — not project config, since a rename
-# here is a docs-contract change, not a per-project setting.
-ADR_DIR=docs/adr
+# Resolved from the project's own ADDW_ADR_DIR (docs/agents/domain.md,
+# skills/addw-init's Step 1.5) — the same key next-adr-number.sh and
+# codex-code-review's guardrail check already read, so a project that
+# configured a non-default ADR directory gets a correct answer here too.
+# Empty until resolve_adr_dir() runs, and only the child-delivery path needs
+# it — every other tracker.sh command must stay usable without an
+# ADDW_ADR_DIR at all.
+ADR_DIR=""
 
 CLOSING_PR_QUERY='
 query($owner: String!, $name: String!, $number: Int!) {
@@ -116,6 +123,19 @@ resolve_fetch_limit() {
     exit 1
   fi
   FETCH_LIMIT=$configured
+}
+
+# Sets ADR_DIR from ADDW_ADR_DIR, the same key next-adr-number.sh requires.
+# No default: unlike the fetch limit, a wrong guess here would silently
+# mis-locate ADRs in a project that configured a non-default directory, so
+# an unset or empty key is a config defect (78, EX_CONFIG), not a fallback.
+resolve_adr_dir() {
+  config_source ADDW_ADR_DIR
+  ADR_DIR="${ADDW_ADR_DIR:-}"
+  if [ -z "$ADR_DIR" ]; then
+    printf 'tracker.sh: ADDW_ADR_DIR is unset or empty in %s\n' "$CONFIG" >&2
+    exit 78
+  fi
 }
 
 snapshot() {
@@ -194,8 +214,8 @@ closing_pr() { # issue-number
       | if . == null then "" else "\(.number)\t\(.mergeCommit.oid)" end'
 }
 
-adr_touched() { # commit-sha
-  if git show --format= --name-status "$1" -- "$ADR_DIR" 2>/dev/null \
+adr_touched() { # commit-sha — the caller has already verified it resolves
+  if git show --format= --name-status "$1" -- "$ADR_DIR" \
       | awk '$1 ~ /^[AM]/ { f = 1 } END { exit !f }'; then
     echo yes
   else
@@ -244,6 +264,15 @@ child_delivery() { # spec-number issues.json
     fi
     pr="${pr_line%%$'\t'*}"
     sha="${pr_line#*$'\t'}"
+    # Verified before either git read trusts it: a commit this checkout
+    # cannot see (a shallow or stale clone) must not read as a quiet "no" /
+    # "unreleased" — that would misrepresent a fact this command couldn't
+    # actually check.
+    if ! git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+      printf 'tracker.sh: #%s: merge commit %s (PR #%s) is not in this checkout — fetch full history and retry\n' \
+        "$num" "$sha" "$pr" >&2
+      return 1
+    fi
     adr="$(adr_touched "$sha")"
     tag="$(first_tag "$sha")"
     printf '#%s\tcompleted\t#%s\t%s\t%s\t%s\n' "$num" "$pr" "$sha" "$adr" "$tag"
@@ -413,6 +442,7 @@ case "$cmd" in
   child-delivery)
     [ "$#" -eq 1 ] || usage
     case "$1" in *[!0-9]*|'') usage ;; esac
+    resolve_adr_dir
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
