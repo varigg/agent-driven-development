@@ -100,23 +100,27 @@ classify() { # num
   bash "$PARSE" classify-reason "${REASON[$1]}"
 }
 
-# Sets the global SPEC_VERDICT to complete | partial | planned | no-children
-# for spec $1. A not-planned child counts as closed: it neither delivers nor
-# holds a spec open, so a spec whose only remaining children are not-planned
-# is complete. Runs in the caller's shell (never inside a command
-# substitution) so the global survives — callers needing SPEC_VERDICT must not
-# capture this call's stdout, since it has none.
-spec_verdict() { # num
+# One pass over spec $1's children, classifying each closed one exactly once.
+# Sets two globals: SPEC_VERDICT (complete | partial | planned | no-children)
+# and SPEC_CHILD_LINES (an array of "<status>\t#<n>\t<title>" entries, empty
+# for a childless spec). A not-planned child counts as closed: it neither
+# delivers nor holds a spec open, so a spec whose only remaining children are
+# not-planned is complete. Runs in the caller's shell (never inside a command
+# substitution) so both globals survive.
+spec_scan() { # num
   local spec=$1 n count=0 has_open=0 has_completed=0 status
+  SPEC_CHILD_LINES=()
   for n in "${NUMBERS[@]}"; do
     [ "${PARENT[$n]}" = "$spec" ] || continue
     count=$((count + 1))
     if [ "${STATE[$n]}" = "OPEN" ]; then
+      status=open
       has_open=1
     else
       status="$(classify "$n")" || exit $?
       [ "$status" = "completed" ] && has_completed=1
     fi
+    SPEC_CHILD_LINES+=("$(printf '%s\t#%s\t%s' "$status" "$n" "${TITLE[$n]}")")
   done
   if [ "$count" -eq 0 ]; then
     SPEC_VERDICT=no-children
@@ -127,22 +131,6 @@ spec_verdict() { # num
   else
     SPEC_VERDICT=planned
   fi
-}
-
-# Child status lines for spec $1 on stdout, one <status>\t#<n>\t<title> line
-# per child, none for a childless spec. Callers capturing via command
-# substitution must forward exit 2 themselves (a subshell swallows the exit).
-spec_children() { # num
-  local spec=$1 n status
-  for n in "${NUMBERS[@]}"; do
-    [ "${PARENT[$n]}" = "$spec" ] || continue
-    if [ "${STATE[$n]}" = "OPEN" ]; then
-      status=open
-    else
-      status="$(classify "$n")" || exit $?
-    fi
-    printf '%s\t#%s\t%s\n' "$status" "$n" "${TITLE[$n]}"
-  done
 }
 
 frontier() { # issues.json [branches-file]
@@ -159,7 +147,7 @@ frontier() { # issues.json [branches-file]
     [ "${STATE[$n]}" = "OPEN" ] || continue
 
     if has_label "$n" spec; then
-      spec_verdict "$n"
+      spec_scan "$n"
       if [ "$SPEC_VERDICT" = complete ]; then
         spec_lines+=("$(printf '#%s\t%s' "$n" "${TITLE[$n]}")")
       fi
@@ -225,9 +213,12 @@ spec_complete() { # spec-number issues.json
     printf 'resolve.sh: #%s is not a spec-labeled issue in the snapshot\n' "$spec" >&2
     exit 2
   fi
-  spec_verdict "$spec"
+  spec_scan "$spec"
   printf '%s\n' "$SPEC_VERDICT"
-  spec_children "$spec"
+  local line
+  for line in "${SPEC_CHILD_LINES[@]:-}"; do
+    [ -n "$line" ] && printf '%s\n' "$line"
+  done
   [ "$SPEC_VERDICT" = complete ]
 }
 
@@ -237,7 +228,7 @@ specs() { # issues.json
   for n in "${NUMBERS[@]}"; do
     [ "${STATE[$n]}" = "OPEN" ] || continue
     has_label "$n" spec || continue
-    spec_verdict "$n"
+    spec_scan "$n"
     printf '#%s\t%s\t%s\n' "$n" "$SPEC_VERDICT" "${TITLE[$n]}"
   done
 }

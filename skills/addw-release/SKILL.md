@@ -2,7 +2,7 @@
 name: addw-release
 description: Mechanical release - derived version, generated changelog, release PR, tag and GitHub Release
 disable-model-invocation: true
-argument-hint: "<spec-issue-number> — omit for the sole release-ready spec, or the repository"
+argument-hint: "<spec-issue-number> — omit for the sole complete spec, or the repository"
 ---
 
 # Release Mode
@@ -67,13 +67,17 @@ whether the children are done, not whether the spec is still in flight.
 
 It prints the four-way verdict — `complete`, `partial`, `planned`, or
 `no-children` — then one `<completed|open|not-planned>` line per child (none
-for `no-children`). Only `complete` proceeds:
+for `no-children`). Read the child lines before reacting to the verdict,
+because a `complete` spec still splits into two cases:
 
-- **`complete`** → proceed. A remaining not-planned child needs no human
-  waiver here — the verdict already counts it as closed, since it neither
-  delivers nor holds the spec open.
 - **`partial` or `planned`** → **refuse**. List the open tickets and stop. The
   release does not get to decide that unfinished work is finished.
+- **`complete`, with one or more children closed as *not planned*** → name
+  each one and ask the human, with `AskUserQuestion`, whether to release
+  without it. A ticket closed as not planned is work deliberately abandoned,
+  so only the human can say the spec is complete anyway; their confirmation
+  **is** the waiver, and the release proceeds on it.
+- **`complete`, no not-planned children** → proceed.
 - **`no-children`** → refuse: decomposition never happened, so there is no
   completed intent to release.
 
