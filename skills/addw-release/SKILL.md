@@ -96,18 +96,22 @@ ADR that never landed in the commits this release is about to project: refuse
 exactly as the open-children case does, naming the spec and the unmet
 obligation printed on stderr, and stop.
 
-**The invocation names nothing** — decide from the `complete-specs` section:
+**The invocation names nothing** — decide from the `complete-specs` section.
+It names only which specs are `complete`, not whether any is complete via a
+not-planned waiver, so run the same `spec-complete` and ADR-obligation check
+above on every entry it lists before offering it:
 
-- Exactly one → release it as a spec release, saying which.
-- More than one → **offer all of them and accept any subset**, with
-  `AskUserQuestion`. One tag consumes every complete spec's commits either
-  way — releasing only some of them still ships the rest, just without
-  crediting them — so *all of them* is the expected answer, and the human may
-  still choose fewer. When they name a proper subset, say plainly, before
-  proceeding, which specs are being left out and that this tag's range
-  already contains their commits: released later, those specs close against a
-  version whose changelog entry does not describe their work. Let the human
-  proceed knowingly rather than silently.
+- Exactly one → verify it as above, then release it as a spec release, saying
+  which.
+- More than one → verify each one as above, then **offer all of them and
+  accept any subset**, with `AskUserQuestion`. One tag consumes every complete
+  spec's commits either way — releasing only some of them still ships the
+  rest, just without crediting them — so *all of them* is the expected
+  answer, and the human may still choose fewer. When they name a proper
+  subset, say plainly, before proceeding, which specs are being left out and
+  that this tag's range already contains their commits: released later, those
+  specs close against a version whose changelog entry does not describe their
+  work. Let the human proceed knowingly rather than silently.
 - None → it is a **repository release** — it tags whatever the main branch has
   accumulated since the last tag and **closes nothing**. Say that explicitly,
   since it is the mode that silently does less.
