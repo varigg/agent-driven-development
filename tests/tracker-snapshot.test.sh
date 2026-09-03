@@ -197,10 +197,11 @@ out="$(cd "$proj" && bash "$TRACKER" snapshot)"
 assert_eq 3 "$(printf '%s' "$out" | jq 'length')" \
   "remedy: raising the configured limit makes the same fetch answer"
 
-# --- the refusal propagates to both queries ---------------------------------
+# --- the refusal propagates to all three queries ----------------------------
 #
 # A truncated frontier that merely looked shorter is the silent failure this
-# exists to prevent, so both queries must exit non-zero rather than answer.
+# exists to prevent, so every live query must exit non-zero rather than
+# answer.
 
 proj="$(make_project frontier-at-limit 5)"
 assert_exit 1 "frontier: the refusal reaches the frontier query as an exit code" \
@@ -216,7 +217,13 @@ assert_exit 1 "spec-complete: the refusal reaches the completion query" \
 out="$(cd "$proj" && bash "$TRACKER" spec-complete 5 2>/dev/null || true)"
 assert_eq "" "$out" "spec-complete: a refused query returns no verdict"
 
-# Below the limit both queries answer, so the assertions above are about the
+assert_exit 1 "specs: the refusal reaches the specs listing" \
+  in_proj "$proj" bash "$TRACKER" specs
+
+out="$(cd "$proj" && bash "$TRACKER" specs 2>/dev/null || true)"
+assert_eq "" "$out" "specs: a refused query returns no listing"
+
+# Below the limit every query answers, so the assertions above are about the
 # refusal rather than about a query that never worked.
 proj="$(make_project frontier-below 6)"
 out="$(cd "$proj" && bash "$TRACKER" frontier)"
@@ -226,8 +233,12 @@ assert_not_contains "$out" "A retired proposal" \
   "frontier: no archived issue reaches the listing"
 
 out="$(cd "$proj" && bash "$TRACKER" spec-complete 5 2>/dev/null || true)"
-assert_contains "$out" "not-release-ready" \
+assert_contains "$out" "no-children" \
   "spec-complete: answers normally below the limit"
+
+out="$(cd "$proj" && bash "$TRACKER" specs 2>/dev/null || true)"
+assert_contains "$out" "$(printf '#5\tno-children\tSpec: the parent')" \
+  "specs: answers normally below the limit"
 
 # --- a malformed limit is refused, never passed to the fetch ----------------
 #

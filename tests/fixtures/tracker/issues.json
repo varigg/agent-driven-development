@@ -169,5 +169,23 @@
     "labels": [{ "name": "ready-for-agent" }],
     "assignees": [],
     "body": "## Parent\n\n- #24\n\n## What to build\n\nDocs polish nobody needed.\n\n## Blocked by\n\n- #25\n"
+  },
+  {
+    "number": 27,
+    "title": "Spec: planned only",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "spec" }],
+    "assignees": [],
+    "body": "## Problem Statement\n\nA spec whose only child is still open, none delivered.\n"
+  },
+  {
+    "number": 28,
+    "title": "Build the pending piece",
+    "state": "OPEN",
+    "stateReason": "",
+    "labels": [{ "name": "ready-for-agent" }],
+    "assignees": [],
+    "body": "## Parent\n\n- #27\n\n## What to build\n\nThe pending piece.\n\n## Blocked by\n\nNone — can start immediately.\n"
   }
 ]

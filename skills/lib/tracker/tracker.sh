@@ -25,6 +25,7 @@
 #   tracker.sh branches                          remote branch names, one per line
 #   tracker.sh frontier                          live frontier listing
 #   tracker.sh spec-complete <n>                 live spec-completion query
+#   tracker.sh specs                             live specs-by-verdict listing
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
 #   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
 #   tracker.sh parent-check <n> <expected>       fail loudly unless <n>'s parsed parent is <expected>
@@ -295,6 +296,13 @@ case "$cmd" in
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
     bash "$RESOLVE" spec-complete "$1" "$tmpdir/issues.json"
+    ;;
+  specs)
+    [ "$#" -eq 0 ] || usage
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf "$tmpdir"' EXIT
+    snapshot > "$tmpdir/issues.json"
+    bash "$RESOLVE" specs "$tmpdir/issues.json"
     ;;
   *)
     usage
