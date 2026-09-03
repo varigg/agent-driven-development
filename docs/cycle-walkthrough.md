@@ -192,9 +192,9 @@ listing also surfaces complete specs so you notice at your next session
    **repository release** tags whatever `main` has accumulated since the last tag and closes
    nothing. A child closed as *not planned* is surfaced by name and you decide whether to
    proceed — your confirmation is the waiver. A spec whose Implementation Decisions declared an
-   ADR obligation still has to show one: `skills/lib/release/adr-check.sh` reads the spec body
-   and refuses, naming the unmet obligation, if no ADR landed in the commits about to be
-   released — closed tickets alone were never proof, as spec #84 showed (#137).
+   ADR obligation has that obligation folded into its completeness verdict: it remains `partial`,
+   not `complete`, until a delivering commit adds or modifies a file under the ADR directory —
+   closed tickets alone were never proof, as spec #84 showed (#137).
 
 2. **Version and changelog, both derived** (§ *Step 2: Derive the Version and the Entry*).
    `skills/lib/release/derive.sh` reads the conventional-commit subjects since the last tag —

@@ -7,9 +7,9 @@
 # not-planned refuses loudly (exit 2) rather than guessing an edge.
 #
 # Usage:
-#   resolve.sh frontier <issues.json> [branches-file]
-#   resolve.sh spec-complete <spec-number> <issues.json>
-#   resolve.sh specs <issues.json>
+#   resolve.sh frontier <issues.json> [branches-file] [deliveries-file]
+#   resolve.sh spec-complete <spec-number> <issues.json> [deliveries-file]
+#   resolve.sh specs <issues.json> [deliveries-file]
 #
 # frontier prints four fixed sections, headers always present, entries
 # tab-separated and ascending by issue number:
@@ -19,6 +19,7 @@
 #   needs-rescoping:     dependents of a blocker closed as not planned
 #   unknown-blockers:    dependents of a blocker absent from the snapshot
 #   complete-specs:      open spec-labeled issues whose verdict is `complete`
+#                        after folding in any declared ADR obligation
 # The branch annotation matches whatever heads the caller passes in, which
 # ../README.md's contract fixes as the remote ones. Where a repo keeps merged
 # branches, the annotation outlives the work — harmless for the ticket the PR
@@ -29,13 +30,15 @@
 # silently — waiting is the normal case).
 #
 # spec-complete prints the four-way verdict — complete, partial, planned, or
-# no-children — as its first line (exit 0 iff complete), then one
-# <completed|open|not-planned><TAB>#N<TAB><title> line per child (no lines for
-# a childless spec — the verdict line already says so). A number that is not a
-# spec-labeled issue in the snapshot exits 2.
+# no-children — as its first line (exit 0 iff complete), folding a declared ADR
+# obligation into that verdict using the optional deliveries file. It then
+# prints one <completed|open|not-planned><TAB>#N<TAB><title> line per child (no
+# lines for a childless spec — the verdict line already says so). A number that
+# is not a spec-labeled issue in the snapshot exits 2.
 #
 # specs prints one <#N><TAB><verdict><TAB><title> line per open spec-labeled
-# issue in the snapshot, ascending by issue number.
+# issue in the snapshot, ascending by issue number; each verdict folds in a
+# declared ADR obligation from the optional deliveries file.
 set -euo pipefail
 
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
@@ -52,7 +55,7 @@ usage() {
   exit 2
 }
 
-declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS
+declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS OBLIGATION DELIVERY_ADR
 NUMBERS=()
 
 load_snapshot() { # issues.json
@@ -65,11 +68,12 @@ load_snapshot() { # issues.json
     printf 'resolve.sh: snapshot is not a JSON array: %s\n' "$snapshot" >&2
     exit 1
   fi
-  # One jq pass, one parse of each body: parent and blocker edges are indexed
-  # here so the queries never rescan the snapshot. The body travels base64'd
-  # to keep the record single-line; the separator is the ASCII unit separator,
-  # not @tsv, because tab is IFS whitespace and read would collapse the empty
-  # stateReason/assignees fields, shifting every later field left.
+  # One jq pass, one parse of each body: parent, blocker, and ADR-obligation
+  # facts are indexed here so the queries never rescan the snapshot. The body
+  # travels base64'd to keep the record single-line; the separator is the ASCII
+  # unit separator, not @tsv, because tab is IFS whitespace and read would
+  # collapse the empty stateReason/assignees fields, shifting every later field
+  # left.
   while IFS=$'\x1f' read -r num state reason labels logins b64 title; do
     NUMBERS+=("$num")
     STATE[$num]=$state
@@ -80,10 +84,28 @@ load_snapshot() { # issues.json
     body="$(printf '%s' "$b64" | base64 -d)"
     PARENT[$num]="$(printf '%s' "$body" | bash "$PARSE" parent)"
     BLOCKERS[$num]="$(printf '%s' "$body" | bash "$PARSE" blockers | tr '\n' ' ')"
+    OBLIGATION[$num]="$(printf '%s' "$body" | bash "$PARSE" adr-obligation)"
   done < <(jq -r 'sort_by(.number)[] |
       [(.number | tostring), .state, (.stateReason // ""),
        ([.labels[].name] | join(",")), ([.assignees[].login] | join(",")),
        (.body // "" | @base64), .title] | join("\u001f")' "$snapshot")
+}
+
+load_deliveries() { # [deliveries-file]
+  local deliveries="${1:-}" child_num
+  local -a fields
+  DELIVERY_ADR=()
+  [ -n "$deliveries" ] && [ -s "$deliveries" ] || return 0
+
+  while IFS=$'\t' read -r -a fields; do
+    [ "${fields[1]:-}" = completed ] || continue
+    case "${fields[0]:-}:${fields[4]:-}" in
+      \#[0-9]*:yes|\#[0-9]*:no)
+        child_num=${fields[0]#\#}
+        DELIVERY_ADR[$child_num]=${fields[4]}
+        ;;
+    esac
+  done < "$deliveries"
 }
 
 has_label() { # num label
@@ -104,15 +126,19 @@ classify() { # num
 # Sets two globals: SPEC_VERDICT (complete | partial | planned | no-children)
 # and SPEC_CHILD_LINES (an array of "<status>\t#<n>\t<title>" entries, empty
 # for a childless spec). A not-planned child counts as closed: it neither
-# delivers nor holds a spec open, so a spec whose only remaining children are
-# not-planned is complete. Runs in the caller's shell (never inside a command
-# substitution) so both globals survive.
+# delivers nor holds a spec open. A declared ADR obligation additionally needs
+# one child delivery marked yes, even when every child is closed. Runs in the
+# caller's shell (never inside a command substitution) so both globals survive.
 spec_scan() { # num
-  local spec=$1 n count=0 has_open=0 has_completed=0 status
+  local spec=$1 n count=0 has_open=0 has_completed=0 adr_satisfied=1 status
+  [ -n "${OBLIGATION[$spec]:-}" ] && adr_satisfied=0
   SPEC_CHILD_LINES=()
   for n in "${NUMBERS[@]}"; do
     [ "${PARENT[$n]}" = "$spec" ] || continue
     count=$((count + 1))
+    if [ "${DELIVERY_ADR[$n]:-}" = yes ]; then
+      adr_satisfied=1
+    fi
     if [ "${STATE[$n]}" = "OPEN" ]; then
       status=open
       has_open=1
@@ -125,7 +151,11 @@ spec_scan() { # num
   if [ "$count" -eq 0 ]; then
     SPEC_VERDICT=no-children
   elif [ "$has_open" -eq 0 ]; then
-    SPEC_VERDICT=complete
+    if [ "$adr_satisfied" -eq 1 ]; then
+      SPEC_VERDICT=complete
+    else
+      SPEC_VERDICT=partial
+    fi
   elif [ "$has_completed" -eq 1 ]; then
     SPEC_VERDICT=partial
   else
@@ -133,9 +163,11 @@ spec_scan() { # num
   fi
 }
 
-frontier() { # issues.json [branches-file]
+frontier() { # issues.json [branches-file] [deliveries-file]
   local branches="${2:-}"
+  local deliveries="${3:-}"
   load_snapshot "$1"
+  load_deliveries "$deliveries"
   if [ -n "$branches" ] && [ ! -r "$branches" ]; then
     printf 'resolve.sh: cannot read branches file: %s\n' "$branches" >&2
     exit 1
@@ -206,9 +238,10 @@ print_section() { # header [lines...]
   return 0
 }
 
-spec_complete() { # spec-number issues.json
+spec_complete() { # spec-number issues.json [deliveries-file]
   local spec=$1
   load_snapshot "$2"
+  load_deliveries "${3:-}"
   if [ -z "${STATE[$spec]:-}" ] || ! has_label "$spec" spec; then
     printf 'resolve.sh: #%s is not a spec-labeled issue in the snapshot\n' "$spec" >&2
     exit 2
@@ -222,8 +255,9 @@ spec_complete() { # spec-number issues.json
   [ "$SPEC_VERDICT" = complete ]
 }
 
-specs() { # issues.json
+specs() { # issues.json [deliveries-file]
   load_snapshot "$1"
+  load_deliveries "${2:-}"
   local n
   for n in "${NUMBERS[@]}"; do
     [ "${STATE[$n]}" = "OPEN" ] || continue
@@ -239,16 +273,16 @@ shift
 
 case "$cmd" in
   frontier)
-    [ "$#" -eq 1 ] || [ "$#" -eq 2 ] || usage
+    [ "$#" -eq 1 ] || [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || usage
     frontier "$@"
     ;;
   spec-complete)
-    [ "$#" -eq 2 ] || usage
+    [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || usage
     case "$1" in *[!0-9]*|'') usage ;; esac
     spec_complete "$@"
     ;;
   specs)
-    [ "$#" -eq 1 ] || usage
+    [ "$#" -eq 1 ] || [ "$#" -eq 2 ] || usage
     specs "$@"
     ;;
   *)
