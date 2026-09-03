@@ -43,11 +43,11 @@ The independently-checkable unit of work a ticket delivers; a ticket carries exa
 _Avoid_: feature, work item
 
 **Complete** (of a spec):
-A spec with no open child and any ADR it declared present on the main branch, derived at query time from its children and never stored.
+A spec with children, none open, and any ADR it declared present on the main branch, derived at query time from its children and never stored. A childless spec is neither Complete nor Partial.
 _Avoid_: release-ready, done
 
 **Partial** (of a spec):
-A spec with at least one child closed as completed and at least one still open — a tag would ship half its intent, so a release refuses it by default.
+A spec with at least one child closed as completed and not Complete — whether because a sibling is still open or a declared ADR is still missing. A tag would ship half its intent, so a release refuses it by default.
 _Avoid_: in process, in flight, mid-spec
 
 **Closure** (of a spec):
