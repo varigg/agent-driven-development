@@ -27,9 +27,8 @@ bash .claude/skills/lib/tracker/tracker.sh frontier
 The four sections are fixed. **frontier** is what is workable now — tickets annotated
 `[in progress: …]` already have a branch or an assignee, so pick an unannotated one unless
 you are resuming your own work. **needs-rescoping** and **unknown-blockers** are for the
-human, not for you: report them and do not start those tickets. **release-ready-specs** means
-a spec's tickets are all closed as completed — surface it so the human can invoke
-`addw-release`.
+human, not for you: report them and do not start those tickets. **complete-specs** means a
+spec has no open child left — surface it so the human can invoke `addw-release`.
 
 ---
 

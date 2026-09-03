@@ -9,6 +9,7 @@
 # Usage:
 #   resolve.sh frontier <issues.json> [branches-file]
 #   resolve.sh spec-complete <spec-number> <issues.json>
+#   resolve.sh specs <issues.json>
 #
 # frontier prints four fixed sections, headers always present, entries
 # tab-separated and ascending by issue number:
@@ -17,7 +18,7 @@
 #                        [in progress: branch <name>] or [in progress: assignee <login>]
 #   needs-rescoping:     dependents of a blocker closed as not planned
 #   unknown-blockers:    dependents of a blocker absent from the snapshot
-#   release-ready-specs: open spec-labeled issues whose completion query passes
+#   complete-specs:      open spec-labeled issues whose verdict is `complete`
 # The branch annotation matches whatever heads the caller passes in, which
 # ../README.md's contract fixes as the remote ones. Where a repo keeps merged
 # branches, the annotation outlives the work — harmless for the ticket the PR
@@ -27,10 +28,14 @@
 # listing: unknown over not-planned over open (an open blocker excludes
 # silently — waiting is the normal case).
 #
-# spec-complete prints "release-ready" (exit 0) or "not-release-ready"
-# (exit 1), then one <completed|open|not-planned><TAB>#N<TAB><title> line per
-# child ("no-children" when decomposition hasn't happened). A number that is
-# not a spec-labeled issue in the snapshot exits 2.
+# spec-complete prints the four-way verdict — complete, partial, planned, or
+# no-children — as its first line (exit 0 iff complete), then one
+# <completed|open|not-planned><TAB>#N<TAB><title> line per child (no lines for
+# a childless spec — the verdict line already says so). A number that is not a
+# spec-labeled issue in the snapshot exits 2.
+#
+# specs prints one <#N><TAB><verdict><TAB><title> line per open spec-labeled
+# issue in the snapshot, ascending by issue number.
 set -euo pipefail
 
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
@@ -95,28 +100,37 @@ classify() { # num
   bash "$PARSE" classify-reason "${REASON[$1]}"
 }
 
-# Child status lines for spec $1 on stdout; return 0 iff release-ready.
-# Callers capturing via command substitution must forward exit 2 themselves
-# (a subshell swallows the exit).
-spec_children() { # num
-  local spec=$1 n count=0 ready=0 status
+# One pass over spec $1's children, classifying each closed one exactly once.
+# Sets two globals: SPEC_VERDICT (complete | partial | planned | no-children)
+# and SPEC_CHILD_LINES (an array of "<status>\t#<n>\t<title>" entries, empty
+# for a childless spec). A not-planned child counts as closed: it neither
+# delivers nor holds a spec open, so a spec whose only remaining children are
+# not-planned is complete. Runs in the caller's shell (never inside a command
+# substitution) so both globals survive.
+spec_scan() { # num
+  local spec=$1 n count=0 has_open=0 has_completed=0 status
+  SPEC_CHILD_LINES=()
   for n in "${NUMBERS[@]}"; do
     [ "${PARENT[$n]}" = "$spec" ] || continue
     count=$((count + 1))
     if [ "${STATE[$n]}" = "OPEN" ]; then
       status=open
-      ready=1
+      has_open=1
     else
       status="$(classify "$n")" || exit $?
-      [ "$status" = "completed" ] || ready=1
+      [ "$status" = "completed" ] && has_completed=1
     fi
-    printf '%s\t#%s\t%s\n' "$status" "$n" "${TITLE[$n]}"
+    SPEC_CHILD_LINES+=("$(printf '%s\t#%s\t%s' "$status" "$n" "${TITLE[$n]}")")
   done
   if [ "$count" -eq 0 ]; then
-    printf 'no-children\n'
-    return 1
+    SPEC_VERDICT=no-children
+  elif [ "$has_open" -eq 0 ]; then
+    SPEC_VERDICT=complete
+  elif [ "$has_completed" -eq 1 ]; then
+    SPEC_VERDICT=partial
+  else
+    SPEC_VERDICT=planned
   fi
-  return "$ready"
 }
 
 frontier() { # issues.json [branches-file]
@@ -133,7 +147,8 @@ frontier() { # issues.json [branches-file]
     [ "${STATE[$n]}" = "OPEN" ] || continue
 
     if has_label "$n" spec; then
-      if spec_children "$n" >/dev/null; then
+      spec_scan "$n"
+      if [ "$SPEC_VERDICT" = complete ]; then
         spec_lines+=("$(printf '#%s\t%s' "$n" "${TITLE[$n]}")")
       fi
       continue
@@ -178,7 +193,7 @@ frontier() { # issues.json [branches-file]
   print_section frontier: "${frontier_lines[@]:-}"
   print_section needs-rescoping: "${rescope_lines[@]:-}"
   print_section unknown-blockers: "${unknown_lines[@]:-}"
-  print_section release-ready-specs: "${spec_lines[@]:-}"
+  print_section complete-specs: "${spec_lines[@]:-}"
 }
 
 print_section() { # header [lines...]
@@ -198,16 +213,24 @@ spec_complete() { # spec-number issues.json
     printf 'resolve.sh: #%s is not a spec-labeled issue in the snapshot\n' "$spec" >&2
     exit 2
   fi
-  local status=0 lines
-  lines="$(spec_children "$spec")" || status=$?
-  [ "$status" -le 1 ] || exit "$status"
-  if [ "$status" -eq 0 ]; then
-    printf 'release-ready\n'
-  else
-    printf 'not-release-ready\n'
-  fi
-  printf '%s\n' "$lines"
-  return "$status"
+  spec_scan "$spec"
+  printf '%s\n' "$SPEC_VERDICT"
+  local line
+  for line in "${SPEC_CHILD_LINES[@]:-}"; do
+    [ -n "$line" ] && printf '%s\n' "$line"
+  done
+  [ "$SPEC_VERDICT" = complete ]
+}
+
+specs() { # issues.json
+  load_snapshot "$1"
+  local n
+  for n in "${NUMBERS[@]}"; do
+    [ "${STATE[$n]}" = "OPEN" ] || continue
+    has_label "$n" spec || continue
+    spec_scan "$n"
+    printf '#%s\t%s\t%s\n' "$n" "$SPEC_VERDICT" "${TITLE[$n]}"
+  done
 }
 
 [ "$#" -ge 1 ] || usage
@@ -223,6 +246,10 @@ case "$cmd" in
     [ "$#" -eq 2 ] || usage
     case "$1" in *[!0-9]*|'') usage ;; esac
     spec_complete "$@"
+    ;;
+  specs)
+    [ "$#" -eq 1 ] || usage
+    specs "$@"
     ;;
   *)
     usage

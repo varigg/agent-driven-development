@@ -183,12 +183,12 @@ comments, since no `gh pr` subcommand exposes the latter.
 ## Phase 5 — Release (`/addw-release`)
 
 Readiness is detected when you invoke the skill, never by tracker automation; the frontier
-listing also surfaces release-ready specs so you notice at your next session
+listing also surfaces complete specs so you notice at your next session
 (§ *Step 1: Mode and Readiness*).
 
-1. **Two modes.** A **spec release** names a release-ready spec — every issue citing it as
-   parent closed as completed, and at least one child existing, since a spec with no children
-   was never decomposed. Naming an incomplete spec is refused with its open tickets listed. A
+1. **Two modes.** A **spec release** names a complete spec — every issue citing it as parent
+   closed, and at least one child existing, since a spec with no children was never
+   decomposed. Naming an incomplete spec is refused with its open tickets listed. A
    **repository release** tags whatever `main` has accumulated since the last tag and closes
    nothing. A child closed as *not planned* is surfaced by name and you decide whether to
    proceed — your confirmation is the waiver. A spec whose Implementation Decisions declared an

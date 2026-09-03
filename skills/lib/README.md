@@ -18,9 +18,24 @@ lives inside `skills/` rather than at the repo root.
     snapshot (the `gh --json` shape), building on `parse.sh`. Needs `jq` and
     bash ≥ 4 (associative arrays; guarded at startup). No network: fed a
     checked-in fixture in tests, a live snapshot in use.
+    A spec's completion is a four-way verdict — `complete`, `partial`,
+    `planned`, `no-children` — derived at query time from its children rather
+    than stored anywhere, so nothing about it can go stale between sessions. A
+    child closed as *not planned* counts as closed for this purpose: it
+    neither delivers the spec's intent nor holds the spec open, so a spec
+    whose only remaining children are not-planned is `complete`, not a state
+    needing a human waiver. `partial` (some delivered, some still open) is the
+    one state a release must never ship, since it would tag half an intent —
+    `planned` (open children, none delivered) and `no-children` both mean
+    nothing has shipped yet, and the distinction is for a maintainer deciding
+    whether decomposition happened, not for the release's guard. `specs`
+    surfaces this verdict for every open spec at once, one line each, because
+    a maintainer asking "what state is each spec in" is a different question
+    from `spec-complete`'s "is this one spec done" — the frontier's
+    `complete-specs` section is the same query, filtered to one verdict.
   - `tracker.sh` — the thin `gh`-calling wrappers (issue reads, body edits,
-    labels, comments, close-with-reason, self-assign) plus the live `frontier`
-    and `spec-complete` queries, which fetch a snapshot and delegate all
+    labels, comments, close-with-reason, self-assign) plus the live `frontier`,
+    `spec-complete`, and `specs` queries, which fetch a snapshot and delegate all
     reasoning to `resolve.sh`. Four wrappers exist for install verification
     rather than for issue work — `auth`, `issues-enabled`, `labels`, and
     `create-label` — because "is the tracker usable, and do the labels the
@@ -85,8 +100,8 @@ lives inside `skills/` rather than at the repo root.
     That ordering is why reaching `ADDW_TRACKER_FETCH_LIMIT` (default 1000)
     refuses rather than truncating: archives occupy fetch slots and can
     displace live issues *before* anything drops them, so a shortened frontier
-    would be a wrong answer rather than a slow one. `frontier` and
-    `spec-complete` inherit the refusal as a non-zero exit. The bound is
+    would be a wrong answer rather than a slow one. `frontier`, `spec-complete`,
+    and `specs` inherit the refusal as a non-zero exit. The bound is
     configuration because the remedy would otherwise mean editing a skill,
     which must stay byte-identical across installs.
 

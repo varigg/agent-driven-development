@@ -2,7 +2,7 @@
 name: addw-release
 description: Mechanical release - derived version, generated changelog, release PR, tag and GitHub Release
 disable-model-invocation: true
-argument-hint: "<spec-issue-number> — omit for the sole release-ready spec, or the repository"
+argument-hint: "<spec-issue-number> — omit for the sole complete spec, or the repository"
 ---
 
 # Release Mode
@@ -50,8 +50,8 @@ nothing about a spec's state can go stale between sessions. Two modes:
 bash .claude/skills/lib/tracker/tracker.sh frontier
 ```
 
-Its `release-ready-specs` section is the same query, surfaced for the human at
-the end of an implement session; this step re-runs it rather than trusting it.
+Its `complete-specs` section is the same query, surfaced for the human at the
+end of an implement session; this step re-runs it rather than trusting it.
 
 **The invocation names a spec** — verify it:
 
@@ -65,25 +65,26 @@ release's tail did — so releasing it again would cut a second version for the
 same intent. Refuse unless it is open; the completion query answers only
 whether the children are done, not whether the spec is still in flight.
 
-It prints `release-ready` or `not-release-ready`, then one
-`<completed|open|not-planned>` line per child. Read the child lines before
-reacting to the verdict, because the two ways to be not-ready mean opposite
-things:
+It prints the four-way verdict — `complete`, `partial`, `planned`, or
+`no-children` — then one `<completed|open|not-planned>` line per child (none
+for `no-children`). Read the child lines before reacting to the verdict,
+because a `complete` spec still splits into two cases:
 
-- **Any child still open** → **refuse**. List those tickets and stop. The
+- **`partial` or `planned`** → **refuse**. List the open tickets and stop. The
   release does not get to decide that unfinished work is finished.
-- **No open child, but one or more closed as *not planned*** → name each one
-  and ask the human, with `AskUserQuestion`, whether to release without it. A
-  ticket closed as not planned is work deliberately abandoned, so only the human
-  can say the spec is complete anyway; their confirmation **is** the waiver, and
-  the release proceeds on it.
+- **`complete`, with one or more children closed as *not planned*** → name
+  each one and ask the human, with `AskUserQuestion`, whether to release
+  without it. A ticket closed as not planned is work deliberately abandoned,
+  so only the human can say the spec is complete anyway; their confirmation
+  **is** the waiver, and the release proceeds on it.
+- **`complete`, no not-planned children** → proceed.
 - **`no-children`** → refuse: decomposition never happened, so there is no
   completed intent to release.
 
 A spec that clears the child-completion check still owes one more read before
 it counts as ready — its own text can promise something no ticket carries.
 Verify it the same way for every spec this step considers, named or picked
-from `release-ready-specs` below:
+from `complete-specs` below:
 
 ```bash
 bash .claude/skills/lib/tracker/tracker.sh body <n> | bash .claude/skills/lib/release/adr-check.sh
@@ -95,38 +96,25 @@ ADR that never landed in the commits this release is about to project: refuse
 exactly as the open-children case does, naming the spec and the unmet
 obligation printed on stderr, and stop.
 
-**The invocation names nothing** — decide from the `release-ready-specs`
-section:
+**The invocation names nothing** — decide from the `complete-specs` section.
+It names only which specs are `complete`, not whether any is complete via a
+not-planned waiver, so run the same `spec-complete` and ADR-obligation check
+above on every entry it lists before offering it:
 
-- Exactly one → release it as a spec release, saying which.
-- More than one → **offer all of them and accept any subset**, with
-  `AskUserQuestion`. One tag consumes every release-ready spec's commits
-  either way — releasing only some of them still ships the rest, just without
-  crediting them — so *all of them* is the expected answer, and the human may
-  still choose fewer. When they name a proper subset, say plainly, before
-  proceeding, which specs are being left out and that this tag's range
-  already contains their commits: released later, those specs close against a
-  version whose changelog entry does not describe their work. Let the human
-  proceed knowingly rather than silently.
-- None → before concluding, check for a spec that is complete **but for a
-  not-planned child**. Such a spec never appears in `release-ready-specs`, so
-  defaulting straight to a repository release would silently withhold the very
-  waiver the human is owed:
-
-  ```bash
-  bash .claude/skills/lib/tracker/tracker.sh snapshot \
-    | jq -r '.[] | select(.state == "OPEN")
-             | select(any(.labels[]; .name == "spec")) | .number'
-  ```
-
-  Run `spec-complete` on each, then the same ADR-obligation check above —
-  a not-planned waiver does not excuse a promised ADR. Any spec whose children
-  are all closed, with at least one not planned, and whose ADR obligation (if
-  any) is satisfied, is a release candidate: name it and its abandoned
-  tickets, and offer it. If none qualifies, it is a **repository release** —
-  it tags whatever the main branch has accumulated since the last tag and
-  **closes nothing**. Say that explicitly, since it is the mode that silently
-  does less.
+- Exactly one → verify it as above, then release it as a spec release, saying
+  which.
+- More than one → verify each one as above, then **offer all of them and
+  accept any subset**, with `AskUserQuestion`. One tag consumes every complete
+  spec's commits either way — releasing only some of them still ships the
+  rest, just without crediting them — so *all of them* is the expected
+  answer, and the human may still choose fewer. When they name a proper
+  subset, say plainly, before proceeding, which specs are being left out and
+  that this tag's range already contains their commits: released later, those
+  specs close against a version whose changelog entry does not describe their
+  work. Let the human proceed knowingly rather than silently.
+- None → it is a **repository release** — it tags whatever the main branch has
+  accumulated since the last tag and **closes nothing**. Say that explicitly,
+  since it is the mode that silently does less.
 
 Carry two things out of this step: the **mode**, and for a spec release the
 **set of spec issue numbers** being closed — one or more.
@@ -222,7 +210,7 @@ gh pr create --base "$ADDW_MAIN_BRANCH" --title "chore(release): <version>" --bo
 The body states the mode (spec release naming every spec it closes, or
 repository release), the range the derivation covered, the changelog entry
 verbatim, and any unclassifiable subjects from Step 2. When Step 1 excluded
-some release-ready specs, name them here too, with the same warning given the
+some complete specs, name them here too, with the same warning given the
 human then — this tag's range already contains their commits. Say plainly
 that **merging is the version confirmation** and that the tag and GitHub
 Release follow it.
