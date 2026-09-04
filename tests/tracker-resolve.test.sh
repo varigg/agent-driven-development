@@ -13,7 +13,7 @@
 #   frontier:            #N<TAB>title[<TAB>[in progress: ...]]
 #   needs-rescoping:     #N<TAB>title<TAB>[blocker #M closed as not planned]
 #   unknown-blockers:    #N<TAB>title<TAB>[blocker #M not in snapshot]
-#   complete-specs:      #N<TAB>title
+#   complete-specs:      #N<TAB>title<TAB>tracker.sh close-spec N
 #
 # Spec-completion output: first line is the four-way verdict — complete,
 # partial, planned, or no-children (exit 0 iff complete) — then one line per
@@ -29,7 +29,9 @@
 # spec's children in it) reads as unsatisfied, same as an explicit "no".
 #
 # specs output: one line per open spec-labeled issue, ascending by issue
-# number: #N<TAB>verdict<TAB>title
+# number: #N<TAB>verdict<TAB>title, plus a fourth field naming the close
+# command when verdict is complete: #N<TAB>complete<TAB>title<TAB>tracker.sh
+# close-spec N
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 . ./lib.sh
@@ -80,10 +82,10 @@ assert_contains "$rescope_sec" "$(printf '#7\tRework the exporter\t[blocker #9 c
   "rescoping: dependent of not-planned blocker flagged with the blocker named"
 assert_contains "$unknown_sec" "$(printf '#12\tRide the missing blocker\t[blocker #99 not in snapshot]')" \
   "unknown: absent blocker flagged loudly, never treated as satisfied"
-assert_contains "$specs_sec" "$(printf '#2\tSpec: sample overlay')" \
-  "complete-specs: spec with only a completed child surfaced"
-assert_contains "$specs_sec" "$(printf '#24\tSpec: waived child')" \
-  "complete-specs: a not-planned remaining child still counts as complete"
+assert_contains "$specs_sec" "$(printf '#2\tSpec: sample overlay\ttracker.sh close-spec 2')" \
+  "complete-specs: spec with only a completed child surfaced, naming the close command"
+assert_contains "$specs_sec" "$(printf '#24\tSpec: waived child\ttracker.sh close-spec 24')" \
+  "complete-specs: a not-planned remaining child still counts as complete, naming the close command"
 assert_not_contains "$specs_sec" "$(printf '#20\t')" \
   "complete-specs: childless spec not surfaced"
 assert_not_contains "$specs_sec" "$(printf '#21\t')" \
@@ -94,8 +96,8 @@ assert_not_contains "$specs_sec" "$(printf '#29\t')" \
   "complete-specs: unmet ADR obligation not surfaced without a deliveries file"
 
 out_deliveries="$(bash "$RESOLVE" frontier "$FIX/issues.json" "$FIX/branches.txt" "$FIX/deliveries-met.txt")"
-assert_contains "$out_deliveries" "$(printf '#29\tSpec: ADR obligation')" \
-  "complete-specs: satisfied ADR obligation surfaced given the deliveries file"
+assert_contains "$out_deliveries" "$(printf '#29\tSpec: ADR obligation\ttracker.sh close-spec 29')" \
+  "complete-specs: satisfied ADR obligation surfaced given the deliveries file, naming the close command"
 
 out_nobranches="$(bash "$RESOLVE" frontier "$FIX/issues.json")"
 assert_contains "$out_nobranches" "$(printf '#10\tAdd the widget')" \
@@ -179,10 +181,12 @@ assert_eq "complete" "$(head -n 1 <<<"$no_obligation")" \
 # --- specs ---
 specs_out="$(bash "$RESOLVE" specs "$FIX/issues.json")"
 assert_exit 0 "specs: exits zero" bash "$RESOLVE" specs "$FIX/issues.json"
-assert_contains "$specs_out" "$(printf '#2\tcomplete\tSpec: sample overlay')" \
-  "specs: complete spec listed with its verdict"
+assert_contains "$specs_out" "$(printf '#2\tcomplete\tSpec: sample overlay\ttracker.sh close-spec 2')" \
+  "specs: complete spec listed with its verdict, naming the close command"
 assert_contains "$specs_out" "$(printf '#20\tno-children\tSpec: childless')" \
   "specs: childless spec listed with its verdict"
+assert_not_contains "$specs_out" "$(printf '#20\tno-children\tSpec: childless\ttracker.sh')" \
+  "specs: a non-complete verdict never names the close command"
 assert_contains "$specs_out" "$(printf '#21\tpartial\tSpec: one open child')" \
   "specs: partial spec listed with its verdict"
 assert_contains "$specs_out" "$(printf '#24\tcomplete\tSpec: waived child')" \
@@ -196,8 +200,8 @@ assert_eq "2,20,21,24,27,29" \
   "specs: entries ascend by issue number"
 
 specs_met="$(bash "$RESOLVE" specs "$FIX/issues.json" "$FIX/deliveries-met.txt")"
-assert_contains "$specs_met" "$(printf '#29\tcomplete\tSpec: ADR obligation')" \
-  "specs: satisfied ADR obligation reads as complete given the deliveries file"
+assert_contains "$specs_met" "$(printf '#29\tcomplete\tSpec: ADR obligation\ttracker.sh close-spec 29')" \
+  "specs: satisfied ADR obligation reads as complete given the deliveries file, naming the close command"
 
 # --- CLI seam hygiene ---
 assert_exit 2 "no arguments refuses loudly" bash "$RESOLVE"

@@ -19,7 +19,9 @@
 #   needs-rescoping:     dependents of a blocker closed as not planned
 #   unknown-blockers:    dependents of a blocker absent from the snapshot
 #   complete-specs:      open spec-labeled issues whose verdict is `complete`
-#                        after folding in any declared ADR obligation
+#                        after folding in any declared ADR obligation, each
+#                        line naming the close command:
+#                        #N<TAB>title<TAB>tracker.sh close-spec N
 # The branch annotation matches whatever heads the caller passes in, which
 # ../README.md's contract fixes as the remote ones. Where a repo keeps merged
 # branches, the annotation outlives the work — harmless for the ticket the PR
@@ -38,7 +40,9 @@
 #
 # specs prints one <#N><TAB><verdict><TAB><title> line per open spec-labeled
 # issue in the snapshot, ascending by issue number; each verdict folds in a
-# declared ADR obligation from the optional deliveries file.
+# declared ADR obligation from the optional deliveries file. A `complete`
+# line carries a fourth field naming the close command:
+#   #N<TAB>complete<TAB>title<TAB>tracker.sh close-spec N
 set -euo pipefail
 
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
@@ -181,7 +185,7 @@ frontier() { # issues.json [branches-file] [deliveries-file]
     if has_label "$n" spec; then
       spec_scan "$n"
       if [ "$SPEC_VERDICT" = complete ]; then
-        spec_lines+=("$(printf '#%s\t%s' "$n" "${TITLE[$n]}")")
+        spec_lines+=("$(printf '#%s\t%s\ttracker.sh close-spec %s' "$n" "${TITLE[$n]}" "$n")")
       fi
       continue
     fi
@@ -263,7 +267,11 @@ specs() { # issues.json [deliveries-file]
     [ "${STATE[$n]}" = "OPEN" ] || continue
     has_label "$n" spec || continue
     spec_scan "$n"
-    printf '#%s\t%s\t%s\n' "$n" "$SPEC_VERDICT" "${TITLE[$n]}"
+    if [ "$SPEC_VERDICT" = complete ]; then
+      printf '#%s\t%s\t%s\ttracker.sh close-spec %s\n' "$n" "$SPEC_VERDICT" "${TITLE[$n]}" "$n"
+    else
+      printf '#%s\t%s\t%s\n' "$n" "$SPEC_VERDICT" "${TITLE[$n]}"
+    fi
   done
 }
 
