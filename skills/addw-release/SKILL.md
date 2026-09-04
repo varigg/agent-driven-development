@@ -62,10 +62,13 @@ neither blocks:
   of its children delivered and it is not yet Complete — a tag here would ship
   half an intent. For each partial spec, run
   `bash .claude/skills/lib/tracker/tracker.sh spec-complete <n>` and list its
-  `open` child lines, so the human sees exactly what is unfinished. Then offer
-  the override with `AskUserQuestion`: proceed and ship around it, or stop.
-  The human proceeding knowingly **is** the override — record which partial
-  specs were shipped around, and their open tickets, for the PR body (Step 4).
+  `open` child lines, so the human sees exactly what is unfinished. **No
+  `open` line at all** means every child already closed and the block is the
+  spec's declared ADR obligation, unsatisfied — say that explicitly rather
+  than showing an empty list. Then offer the override with `AskUserQuestion`:
+  proceed and ship around it, or stop. The human proceeding knowingly **is**
+  the override — record which partial specs were shipped around, and their
+  open tickets (or the unmet ADR obligation), for the PR body (Step 4).
 - **Any `complete` spec** → surface it, naming its close command from the
   fourth field, and say it is left open. Closing it is human housekeeping
   through `tracker.sh close-spec`, never a side effect of a tag — record the
