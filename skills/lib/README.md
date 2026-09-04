@@ -33,7 +33,10 @@ lives inside `skills/` rather than at the repo root.
     surfaces this verdict for every open spec at once, one line each, because
     a maintainer asking "what state is each spec in" is a different question
     from `spec-complete`'s "is this one spec done" — the frontier's
-    `complete-specs` section is the same query, filtered to one verdict.
+    `complete-specs` section is the same query, filtered to one verdict. Both
+    `specs` and `complete-specs` name `close-spec` on every `complete` line,
+    so closure is nagged at the maintainer everywhere a Complete spec
+    surfaces, never enforced.
     A declared ADR obligation is satisfied only when the optional deliveries
     input records at least one child whose delivering commit added or modified
     a file under the configured ADR directory. This check exists because no
@@ -137,10 +140,12 @@ lives inside `skills/` rather than at the repo root.
     checkout cannot resolve (shallow or stale) refuses the whole command
     loudly rather than reporting that child's ADR-touch or tag as a quiet
     "no" / "unreleased" it never actually checked. This is the seam that
-    `specs`, `spec-complete`, and `frontier` now use: each gathers per-spec
-    deliveries and hands them to `resolve.sh` as an optional input file; a
-    later `close-spec` will consume it the same way. It stays a plain live
-    read here rather than pulled into the resolver, so the resolver stays
+    `specs`, `spec-complete`, and `frontier` use for the ADR-obligation fold,
+    each gathering per-spec deliveries and handing them to `resolve.sh` as an
+    optional input file, and that `close-spec` calls directly for its closing
+    record, since that record needs every completed child's PR and tag
+    regardless of any declared obligation. It stays a plain live read here
+    rather than pulled into the resolver, so the resolver stays
     fixture-testable and this stays testable against a real git fixture
     instead.
     `detach <n>` is deferral, not a `not-planned` close. Once release and spec
@@ -161,13 +166,37 @@ lives inside `skills/` rather than at the repo root.
     safe to retry. The spec is
     left alone: detaching its last child leaves it with none, which is a
     `no-children` verdict a human resolves by closing the spec `not-planned`
-    by hand — `close-spec` (a later ticket) refuses `no-children` for exactly
-    this reason, so detach must never touch the parent. It refuses a closed
+    by hand — `close-spec` refuses `no-children` for exactly this reason, so
+    detach must never touch the parent. It refuses a closed
     ticket (deferring finished work is not a thing) and a ticket with no
     parseable parent (nothing to detach it from), both loudly and non-zero.
     Unit-tested (`tests/tracker-detach.test.sh`) against a `gh` stub in the
     existing style, because the body rewrite and the label swap are logic a
     passthrough wrapper does not have.
+    `close-spec <n>` is closure (ADR 0011): it refuses unless `spec-complete`
+    reports `complete`, naming the verdict and, for `partial`/`planned`, the
+    open child lines — `no-children` refuses for the same reason `detach`
+    never touches a spec it just emptied, so an empty or unfinished spec is
+    never recorded as delivered. On a `complete` verdict it calls
+    `child_delivery` for the record — a not-planned child as `abandoned`, a
+    completed child with no tracked PR as `no-pr`, and otherwise the PR and
+    first tag or `unreleased` — and posts it as the closing comment in the
+    same call that closes the spec as completed, so a future reader learns
+    "which version delivered spec N" from one read
+    of the closed issue rather than reconstructing it from the children's own
+    PRs. It is a seam subcommand rather than a skill because no judgment
+    remains in it once the not-planned waiver moved to a human's own choice
+    to close `not planned` by hand (ADR 0011's gate): every input is either
+    the tracker snapshot or a git fact, and a skill here would carry only
+    prose telling an agent to run one command. The GitHub close button still
+    works on a Complete spec; it simply forgoes the record. Needs
+    `ADDW_ADR_DIR` configured even for a spec with no declared ADR obligation,
+    since `child_delivery`'s tag lookup runs for every completed child
+    regardless — the same requirement the plain `child-delivery` subcommand
+    already carries. Unit-tested (`tests/tracker-close-spec.test.sh`) against
+    the same stubbed-`gh`-plus-real-git-fixture style `child-delivery`'s own
+    test uses, since the record it posts inherits that command's git-backed
+    facts.
 
 - `config/config.sh` — the shared reader for `docs/addw.env`, and the only
   code that opens it: every consumer — scripts and SKILL.md snippets alike —

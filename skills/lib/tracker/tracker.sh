@@ -32,6 +32,8 @@
 #   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
 #   tracker.sh parent-check <n> <expected>       fail loudly unless <n>'s parsed parent is <expected>
 #   tracker.sh child-delivery <n>                live per-spec closed-child delivery lookup
+#   tracker.sh close-spec <n>                    close a Complete spec, recording each
+#                                                 child's delivery
 #
 # `snapshot` means "the issues the workflow reasons about", not "every issue":
 # `archived` issues are dropped immediately after the fetch, so no consumer can
@@ -63,6 +65,19 @@
 # snapshot; 78 (EX_CONFIG) when ADDW_ADR_DIR is unset or empty; 1 when a
 # closing PR's merge commit is not resolvable in this checkout (a shallow or
 # stale clone) — never reported as a quiet "no" / "unreleased".
+#
+# close-spec <n> refuses unless <n>'s verdict (spec-complete's four-way
+# read, ADR obligation folded in) is `complete` — non-zero, naming the
+# verdict, and for partial/planned also the open child lines. On a `complete`
+# verdict it derives the record from child-delivery: for each child, its
+# ticket, closing PR, and first tag containing its merge commit, or
+# *unreleased*; a not-planned child lists as abandoned; a completed child
+# closed by hand with no tracked PR lists as such. That record is posted as
+# the closing comment in the same `gh issue close` call, and the spec closes
+# as completed. Needs ADDW_ADR_DIR configured (78, EX_CONFIG, if not) even
+# for a spec with no declared ADR obligation, since child-delivery's tag
+# lookup runs unconditionally for every completed child. Exits 2 when <n> is
+# not a spec-labeled issue in the snapshot.
 #
 # detach <n> is deferral: it rewrites <n>'s body with its "## Parent" section
 # removed (parse.sh strip-section), swaps `ready-for-agent` for `backlog`,
@@ -359,6 +374,52 @@ child_delivery() { # spec-number issues.json
       | join("")' "$file")
 }
 
+# Closes spec <n> as completed, refusing unless its verdict is `complete`.
+# tmpdir is deliberately not `local`, matching detach's own reasoning: its
+# cleanup trap fires on the whole process's EXIT, after this function's
+# locals have gone out of scope.
+close_spec() { # spec-number
+  local spec=$1 rc=0 out verdict record status num pr sha adr tag
+
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+  snapshot > "$tmpdir/issues.json"
+  gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt" "$spec"
+
+  out="$(bash "$RESOLVE" spec-complete "$spec" "$tmpdir/issues.json" "$tmpdir/deliveries.txt")" || rc=$?
+  [ "$rc" -ne 2 ] || return 2
+
+  verdict="$(printf '%s\n' "$out" | head -n 1)"
+  if [ "$verdict" != complete ]; then
+    printf 'close-spec: #%s is %s, not complete; refusing\n' "$spec" "$verdict" >&2
+    if [ "$verdict" = partial ] || [ "$verdict" = planned ]; then
+      printf '%s\n' "$out" | tail -n +2 | awk -F'\t' '$1 == "open"' >&2
+    fi
+    return 1
+  fi
+
+  # child-delivery's tag lookup runs for every completed child regardless of
+  # whether this spec declared an obligation, so ADR_DIR is required here
+  # even on that path — the same requirement the plain child-delivery
+  # subcommand already carries.
+  resolve_adr_dir
+  record="$(child_delivery "$spec" "$tmpdir/issues.json")"
+
+  {
+    printf 'Closing as Complete.\n\n'
+    while IFS=$'\t' read -r num status pr sha adr tag; do
+      [ -n "$num" ] || continue
+      case "$status" in
+        abandoned) printf -- '- %s: abandoned\n' "$num" ;;
+        no-pr) printf -- '- %s: closed completed, no tracked PR\n' "$num" ;;
+        completed) printf -- '- %s: %s (%s)\n' "$num" "$pr" "$tag" ;;
+      esac
+    done <<< "$record"
+  } > "$tmpdir/comment.md"
+
+  gh issue close "$spec" --reason completed --comment "$(cat "$tmpdir/comment.md")"
+}
+
 [ "$#" -ge 1 ] || usage
 cmd=$1
 shift
@@ -532,6 +593,11 @@ case "$cmd" in
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
     child_delivery "$1" "$tmpdir/issues.json"
+    ;;
+  close-spec)
+    [ "$#" -eq 1 ] || usage
+    case "$1" in *[!0-9]*|'') usage ;; esac
+    close_spec "$1"
     ;;
   *)
     usage
