@@ -184,17 +184,18 @@ comments, since no `gh pr` subcommand exposes the latter.
 
 Readiness is detected when you invoke the skill, never by tracker automation; the frontier
 listing also surfaces complete specs so you notice at your next session
-(§ *Step 1: Mode and Readiness*).
+(§ *Step 1: The Partial-Spec Guard*).
 
-1. **Two modes.** A **spec release** names a complete spec — every issue citing it as parent
-   closed, and at least one child existing, since a spec with no children was never
-   decomposed. Naming an incomplete spec is refused with its open tickets listed. A
-   **repository release** tags whatever `main` has accumulated since the last tag and closes
-   nothing. A child closed as *not planned* is surfaced by name and you decide whether to
-   proceed — your confirmation is the waiver. A spec whose Implementation Decisions declared an
-   ADR obligation has that obligation folded into its completeness verdict: it remains `partial`,
-   not `complete`, until a delivering commit adds or modifies a file under the ADR directory —
-   closed tickets alone were never proof, as spec #84 showed (#137).
+1. **One mode.** A release tags whatever `main` has accumulated since the last tag and closes
+   nothing (ADR 0011) — a spec's completeness is a lifecycle of its own, reached through
+   `tracker.sh close-spec`, never a side effect of a tag. Its single guard is that no spec is
+   **Partial** — some children delivered, others still open — since a tag must never ship half
+   an intent; the refusal names each such spec and its open tickets, and you may override it
+   knowingly. A spec whose Implementation Decisions declared an ADR obligation has that
+   obligation folded into its completeness verdict: it remains `partial`, not `complete`, until a
+   delivering commit adds or modifies a file under the ADR directory — closed tickets alone were
+   never proof, as spec #84 showed (#137). A **Complete** spec is surfaced and left open, naming
+   the close command, since closure is your housekeeping, not the release's.
 
 2. **Version and changelog, both derived** (§ *Step 2: Derive the Version and the Entry*).
    `skills/lib/release/derive.sh` reads the conventional-commit subjects since the last tag —
@@ -206,9 +207,9 @@ listing also surfaces complete specs so you notice at your next session
    § *Step 4: Open the Release PR*). This is what keeps "every commit on `main` is a reviewed
    PR" true with zero routine exceptions.
 
-4. **The post-merge tail** — tag, push, GitHub Release carrying the identical changelog text,
-   and for a spec release, closing the spec issue (§ *Step 5: The Post-Merge Tail*). It is
-   re-runnable: each step skips what is already done.
+4. **The post-merge tail** — tag, push, GitHub Release carrying the identical changelog text
+   (§ *Step 5: The Post-Merge Tail*). It closes nothing. It is re-runnable: each step skips what
+   is already done.
 
 5. **A verification sweep** over the living docs — vocabulary, accretion, charter fit — as a
    backstop, not a bulk rewrite (§ *Step 6: Verification Sweep*). Reconciliation is small
@@ -269,6 +270,5 @@ prompts, which is the design: a merge is a decision with a record.
 1. Alignment interview — uncapped and incremental (`grill-with-docs`)
 2. Spec-review findings you adjudicate — per round, to convergence (`codex-spec-review`)
 3. **Your review and squash-merge of each ticket PR** (`addw-implement` § *Step 11: Open the PR*)
-4. Release mode, when readiness is ambiguous (`addw-release` § *Step 1: Mode and Readiness*)
-5. Whether to proceed past a child closed as *not planned* (`addw-release` § *Step 1: Mode and Readiness*)
-6. **Your merge of the release PR** — the version confirmation (`addw-release` § *Step 4: Open the Release PR*)
+4. Whether to override a Partial-spec refusal and ship around it (`addw-release` § *Step 1: The Partial-Spec Guard*)
+5. **Your merge of the release PR** — the version confirmation (`addw-release` § *Step 4: Open the Release PR*)

@@ -28,7 +28,7 @@ End to end: **spec → tickets → per-ticket PR → release** — with a second
 2. **Spec review** — `codex-spec-review` runs its review loop over the spec issue; fixes land in the issue body, and only the final verdict is posted as a comment.
 3. **Ticket** — `to-tickets` decomposes the spec into tracer-bullet issues with blocking edges. The *frontier* — tickets whose blockers are all merged — is queryable at any time; work on a ticket starts only after its blockers have merged.
 4. **Implement, one ticket per session** — `addw-implement` wraps the loop: frozen contract tests → implementation (delegated to `codex-implement`, or driven inline with `tdd`) → deterministic gate → `codex-code-review` convergence → open the PR and stop. You review and merge on GitHub.
-5. **Release** — when a spec's last ticket merges (or on demand), `addw-release` opens a release PR carrying the derived version bump and the mechanical changelog. Your merge is the confirmation; the tag and GitHub Release follow automatically.
+5. **Release** — on demand, `addw-release` opens a release PR carrying the derived version bump and the mechanical changelog, refusing when a spec is Partial. Your merge is the confirmation; the tag and GitHub Release follow automatically.
 
 Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencies), `codex-ask` (second opinions), and `addw-compact` (doc size control) — see the reference below.
 
@@ -56,7 +56,7 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | `/addw-init` | Bootstraps a project: verifies Matt's setup ran and configured GitHub, generates the living docs and the config, declares the shipped ADR template authoritative, gates on doctor. |
 | `/codex-spec-review` | Cross-model review loop over a spec issue, before ticketing. |
 | `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. Bare invocation lists the frontier. |
-| `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. Refuses a spec whose tickets are not all closed as completed. |
+| `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. Refuses when a spec is Partial; closes nothing. |
 | `/addw-maintain` | Periodic audit with three skippable sweeps: living-docs drift, coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
 | `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Even an emergency rides a PR a human merges — no direct-push path to main. |
 | `/addw-compact` | Shrinks `ARCHITECTURE.md` through summarization and restructuring when it outgrows its token budget (rule of thumb: ~10% of the context window). |

@@ -1,22 +1,17 @@
 #!/usr/bin/env bash
 # Contract: skills/lib/release/tail.sh — the re-runnable post-merge tail.
 #
-#   tail.sh [--spec <n>]... [--commit <sha>] <version>
+#   tail.sh [--commit <sha>] <version>
 #
 # Run from the repo root after the release PR merged. --commit is that PR's
 # merge commit and is what gets tagged; HEAD is only the default. Three fixed
-# steps, then one per named spec, each skipping what is already done so that
-# running the tail twice is harmless and an interrupted run completes on the
-# next invocation:
+# steps, each skipping what is already done so that running the tail twice is
+# harmless and an interrupted run completes on the next invocation:
 #
 #   1. tag      lay <version> on the release commit, unless already there
 #   2. push     push the tag to origin, unless it is already there
 #   3. release  publish the GitHub Release from the CHANGELOG.md entry for
 #               <version>, unless a release for the tag already exists
-#   4. spec     close each --spec issue as completed, unless already closed;
-#               --spec is repeatable, one occurrence per spec being closed, and
-#               a number named twice closes it once. Omitted entirely without
-#               --spec (a repository release closes nothing).
 #
 # Each step prints exactly one line to stdout, `done: ...` or `skip: ...`, so
 # the caller can see what an interrupted run had already accomplished.
@@ -85,9 +80,9 @@ EXPECTED_NOTES='### Features
 
 # A repo with one commit, a bare origin, a changelog, and a fake gh on PATH.
 # The fake records every invocation in gh.log and keeps its own state under
-# state/, so that creating a release or closing an issue is visible to a later
-# run — which is what makes the re-run tests real rather than a replay of the
-# same starting conditions.
+# state/, so that publishing a release is visible to a later run — which is
+# what makes the re-run tests real rather than a replay of the same starting
+# conditions.
 new_release_repo() { # name
   local repo="$work/$1"
   mkdir -p "$repo" "$work/$1-bin" "$work/$1-state"
@@ -125,15 +120,6 @@ case "${1:-}/${2:-}" in
     [ -z "$notes_file" ] || cp "$notes_file" "$GH_STATE/notes-$tag"
     : >"$GH_STATE/release-$tag"
     ;;
-  issue/view)
-    # The seam asks for one field; answering anything else would let the
-    # script under test parse a shape it is not supposed to know.
-    cat "$GH_STATE/issue-$3.state"
-    ;;
-  issue/close)
-    # A closed issue must read back as closed, or the re-run cannot skip.
-    printf 'CLOSED\n' >"$GH_STATE/issue-$3.state"
-    ;;
   *)
     echo "fake gh: unexpected invocation: $*" >&2
     exit 90
@@ -141,10 +127,6 @@ case "${1:-}/${2:-}" in
 esac
 STUB
   chmod +x "$work/$1-bin/gh"
-}
-
-set_issue() { # name number OPEN|CLOSED
-  printf '%s\n' "$3" >"$work/$1-state/issue-$2.state"
 }
 
 # Runs the tail in a prepared repo with the fake gh on PATH.
@@ -169,8 +151,6 @@ setup() { # name — repo + stub + empty log
 setup usage
 assert_exit 2 "no version argument" run_tail usage
 assert_exit 2 "unknown flag" run_tail usage --nope v1.2.0
-assert_exit 2 "--spec without a number" run_tail usage --spec v1.2.0
-assert_exit 2 "--spec with a non-numeric value" run_tail usage --spec abc v1.2.0
 assert_exit 2 "extra positional argument" run_tail usage v1.2.0 v1.3.0
 assert_exit 2 "--commit without a value" run_tail usage --commit v1.2.0 extra
 assert_exit 2 "--commit that resolves to nothing" \
@@ -182,54 +162,38 @@ status=0
 ( cd "$outside" && bash "$TAIL" v1.2.0 ) >/dev/null 2>&1 || status=$?
 assert_eq 2 "$status" "outside a git work tree exits 2"
 
-# --- a full spec release, from nothing -------------------------------------
+# --- a full release, from nothing -------------------------------------------
 
-setup spec
-set_issue spec 2 OPEN
-out="$(run_tail spec --spec 2 v1.2.0)"
+setup full
+out="$(run_tail full v1.2.0)"
 
 assert_contains "$out" "done: tagged v1.2.0" "fresh run lays the tag"
 assert_contains "$out" "done: pushed v1.2.0" "fresh run pushes the tag"
 assert_contains "$out" "done: published" "fresh run publishes the release"
-assert_contains "$out" "done: closed spec #2" "fresh run closes the spec issue"
-assert_eq 4 "$(printf '%s\n' "$out" | grep -c .)" "one line per step"
+assert_eq 3 "$(printf '%s\n' "$out" | grep -c .)" "one line per step"
 
-head_sha="$(git -C "$work/spec" rev-parse HEAD)"
-tag_sha="$(git -C "$work/spec" rev-parse 'v1.2.0^{commit}')"
+head_sha="$(git -C "$work/full" rev-parse HEAD)"
+tag_sha="$(git -C "$work/full" rev-parse 'v1.2.0^{commit}')"
 assert_eq "$head_sha" "$tag_sha" "the tag lands on the checked-out merge commit"
-assert_contains "$(git -C "$work/spec" ls-remote --tags origin)" "refs/tags/v1.2.0" \
+assert_contains "$(git -C "$work/full" ls-remote --tags origin)" "refs/tags/v1.2.0" \
   "the tag reaches the remote"
 
-log="$(cat "$work/spec-state/gh.log")"
+log="$(cat "$work/full-state/gh.log")"
 assert_contains "$log" "release create v1.2.0" "the release is created for the tag"
-assert_contains "$log" "issue close 2 --reason completed" \
-  "the spec issue closes as completed"
-assert_eq "$EXPECTED_NOTES" "$(cat "$work/spec-state/notes-v1.2.0")" \
+assert_eq "$EXPECTED_NOTES" "$(cat "$work/full-state/notes-v1.2.0")" \
   "the release notes are the changelog entry's body, heading omitted"
 
 # Running it again must change nothing and say so.
-out2="$(run_tail spec --spec 2 v1.2.0)"
+out2="$(run_tail full v1.2.0)"
 assert_contains "$out2" "skip: tag v1.2.0 already at" "re-run skips the tag"
 assert_contains "$out2" "skip: tag v1.2.0 already on origin" "re-run skips the push"
 assert_contains "$out2" "skip: GitHub Release v1.2.0" "re-run skips the release"
-assert_contains "$out2" "skip: spec #2 already closed" "re-run skips the closure"
 assert_not_contains "$out2" "done: " "a second run does nothing"
-assert_eq 4 "$(printf '%s\n' "$out2" | grep -c '^skip: ')" "re-run skips all four steps"
-assert_eq 1 "$(grep -c 'release create' "$work/spec-state/gh.log")" \
+assert_eq 3 "$(printf '%s\n' "$out2" | grep -c '^skip: ')" "re-run skips all three steps"
+assert_eq 1 "$(grep -c 'release create' "$work/full-state/gh.log")" \
   "the release is created exactly once"
-assert_eq 1 "$(grep -c 'issue close' "$work/spec-state/gh.log")" \
-  "the spec issue is closed exactly once"
 
-# --- a repository release closes nothing -----------------------------------
-
-setup repo
-out="$(run_tail repo v1.2.0)"
-assert_eq 3 "$(printf '%s\n' "$out" | grep -c .)" "without --spec there are three steps"
-assert_not_contains "$out" "spec" "no spec step without --spec"
-assert_not_contains "$(cat "$work/repo-state/gh.log")" "issue close" \
-  "a repository release closes no issue"
-
-# --- a tag pointing elsewhere is refused, never skipped --------------------
+# --- a tag pointing elsewhere is refused, never skipped ---------------------
 
 # The dangerous case: the tag was laid from a stale checkout. Skipping on the
 # name alone would cement it and publish notes against the wrong commit.
@@ -262,7 +226,7 @@ assert_eq "" "$(git -C "$work/staleremote" tag -l)" "no local tag is laid over i
 assert_not_contains "$(cat "$work/staleremote-state/gh.log")" "release create" \
   "no release is published against the wrong commit"
 
-# --- the release commit, not whatever HEAD drifted to ----------------------
+# --- the release commit, not whatever HEAD drifted to -----------------------
 
 # The case --commit exists for: another PR merged after the release PR, so
 # HEAD covers commits the changelog entry never mentions.
@@ -274,7 +238,7 @@ assert_contains "$out" "done: tagged v1.2.0" "the tag is laid"
 assert_eq "$release_sha" "$(git -C "$work/drifted" rev-parse 'v1.2.0^{commit}')" \
   "the tag lands on the release commit, not on HEAD"
 
-# --- interruption: each partial state resumes ------------------------------
+# --- interruption: each partial state resumes -------------------------------
 
 # Interrupted after the tag was laid but before it was pushed.
 setup partial1
@@ -295,80 +259,7 @@ assert_contains "$out" "skip: tag v1.2.0 already on origin" \
 assert_not_contains "$out" "done: pushed" "an already-pushed tag is not re-pushed"
 assert_contains "$out" "done: published" "the remaining step completes"
 
-# Interrupted after the release but before the spec closed.
-setup partial3
-set_issue partial3 7 OPEN
-git -C "$work/partial3" tag v1.2.0
-git -C "$work/partial3" push -q origin v1.2.0
-: >"$work/partial3-state/release-v1.2.0"
-out="$(run_tail partial3 --spec 7 v1.2.0)"
-assert_contains "$out" "skip: GitHub Release v1.2.0 already published" \
-  "an existing release is not republished"
-assert_contains "$out" "done: closed spec #7" "the last step completes"
-assert_not_contains "$(cat "$work/partial3-state/gh.log")" "release create" \
-  "no release is created when one already exists"
-
-# An already-closed spec issue is skipped, not closed twice.
-setup closed
-set_issue closed 5 CLOSED
-out="$(run_tail closed --spec 5 v1.2.0)"
-assert_contains "$out" "skip: spec #5 already closed" \
-  "an already-closed spec issue is skipped"
-assert_not_contains "$(cat "$work/closed-state/gh.log")" "issue close" \
-  "a closed spec issue is not closed again"
-
-# --- --spec is repeatable: one tag can close more than one spec ------------
-
-# A fresh multi-spec close: one tag, every named spec closed, one done: line
-# each.
-setup multi
-set_issue multi 2 OPEN
-set_issue multi 3 OPEN
-out="$(run_tail multi --spec 2 --spec 3 v1.2.0)"
-assert_contains "$out" "done: closed spec #2" "the first named spec closes"
-assert_contains "$out" "done: closed spec #3" "the second named spec closes"
-assert_eq 5 "$(printf '%s\n' "$out" | grep -c .)" \
-  "three fixed steps plus one line per named spec"
-assert_eq 1 "$(grep -c 'issue close 2 --reason completed' "$work/multi-state/gh.log")" \
-  "spec 2 is closed exactly once"
-assert_eq 1 "$(grep -c 'issue close 3 --reason completed' "$work/multi-state/gh.log")" \
-  "spec 3 is closed exactly once"
-
-# A partial re-run: one of the two named specs already closed (by a prior
-# interrupted run, or independently) is skipped while the other still closes.
-setup multipartial
-set_issue multipartial 2 CLOSED
-set_issue multipartial 3 OPEN
-out="$(run_tail multipartial --spec 2 --spec 3 v1.2.0)"
-assert_contains "$out" "skip: spec #2 already closed" \
-  "the already-closed named spec is skipped"
-assert_contains "$out" "done: closed spec #3" \
-  "the still-open named spec closes"
-assert_not_contains "$(cat "$work/multipartial-state/gh.log")" "issue close 2" \
-  "the already-closed spec is never asked to close again"
-
-# The same spec named twice closes once, without an error.
-setup dupe
-set_issue dupe 2 OPEN
-out="$(run_tail dupe --spec 2 --spec 2 v1.2.0)"
-assert_eq 1 "$(printf '%s\n' "$out" | grep -c 'spec #2')" \
-  "a duplicated --spec produces one line for the issue, not two"
-assert_eq 1 "$(grep -c 'issue close' "$work/dupe-state/gh.log")" \
-  "a duplicated --spec closes the issue exactly once"
-
-# An invalid value among otherwise-valid ones aborts before anything mutates —
-# validation covers every --spec occurrence before the first git command runs.
-setup badmulti
-set_issue badmulti 2 OPEN
-status=0
-out="$(run_tail badmulti --spec 2 --spec abc v1.2.0 2>&1)" || status=$?
-assert_eq 2 "$status" "one invalid --spec among valid ones exits 2"
-assert_eq "" "$(git -C "$work/badmulti" tag -l)" \
-  "no tag is laid when a later --spec value is invalid"
-assert_eq "" "$(cat "$work/badmulti-state/gh.log")" \
-  "no external service is reached when a later --spec value is invalid"
-
-# --- the changelog entry ---------------------------------------------------
+# --- the changelog entry -----------------------------------------------------
 
 # No entry for the version: the release cannot be published, and the failure
 # is loud. This is also what catches a version argument that disagrees with

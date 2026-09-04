@@ -273,11 +273,9 @@ lives inside `skills/` rather than at the repo root.
   silent about.
 
 - `release/tail.sh` — the re-runnable post-merge tail: the version tag, its
-  push, the GitHub Release, and for a spec release each named spec issue's
-  closure (`--spec` is repeatable, since one tag can close more than one
-  spec) — the last of those through `tracker/tracker.sh`, never the tracker
-  CLI directly, since closing an issue is a tracker operation while creating a
-  GitHub Release is not.
+  push, and the GitHub Release. It closes nothing (ADR 0011): a release's only
+  guard is that no spec is Partial, and closure is a spec's own lifecycle,
+  reached through `tracker.sh close-spec` rather than a side effect of a tag.
   Each step skips what is already done, so running the tail twice is harmless
   and an interrupted run completes on the next invocation — the property that
   makes a half-finished release recoverable by re-running rather than by hand.
