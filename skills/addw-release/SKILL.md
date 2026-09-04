@@ -63,7 +63,8 @@ bash .claude/skills/lib/tracker/tracker.sh spec-complete <n>
 A **closed** spec has already been released — its closure is what the last
 release's tail did — so releasing it again would cut a second version for the
 same intent. Refuse unless it is open; the completion query answers only
-whether the children are done, not whether the spec is still in flight.
+whether the children are done and any declared ADR obligation is satisfied,
+not whether the spec is still in flight.
 
 It prints the four-way verdict — `complete`, `partial`, `planned`, or
 `no-children` — then one `<completed|open|not-planned>` line per child (none
@@ -81,25 +82,10 @@ because a `complete` spec still splits into two cases:
 - **`no-children`** → refuse: decomposition never happened, so there is no
   completed intent to release.
 
-A spec that clears the child-completion check still owes one more read before
-it counts as ready — its own text can promise something no ticket carries.
-Verify it the same way for every spec this step considers, named or picked
-from `complete-specs` below:
-
-```bash
-bash .claude/skills/lib/tracker/tracker.sh body <n> | bash .claude/skills/lib/release/adr-check.sh
-```
-
-Silent output and exit 0 mean nothing is owed, or it is already satisfied —
-move on. A non-zero exit means the spec's Implementation Decisions promised an
-ADR that never landed in the commits this release is about to project: refuse
-exactly as the open-children case does, naming the spec and the unmet
-obligation printed on stderr, and stop.
-
 **The invocation names nothing** — decide from the `complete-specs` section.
 It names only which specs are `complete`, not whether any is complete via a
-not-planned waiver, so run the same `spec-complete` and ADR-obligation check
-above on every entry it lists before offering it:
+not-planned waiver, so run `spec-complete` on every entry it lists before
+offering it:
 
 - Exactly one → verify it as above, then release it as a spec release, saying
   which.

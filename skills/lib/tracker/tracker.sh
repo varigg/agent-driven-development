@@ -281,6 +281,38 @@ detach() { # issue-number
     --add-label backlog --remove-label ready-for-agent
 }
 
+# Writes one combined deliveries file (tracker.sh child-delivery's line shape,
+# concatenated across every open spec-labeled issue that actually declares an
+# ADR obligation) to <out-file>. resolve.sh's verdict never consults a child's
+# delivery unless the spec itself declared an obligation, so scoping the
+# lookup the same way means a project with no such spec — the common case —
+# never has to configure ADDW_ADR_DIR at all, and specs with nothing promised
+# never pay for a delivery lookup they cannot affect.
+#
+# An optional third argument scopes the whole gather to one spec — spec-
+# complete's single-target query passes its own number so that some other
+# obligated spec's unresolvable merge commit (a shallow or stale clone) can
+# never fail a query about a spec it has nothing to do with; specs and
+# frontier omit it, since they answer for every open spec at once.
+gather_deliveries() { # issues.json out-file [only-spec]
+  local file=$1 out=$2 only=${3:-} spec body obligation
+  : > "$out"
+  local specs obligated=()
+  specs="$(jq -r '.[] | select(.state == "OPEN") | select(any(.labels[]?; .name == "spec")) | .number' "$file")"
+  [ -n "$specs" ] || return 0
+  while IFS= read -r spec; do
+    [ -z "$only" ] || [ "$spec" = "$only" ] || continue
+    body="$(jq -r --arg n "$spec" '.[] | select((.number | tostring) == $n) | .body // ""' "$file")"
+    obligation="$(printf '%s' "$body" | bash "$PARSE" adr-obligation)"
+    [ -z "$obligation" ] || obligated+=("$spec")
+  done <<< "$specs"
+  [ "${#obligated[@]}" -gt 0 ] || return 0
+  resolve_adr_dir
+  for spec in "${obligated[@]}"; do
+    child_delivery "$spec" "$file" >> "$out"
+  done
+}
+
 child_delivery() { # spec-number issues.json
   local spec=$1 file=$2 num state reason b64 body parent status pr_line pr sha adr tag
 
@@ -472,22 +504,25 @@ case "$cmd" in
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
+    gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
     branches > "$tmpdir/branches.txt"
-    bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt"
+    bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt" "$tmpdir/deliveries.txt"
     ;;
   spec-complete)
     [ "$#" -eq 1 ] || usage
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
-    bash "$RESOLVE" spec-complete "$1" "$tmpdir/issues.json"
+    gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt" "$1"
+    bash "$RESOLVE" spec-complete "$1" "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
     ;;
   specs)
     [ "$#" -eq 0 ] || usage
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
-    bash "$RESOLVE" specs "$tmpdir/issues.json"
+    gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
+    bash "$RESOLVE" specs "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
     ;;
   child-delivery)
     [ "$#" -eq 1 ] || usage

@@ -13,7 +13,8 @@ lives inside `skills/` rather than at the repo root.
   - `parse.sh` — pure text-in/conclusion-out parsers for the issue-body
     section encoding (`## Parent` / `## Blocked by`) and close-reason
     classification, plus `adr-obligation` over a spec body's
-    `## Implementation Decisions` section for `release/adr-check.sh`.
+    `## Implementation Decisions` section, which `resolve.sh`'s completeness
+    verdict reads directly.
   - `resolve.sh` — pure frontier and spec-completion resolution over an issue
     snapshot (the `gh --json` shape), building on `parse.sh`. Needs `jq` and
     bash ≥ 4 (associative arrays; guarded at startup). No network: fed a
@@ -33,6 +34,14 @@ lives inside `skills/` rather than at the repo root.
     a maintainer asking "what state is each spec in" is a different question
     from `spec-complete`'s "is this one spec done" — the frontier's
     `complete-specs` section is the same query, filtered to one verdict.
+    A declared ADR obligation is satisfied only when the optional deliveries
+    input records at least one child whose delivering commit added or modified
+    a file under the configured ADR directory. This check exists because no
+    other readiness signal reads what the spec's own text promised: without
+    it, a spec could pass every check, release, and close while a promised ADR
+    never landed (#137, as spec #84 showed). The obligation is checked from the
+    spec's own delivered children via that deliveries file, not from a
+    release's commit range.
   - `tracker.sh` — the thin `gh`-calling wrappers (issue reads, body edits,
     labels, comments, close-with-reason, self-assign) plus the live `frontier`,
     `spec-complete`, and `specs` queries, which fetch a snapshot and delegate all
@@ -127,11 +136,13 @@ lives inside `skills/` rather than at the repo root.
     guessed PR, for the same reason, and a closing PR whose merge commit this
     checkout cannot resolve (shallow or stale) refuses the whole command
     loudly rather than reporting that child's ADR-touch or tag as a quiet
-    "no" / "unreleased" it never actually checked. This is the seam a later
-    ticket's `close-spec` and the resolver's own delivery record consume as
-    an optional input file — kept a plain live read here rather than pulled
-    into the resolver, so the resolver stays fixture-testable and this stays
-    testable against a real git fixture instead.
+    "no" / "unreleased" it never actually checked. This is the seam that
+    `specs`, `spec-complete`, and `frontier` now use: each gathers per-spec
+    deliveries and hands them to `resolve.sh` as an optional input file; a
+    later `close-spec` will consume it the same way. It stays a plain live
+    read here rather than pulled into the resolver, so the resolver stays
+    fixture-testable and this stays testable against a real git fixture
+    instead.
     `detach <n>` is deferral, not a `not-planned` close. Once release and spec
     lifecycles split (#144), *not planned* means abandoned, permanently, and
     only a human directs it — a maintainer setting a ticket aside for later
@@ -231,27 +242,6 @@ lives inside `skills/` rather than at the repo root.
   It skips the commit-collection pass entirely, so an empty range is not the
   stop-and-ask case `changelog`/`version` refuse on — there is no commit to be
   silent about.
-
-- `release/adr-check.sh` — the release-readiness check that a spec's declared
-  ADR obligation was actually kept (#137). Every other readiness signal is
-  about tickets — closed, still open, not planned — and none of them reads
-  what the spec's own text promised, so a spec could pass every check, release,
-  and close while an ADR its Implementation Decisions committed to never
-  landed, discovered only when a human asked after the fact. It takes the
-  spec body (`tracker.sh body <n>`, piped or as a file) and looks for the
-  obligation with `parse.sh adr-obligation` — a list item in the
-  "## Implementation Decisions" section mentioning ADR, the durable
-  structural signal to-spec's template guarantees, rather than a phrase
-  matched anywhere in the body. No obligation found is silent and exits 0,
-  which is the common case. An obligation found is checked against
-  `derive.sh range` — reused rather than recomputed, so the two scripts can
-  never disagree about which commits this release covers — for a commit that
-  added or modified a file under `docs/adr/`; found prints which file and
-  exits 0, not found refuses with the obligation's own text on stderr and
-  exits 1, the same refuse-and-name posture `addw-release` already uses for
-  open children. Unit-tested (`tests/release-adr-check.test.sh`, the extractor
-  in `tests/tracker-parse.test.sh`) because the section scan and the three-way
-  verdict are logic, not passthrough.
 
 - `release/tail.sh` — the re-runnable post-merge tail: the version tag, its
   push, the GitHub Release, and for a spec release each named spec issue's
