@@ -2,7 +2,7 @@
 # Contract: skills/lib/tracker/tracker.sh close-spec <n> — closes a Complete
 # spec, recording each child's delivery. Refuses a partial, planned, or
 # no-children spec (naming the verdict and, for partial/planned, the open
-# child lines) without ever calling `gh issue close`. On a `complete` verdict
+# child lines) without ever closing the issue. On a `complete` verdict
 # it derives the record from child-delivery — a tagged child, an unreleased
 # child, and an abandoned child — posts it as the closing comment, and closes
 # the spec as completed. Like tracker-child-delivery.test.sh, the child-to-PR
