@@ -28,7 +28,8 @@ The four sections are fixed. **frontier** is what is workable now — tickets an
 `[in progress: …]` already have a branch or an assignee, so pick an unannotated one unless
 you are resuming your own work. **needs-rescoping** and **unknown-blockers** are for the
 human, not for you: report them and do not start those tickets. **complete-specs** means a
-spec has no open child left — surface it so the human can invoke `addw-release`.
+spec has no open child left — surface it so the human can close it with the command each
+line names (`tracker.sh close-spec <n>`); a release closes no spec (ADR 0011).
 
 ---
 
