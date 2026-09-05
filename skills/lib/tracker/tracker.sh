@@ -398,12 +398,16 @@ close_spec() { # spec-number
     return 1
   fi
 
-  # child-delivery's tag lookup runs for every completed child regardless of
-  # whether this spec declared an obligation, so ADR_DIR is required here
-  # even on that path — the same requirement the plain child-delivery
-  # subcommand already carries.
-  resolve_adr_dir
-  record="$(child_delivery "$spec" "$tmpdir/issues.json")"
+  if [ -s "$tmpdir/deliveries.txt" ]; then
+    record="$(<"$tmpdir/deliveries.txt")"
+  else
+    # child-delivery's tag lookup runs for every completed child regardless of
+    # whether this spec declared an obligation, so ADR_DIR is required here
+    # even on that path — the same requirement the plain child-delivery
+    # subcommand already carries.
+    resolve_adr_dir
+    record="$(child_delivery "$spec" "$tmpdir/issues.json")"
+  fi
 
   {
     printf 'Closing as Complete.\n\n'
