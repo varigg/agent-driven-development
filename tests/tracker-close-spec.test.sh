@@ -44,7 +44,14 @@ SHA_502="$(head_sha)"
 commit "feat: deliver child 601"
 SHA_601="$(head_sha)"
 
-export SHA_501 SHA_502 SHA_601
+mkdir -p "$repo/docs/adr"
+printf '# 0001 fixture ADR\n' > "$repo/docs/adr/0001-fixture.md"
+git -C "$repo" add docs/adr/0001-fixture.md
+git -C "$repo" -c user.name=t -c user.email=t@t \
+  commit -q -m "feat: deliver child 901 (adr-obligated spec)"
+SHA_901="$(head_sha)"
+
+export SHA_501 SHA_502 SHA_601 SHA_901
 
 # --- gh stub: the issue snapshot, closedByPullRequestsReferences per
 #     completed child, and issue close capture --------------------------------
@@ -80,6 +87,13 @@ issues="$work/issues.json"
   issue 701 OPEN "" 700 ready-for-agent "Only open child"
   printf ',\n'
   issue 800 OPEN "" "" spec "Spec: no children"
+  printf ',\n'
+  jq -nc '
+    {number: 900, title: "Spec: complete, ADR-obligated", state: "OPEN",
+     stateReason: null, labels: [{name: "spec"}], assignees: [],
+     body: "## Implementation Decisions\n\n- Records one ADR for this change.\n"}'
+  printf ',\n'
+  issue 901 CLOSED COMPLETED 900 ready-for-agent "Delivered child (adr-obligated spec)"
   printf '\n]\n'
 } > "$issues"
 export STUB_ISSUES="$issues"
@@ -93,6 +107,7 @@ case "$*" in
   *"number=501"*) printf '601\t%s\n' "$SHA_501" ;;
   *"number=502"*) printf '602\t%s\n' "$SHA_502" ;;
   *"number=601"*) printf '701\t%s\n' "$SHA_601" ;;
+  *"number=901"*) printf '902\t%s\n' "$SHA_901" ;;
   *"issue close "*)
     prev=""
     for a in "$@"; do
@@ -163,6 +178,24 @@ assert_contains "$record" "$(printf '#502: #602 (unreleased)')" \
   "close-spec: unreleased child names its PR, no tag yet"
 assert_contains "$record" "$(printf '#503: abandoned')" \
   "close-spec: not-planned child lists as abandoned"
+
+# --- success: an ADR-obligated Complete spec looks up each completed
+#     child's delivery once, not twice -------------------------------------
+
+: > "$CALLS_LOG"
+(cd "$repo" && bash "$TRACKER" close-spec 900 >/dev/null)
+
+close_call="$(grep '^issue close ' "$CALLS_LOG")"
+assert_contains "$close_call" "900 --reason completed" \
+  "close-spec: closes an ADR-obligated spec as completed"
+
+record="$(cat "$COMMENT_CAPTURE")"
+assert_contains "$record" "$(printf '#901: #902 (unreleased)')" \
+  "close-spec: ADR-obligated spec's child names its PR, no tag yet"
+
+lookup_calls="$(grep -c 'number=901' "$CALLS_LOG" || true)"
+assert_eq 1 "$lookup_calls" \
+  "close-spec: an ADR-obligated spec's completed child is looked up once, not twice"
 
 # --- a number that is not a spec-labeled issue refuses loudly ---------------
 
