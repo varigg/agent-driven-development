@@ -115,7 +115,7 @@ bash .claude/skills/lib/tracker/tracker.sh unlabel [ticket-number] backlog
 bash .claude/skills/lib/tracker/tracker.sh label [ticket-number] ready-for-agent
 ```
 
-- If the fix must ship as a tagged release now, invoke `addw-release` after the merge — a repository release tags what main has accumulated since the last tag.
+- If the fix must ship as a tagged release now, invoke `addw-release` after the merge — a release tags what main has accumulated since the last tag.
 - The merged PR is the incident record. If the real fix is deeper than the patch, file a follow-up tracker issue.
 
 ---

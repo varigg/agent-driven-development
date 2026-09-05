@@ -2,7 +2,6 @@
 name: addw-release
 description: Mechanical release - derived version, generated changelog, release PR, tag and GitHub Release
 disable-model-invocation: true
-argument-hint: "<spec-issue-number> — omit for the sole complete spec, or the repository"
 ---
 
 # Release Mode
@@ -12,9 +11,12 @@ comes from the derivation script and the changelog from the generator, both
 projecting the conventional-commit subjects that merged PRs put on the main
 branch. Prose written here could drift from history; derived text cannot.
 
-Your judgment enters at exactly two points — **which spec(s) are being
-released** (Step 1) and, for the human, **whether to merge the release PR**
-(Step 5). Everything between them is transcription.
+The release has **one mode**: tag what the main branch has accumulated since
+the last tag. It closes nothing, credits nothing, and carries no spec numbers
+— a spec's completeness is a lifecycle of its own (ADR 0011). Your judgment
+enters at exactly one point — for the human, **whether to merge the release
+PR** (Step 4). Everything before that is transcription, gated by one refusal
+you may be asked to override.
 
 Every tracker operation goes through `.claude/skills/lib/tracker/tracker.sh`.
 Pull requests and GitHub Releases are not tracker operations and use `gh pr` and
@@ -41,69 +43,40 @@ Stop if they differ.
 
 ---
 
-## Step 1: Mode and Readiness
+## Step 1: The Partial-Spec Guard
 
 Readiness is verified **here, at invocation** — never by tracker automation, so
-nothing about a spec's state can go stale between sessions. Two modes:
+nothing about a spec's state can go stale between sessions:
 
 ```bash
-bash .claude/skills/lib/tracker/tracker.sh frontier
+bash .claude/skills/lib/tracker/tracker.sh specs
 ```
 
-Its `complete-specs` section is the same query, surfaced for the human at the
-end of an implement session; this step re-runs it rather than trusting it.
+One line per open spec-labeled issue: `#N<TAB>complete|partial|planned|no-children<TAB>title`,
+a `complete` line carrying a fourth field naming its close command. Two verdicts
+act on this step; the other two are silent — a tag ships whatever commits exist
+regardless of whether a spec is still `planned` or has `no-children`, and
+neither blocks:
 
-**The invocation names a spec** — verify it:
+- **Any `partial` spec** → **refuse by default**. A spec is Partial when some
+  of its children delivered and it is not yet Complete — a tag here would ship
+  half an intent. For each partial spec, run
+  `bash .claude/skills/lib/tracker/tracker.sh spec-complete <n>` and list its
+  `open` child lines, so the human sees exactly what is unfinished. **No
+  `open` line at all** means every child already closed and the block is the
+  spec's declared ADR obligation, unsatisfied — say that explicitly rather
+  than showing an empty list. Then offer the override with `AskUserQuestion`:
+  proceed and ship around it, or stop. The human proceeding knowingly **is**
+  the override — record which partial specs were shipped around, and their
+  open tickets (or the unmet ADR obligation), for the PR body (Step 4).
+- **Any `complete` spec** → surface it, naming its close command from the
+  fourth field, and say it is left open. Closing it is human housekeeping
+  through `tracker.sh close-spec`, never a side effect of a tag — record the
+  list for the PR body (Step 4).
 
-```bash
-bash .claude/skills/lib/tracker/tracker.sh state <n>
-bash .claude/skills/lib/tracker/tracker.sh spec-complete <n>
-```
-
-A **closed** spec has already been released — its closure is what the last
-release's tail did — so releasing it again would cut a second version for the
-same intent. Refuse unless it is open; the completion query answers only
-whether the children are done and any declared ADR obligation is satisfied,
-not whether the spec is still in flight.
-
-It prints the four-way verdict — `complete`, `partial`, `planned`, or
-`no-children` — then one `<completed|open|not-planned>` line per child (none
-for `no-children`). Read the child lines before reacting to the verdict,
-because a `complete` spec still splits into two cases:
-
-- **`partial` or `planned`** → **refuse**. List the open tickets and stop. The
-  release does not get to decide that unfinished work is finished.
-- **`complete`, with one or more children closed as *not planned*** → name
-  each one and ask the human, with `AskUserQuestion`, whether to release
-  without it. A ticket closed as not planned is work deliberately abandoned,
-  so only the human can say the spec is complete anyway; their confirmation
-  **is** the waiver, and the release proceeds on it.
-- **`complete`, no not-planned children** → proceed.
-- **`no-children`** → refuse: decomposition never happened, so there is no
-  completed intent to release.
-
-**The invocation names nothing** — decide from the `complete-specs` section.
-It names only which specs are `complete`, not whether any is complete via a
-not-planned waiver, so run `spec-complete` on every entry it lists before
-offering it:
-
-- Exactly one → verify it as above, then release it as a spec release, saying
-  which.
-- More than one → verify each one as above, then **offer all of them and
-  accept any subset**, with `AskUserQuestion`. One tag consumes every complete
-  spec's commits either way — releasing only some of them still ships the
-  rest, just without crediting them — so *all of them* is the expected
-  answer, and the human may still choose fewer. When they name a proper
-  subset, say plainly, before proceeding, which specs are being left out and
-  that this tag's range already contains their commits: released later, those
-  specs close against a version whose changelog entry does not describe their
-  work. Let the human proceed knowingly rather than silently.
-- None → it is a **repository release** — it tags whatever the main branch has
-  accumulated since the last tag and **closes nothing**. Say that explicitly,
-  since it is the mode that silently does less.
-
-Carry two things out of this step: the **mode**, and for a spec release the
-**set of spec issue numbers** being closed — one or more.
+No spec name is ever passed to this skill: the release consumes nothing, so
+there is nothing to select. Proceed to Step 2 once every partial spec has
+been refused or knowingly overridden.
 
 ---
 
@@ -193,13 +166,11 @@ git push -u origin "release/<version>"
 gh pr create --base "$ADDW_MAIN_BRANCH" --title "chore(release): <version>" --body-file <file>
 ```
 
-The body states the mode (spec release naming every spec it closes, or
-repository release), the range the derivation covered, the changelog entry
-verbatim, and any unclassifiable subjects from Step 2. When Step 1 excluded
-some complete specs, name them here too, with the same warning given the
-human then — this tag's range already contains their commits. Say plainly
-that **merging is the version confirmation** and that the tag and GitHub
-Release follow it.
+The body states the range the derivation covered, the changelog entry
+verbatim, and any unclassifiable subjects from Step 2. Name every partial
+spec Step 1 shipped around, with its open tickets, and every complete spec
+Step 1 surfaced as awaiting closure. Say plainly that **merging is the
+version confirmation** and that the tag and GitHub Release follow it.
 
 Then **wait**. The merge is the human's, and it is the only approval gate the
 release has — which is exactly why the invariant that every commit on the main
@@ -215,7 +186,7 @@ not whatever the main branch has drifted to since:
 ```bash
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 merge_sha="$(gh pr view <pr-number> --json mergeCommit --jq .mergeCommit.oid)"
-bash .claude/skills/lib/release/tail.sh --commit "$merge_sha" [--spec <n>]... <version>
+bash .claude/skills/lib/release/tail.sh --commit "$merge_sha" <version>
 ```
 
 Always pass `--commit`. If another PR merged in the minutes between the release
@@ -223,17 +194,14 @@ merge and this step — routine on any repo with more than one person — then
 tagging the branch tip would ship a version covering commits its changelog
 entry never mentions, and the tail cannot detect that on its own.
 
-Tag, push, publish the GitHub Release from the changelog entry, and for a
-spec release close every named spec as completed — one `--spec <n>` per spec
-Step 1 carried out. Each **skips what is already done** and prints one
-`done:` or `skip:` line, so running the tail twice is harmless and an
-interrupted run completes on the next invocation. If it exits non-zero, fix
-the cause and **run it again**; do not perform the remaining steps by hand,
-or the next run will disagree with the tree about what happened.
-
-Pass `--spec <n>` once per spec being closed, and only for a spec release. A
-repository release closes nothing, so the open spec issues remain exactly the
-in-flight work.
+Tag, push, publish the GitHub Release from the changelog entry. It closes
+nothing — the open spec issues Step 1 surfaced remain exactly the in-flight
+and awaiting-closure work they were. Each step **skips what is already done**
+and prints one `done:` or `skip:` line, so running the tail twice is harmless
+and an interrupted run completes on the next invocation. If it exits
+non-zero, fix the cause and **run it again**; do not perform the remaining
+steps by hand, or the next run will disagree with the tree about what
+happened.
 
 ---
 
