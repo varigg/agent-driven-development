@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.3.0 — 2026-09-05
+
+### Features
+- feat(release): single mode, gated only on partial specs; tail drops --spec (#161)
+- feat(tracker): close-spec records each child's PR and first tag, refuses non-complete (#159)
+- feat(tracker): ADR obligation is part of spec completeness; retire release adr-check (#158)
+- feat(tracker): add detach, the deferral seam command (#156)
+- feat(tracker): add child-delivery seam subcommand (#155)
+- feat(tracker): four-way spec verdict, specs listing, complete-specs frontier section (#153)
+- feat(codex-code-review): checklist reads write-once prose against ADRs and spec decisions (#152)
+- feat(addw-implement): worktree-per-ticket mode for concurrent sessions (#143)
+
+### Fixes
+- fix(tracker): close-spec reuses gather_deliveries' record instead of recomputing it (#162)
+- fix(release): verify a spec's declared ADR obligation before release (#142)
+- fix(tracker): add parent-check to catch bare-line ## Parent early (#141)
+- fix: let a release close more than one spec (#140)
+
+### Other
+- docs: ADR for independent release and spec lifecycles, plus glossary terms (#157)
+- refactor: rename docs/4-unit-tests to docs/testing, scope doctor to committed files (#139)
+- refactor: parse docs/addw.env as data through one shared reader (#135)
+
 ## v0.2.0 — 2026-08-18
 
 ### Features
