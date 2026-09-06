@@ -177,12 +177,15 @@ lives inside `skills/` rather than at the repo root.
     reports `complete`, naming the verdict and, for `partial`/`planned`, the
     open child lines — `no-children` refuses for the same reason `detach`
     never touches a spec it just emptied, so an empty or unfinished spec is
-    never recorded as delivered. On a `complete` verdict it calls
-    `child_delivery` for the record — a not-planned child as `abandoned`, a
-    completed child with no tracked PR as `no-pr`, and otherwise the PR and
-    first tag or `unreleased` — and posts it as the closing comment in the
-    same call that closes the spec as completed, so a future reader learns
-    "which version delivered spec N" from one read
+    never recorded as delivered. On a `complete` verdict it builds the record
+    — a not-planned child as `abandoned`, a completed child with no tracked PR
+    as `no-pr`, and otherwise the PR and first tag or `unreleased` — reusing
+    the deliveries file `gather_deliveries` already wrote when the spec
+    declared an ADR obligation (that file already holds this exact record),
+    and calling `child_delivery` itself only when the spec declared none (the
+    file stays empty, so nothing to reuse). Either way it posts the record as
+    the closing comment in the same call that closes the spec as completed,
+    so a future reader learns "which version delivered spec N" from one read
     of the closed issue rather than reconstructing it from the children's own
     PRs. It is a seam subcommand rather than a skill because no judgment
     remains in it once the not-planned waiver moved to a human's own choice
