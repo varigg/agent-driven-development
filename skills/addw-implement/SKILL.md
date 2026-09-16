@@ -62,15 +62,12 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    ```bash
    branch="$(gh pr view <n> --json headRefName -q .headRefName)"
    wt_path="$(bash .claude/skills/lib/worktree/find.sh "$branch")"
-   if [ -n "$wt_path" ]; then
-       cd "$wt_path" && git pull
-   else
-       gh pr checkout <n>
-   fi
+   [ -n "$wt_path" ] || gh pr checkout <n>
    ```
 
-   Stay in that directory — `$wt_path` or this checkout, whichever it resolved to — for the
-   rest of this session. Two reads, not one, for the feedback itself — the conversation
+   When `$wt_path` is non-empty, switch the session into that worktree and `git pull` there.
+   Either way, the rest of this session runs from that directory — `$wt_path` or this
+   checkout, whichever it resolved to. Two reads, not one, for the feedback itself — the conversation
    timeline and the comments anchored to diff lines are different endpoints, and inline
    comments are where most review feedback actually lands:
 
@@ -163,14 +160,15 @@ root="${ADDW_WORKTREE_ROOT:-$(dirname "$toplevel")/$(basename "$toplevel")-workt
 wt_path="$root/<issue-number>-<slug>"
 bash .claude/skills/lib/worktree/create.sh "$ADDW_MAIN_BRANCH" \
     <type>/<issue-number>-<slug> "$wt_path"
+```
 
-cd "$wt_path"
+Switch the session into `$wt_path`: the rest of this session runs from there, and every later
+step assumes it is the working directory. Then, from the worktree:
+
+```bash
 git push -u origin <type>/<issue-number>-<slug>
 bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
 ```
-
-Stay in `$wt_path` for the rest of this session — every later step assumes it is the working
-directory.
 
 **`ADDW_IMPLEMENT_WORKTREE` set to anything else** — behaves exactly as before worktree mode
 existed, in this checkout:
