@@ -21,7 +21,12 @@ build, because you cannot read the tracker the ticket lives on.
 - Do NOT write tests unless the instruction block explicitly asks — the requester owns the
   testing gate that follows.
 - Do NOT commit, tag, bump versions, or touch changelogs/README/tutorials — the requester owns
-  everything after implementation.
+  everything after implementation. Your sandbox cannot write `.git` in any case: do not attempt
+  commits, stashes, checkouts, or branch switches.
+- Your sandbox has no network, so no package registry: do not attempt to install a dependency.
+  Report one the work needs as a leftover; the requester installs and locks it.
+- If a command hangs or a suite appears blocked, stop it, say so in the report, and move on
+  rather than diagnosing it — the requester verifies such claims outside the sandbox.
 
 ## Report (your final message)
 

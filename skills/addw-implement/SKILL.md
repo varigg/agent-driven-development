@@ -239,6 +239,14 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
   `IMPLEMENTATION_PARTIAL` → read the report, then `resume.sh` for the remainder or finish
   small leftovers yourself.
 
+  The adapter runs in a sandbox — `codex-implement`'s is workspace-write with no network —
+  and three of its refusals shape how you read the report. It **cannot write `.git`**: you
+  commit, and a git-write failure in the report is the sandbox, not the repository. It has
+  **no package registry**: a dependency reported as a leftover is yours to install and lock
+  here, outside the sandbox. And a **"suite blocked" or "hangs" claim is unverified** until
+  you re-run the command outside the sandbox — sandbox hangs are usually sandbox artifacts,
+  not defects, and one filed as a ticket sends a human chasing the sandbox.
+
 Either way, **read the full diff yourself** afterwards against the ticket, ARCHITECTURE.md
 patterns, and project conventions. What happens to a problem depends on whether the ticket
 covers it:
