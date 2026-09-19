@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Contract: skills/lib/worktree/{create,find}.sh — the worktree-per-ticket
+# Contract: skills/lib/worktree/{create,find}.sh — the ticket-isolation
 # mechanism addw-implement Step 3 and Mode A drive (ADR 0010).
 #
 #   create.sh <main-branch> <new-branch> <worktree-path>
@@ -104,7 +104,7 @@ assert_eq "$wt" "$found" "find: locates the worktree already holding the branch"
 found_none="$(cd "$work/clone" && "$FIND" no-such-branch)"
 assert_eq "" "$found_none" "find: prints nothing for a branch with no worktree"
 
-# A worktree path with a space (a plausible ADDW_WORKTREE_ROOT or repo
+# A worktree path with a space (a plausible agent-chosen location or repo
 # basename) must come back whole, not truncated at the first field.
 wt_spaced="$work/spaced dir/wt"
 ( cd "$work/clone" && "$CREATE" main feat/4-spaced "$wt_spaced" ) >/dev/null 2>&1

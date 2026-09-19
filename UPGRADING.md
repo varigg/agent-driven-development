@@ -433,3 +433,38 @@ Codex's side, `addw-implement` Step 6 the requester's. Nothing fails on a stale
 install and nothing migrates — the note is here so the disposition is on
 record: an install that carried an interim inline copy in its `CLAUDE.md` or
 `AGENTS.md` can drop it at leisure.
+
+## Schema 9 → 10
+
+`addw-implement` Step 3 no longer reads `ADDW_IMPLEMENT_WORKTREE` or `ADDW_WORKTREE_ROOT`
+(ADR 0012, superseding ADR 0010). In-place checkout is no longer a mode: whether a ticket
+gets its own worktree is decided from the clone's observable state — clean on the main
+branch means in place, anything else means a separate worktree — and where that worktree
+goes is the agent's choice, with no sibling-directory default. The config reader ignores
+unknown keys, so stale entries break nothing; the behaviour change is what needs knowing.
+
+### 1. Drop the keys, or don't
+
+An install that set `ADDW_IMPLEMENT_WORKTREE=false` will now see worktrees whenever the
+clone is not clean on main — a session that leaves a ticket branch checked out is exactly
+the state a second session isolates from. If that is unwelcome, keep the clone on main
+between sessions rather than reaching for a key; there is none. Remove both lines from
+`docs/addw.env` whenever convenient:
+
+```bash
+# ADDW_IMPLEMENT_WORKTREE=true
+# ADDW_WORKTREE_ROOT="../<project>-worktrees"
+```
+
+### 2. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=10
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.

@@ -138,50 +138,58 @@ The branch and the assignment are the **in-progress marker** the frontier listin
 not a lock. Push before building, so a second session sees the work exists.
 
 ```bash
-. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH \
-    ADDW_IMPLEMENT_WORKTREE ADDW_WORKTREE_ROOT
+. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH
 ```
 
-**`ADDW_IMPLEMENT_WORKTREE` unset or `true` (the default)** — every later Mode-B step (5
-through 11, including the Step 6 delegate call) runs from a dedicated worktree instead of
-this checkout, so a second session working a different frontier ticket from the same clone
-never collides on the checked-out branch. `worktree/create.sh` fetches and branches off the
-**remote-tracking** ref, never this checkout's own `$ADDW_MAIN_BRANCH` — a concurrent
-session's `git checkout && git pull` right here would be exactly the shared-working-tree
-collision this mode exists to remove, and a plain `git fetch` never touches this checkout's
-working tree or index, so it is safe with another session doing the same thing at once. It
-also recreates a symlinked `.claude/skills` (this repo's own dogfood setup) inside the new
-worktree, pointed at its own tracked `skills/` copy — a no-op wherever `.claude/skills` is
-an ordinary tracked copy, as in a real install:
+Four outcomes. The branch name is the only shape they prescribe; where the branch is
+checked out is decided from the clone's observable state, not from a config key.
 
-```bash
-toplevel="$(git rev-parse --show-toplevel)"
-root="${ADDW_WORKTREE_ROOT:-$(dirname "$toplevel")/$(basename "$toplevel")-worktrees}"
-wt_path="$root/<issue-number>-<slug>"
-bash .claude/skills/lib/worktree/create.sh "$ADDW_MAIN_BRANCH" \
-    <type>/<issue-number>-<slug> "$wt_path"
-```
+1. **The ticket branch `<type>/<issue-number>-<slug>` starts from the remote main** —
+   `origin/$ADDW_MAIN_BRANCH` after a fetch — never from this checkout's own
+   `$ADDW_MAIN_BRANCH`. A `git checkout && git pull` here is exactly the shared-working-tree
+   collision this rule exists to remove when another session is mid-ticket, while a plain
+   `git fetch` touches no working tree or index and is safe with another session doing the
+   same thing at once. `feat/`, `fix/`, `docs/` — the type the work will carry.
 
-Switch the session into `$wt_path`: the rest of this session runs from there, and every later
-step assumes it is the working directory. Then, from the worktree:
+2. **The branch is checked out somewhere the rest of this session runs from, without
+   disturbing another session's checkout.** Read the clone to decide where. When it sits
+   clean on `$ADDW_MAIN_BRANCH` — that branch checked out, nothing modified or staged —
+   nobody else is using this checkout, and in place is fine:
 
-```bash
-git push -u origin <type>/<issue-number>-<slug>
-bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
-```
+   ```bash
+   git fetch origin "$ADDW_MAIN_BRANCH"
+   git checkout -b <type>/<issue-number>-<slug> "origin/$ADDW_MAIN_BRANCH"
+   ```
 
-**`ADDW_IMPLEMENT_WORKTREE` set to anything else** — behaves exactly as before worktree mode
-existed, in this checkout:
+   Anything else — another branch checked out, a dirty tree — is a session's work in
+   progress, possibly your own, and this ticket gets a separate worktree. A second session
+   arriving while the first works in place sees exactly that and isolates itself; that is
+   the whole rule. `worktree/create.sh` is the portable way to get one:
 
-```bash
-git checkout "$ADDW_MAIN_BRANCH" && git pull
-git checkout -b <type>/<issue-number>-<slug>       # feat/ fix/ docs/ — the type the work will carry
-git push -u origin <type>/<issue-number>-<slug>
-bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
-```
+   ```bash
+   bash .claude/skills/lib/worktree/create.sh "$ADDW_MAIN_BRANCH" \
+       <type>/<issue-number>-<slug> <path>
+   ```
 
-Either way, if the branch already exists on the remote, **surface that to the human before
-proceeding** — somebody, possibly you in an earlier session, has already started.
+   It fetches and branches off the remote-tracking ref (outcome 1) and, in this repo's own
+   dogfood setup, recreates the gitignored `.claude/skills` symlink inside the new worktree,
+   pointed at its own tracked `skills/` copy — a no-op wherever `.claude/skills` is an
+   ordinary tracked copy, as in a real install. `<path>` is yours to choose: somewhere this
+   harness can make its working directory, and that stays out of the clone's `git status`.
+
+3. **Every later step runs from the checkout holding the branch** — Steps 5 through 11,
+   the Step 6 delegate call included, since the adapters are cwd-scoped. When that is a
+   worktree, switch the session into it; the mechanism is yours to choose for your harness.
+
+4. **Push and self-assign from that checkout:**
+
+   ```bash
+   git push -u origin <type>/<issue-number>-<slug>
+   bash .claude/skills/lib/tracker/tracker.sh assign <issue-number>
+   ```
+
+If the branch already exists on the remote, **surface that to the human before proceeding**
+— somebody, possibly you in an earlier session, has already started.
 
 ### Step 4: Read the Ticket and Its Spec
 
