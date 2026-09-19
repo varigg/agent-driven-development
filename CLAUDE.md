@@ -47,6 +47,15 @@ merge of a PR whose body names the filing; ADR 0007). They carry no `## Parent`.
   owns its usage block, flags, and exit codes. A header explaining why the
   design is what it is has started a second copy of a document it delegated to.
 
+## Dogfood conventions
+
+- **Ticket worktrees live under `.claude/worktrees/<issue>-<slug>`.** The implement
+  skill leaves the location to the agent (ADR 0012); here the choice is made once. The
+  directory is gitignored, so nested worktrees stay out of `git status`, and it is the
+  one location Claude Code's own worktree tooling can switch a session into — a sibling
+  directory outside the clone cannot be entered, and every command run there would
+  need a `cd` prefix the harness undoes.
+
 ## Pointers
 
 | Where | What |

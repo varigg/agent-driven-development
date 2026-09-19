@@ -11,9 +11,11 @@
 # caller's fallback is then a plain checkout in the current working copy.
 #
 # Exit 0 on a successful `git worktree list`, whether or not a match was
-# found — an empty result is not a failure, it means worktree mode was off or
-# never ran for this ticket. 2 for usage errors; a nonzero git exit code
-# propagates on failure (e.g. run outside a git repository).
+# found — an empty result is not a failure, it means the branch is not
+# checked out anywhere; the main checkout is itself a listed worktree, so a
+# branch checked out in place is found like any other. 2 for usage errors; a
+# nonzero git exit code propagates on failure (e.g. run outside a git
+# repository).
 set -euo pipefail
 
 if [ "$#" -ne 1 ]; then
@@ -23,9 +25,9 @@ fi
 
 branch=$1
 # The path on a `worktree ` line is everything after the 9-character prefix,
-# not just its first field — ADDW_WORKTREE_ROOT or the repo basename may
-# contain spaces, and splitting on whitespace like the `branch` line below
-# would silently truncate such a path.
+# not just its first field — the worktree location is the creating agent's
+# choice and may contain spaces, and splitting on whitespace like the
+# `branch` line below would silently truncate such a path.
 git worktree list --porcelain | awk -v want="refs/heads/$branch" '
     /^worktree / { path = substr($0, 10) }
     $1 == "branch" && $2 == want { print path }

@@ -362,12 +362,14 @@ lives inside `skills/` rather than at the repo root.
   rather than guessing. The adapters are the thin half: pin state, pin prompt,
   hand off.
 
-- `worktree/` — the concurrency-safety mechanism `addw-implement` drives (ADR 0010):
-  `create.sh <main-branch> <new-branch> <path>` fetches the main branch's remote-tracking ref
-  and branches a new ticket worktree off it, deliberately never running `git checkout` or
-  `git pull` in the caller's own checkout — a concurrent session doing the same thing would
-  otherwise contend for that checkout's working tree and index, exactly the collision
-  worktree mode exists to remove. It also recreates a symlinked `.claude/skills` (this repo's
+- `worktree/` — the concurrency-safety mechanism `addw-implement` Step 3 reaches for
+  whenever the clone is not clean on main (ADR 0012): `create.sh <main-branch> <new-branch>
+  <path>` fetches the main branch's remote-tracking ref and branches a new ticket worktree
+  off it, deliberately never running `git checkout` or `git pull` in the caller's own
+  checkout — a concurrent session doing the same thing would otherwise contend for that
+  checkout's working tree and index, exactly the collision isolation exists to remove.
+  Where `<path>` goes is the caller's choice; the layer imposes no directory convention.
+  It also recreates a symlinked `.claude/skills` (this repo's
   own dogfood setup) inside the new worktree, pointed at its own tracked `skills/` copy
   rather than the original symlink's raw target, so an absolute-path original never leaves
   the worktree reading the source checkout's copy — a no-op in a real install, where
