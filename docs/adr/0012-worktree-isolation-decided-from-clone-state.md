@@ -4,10 +4,9 @@
 - **Date**: 2026-09-19
 - **Origin**: ticket varigg/agent-driven-development#172
 
-ADR 0010 gave `addw-implement` a config-gated worktree-per-ticket mode — a toggle
-(`ADDW_IMPLEMENT_WORKTREE`), a sibling-directory convention
-(`../<repo-basename>-worktrees/<issue>-<slug>`), and a second key to move it
-(`ADDW_WORKTREE_ROOT`) — to remove the shared-checkout collision that blocked two
+ADR 0010 gave `addw-implement` a config-gated worktree-per-ticket mode — a toggle, a
+default directory convention beside the clone, and a second key to move it — to remove
+the shared-checkout collision that blocked two
 sessions from working different frontier tickets against one clone. This ADR keeps that
 finding and drops the shape around it. Only four outcomes ever mattered: the ticket branch
 starts from the remote main, never the clone's own local branch, because `git fetch`
@@ -53,8 +52,9 @@ branch cleanup after merge stays judgment-based, as before.
 ## Gate
 
 Mode B decides where a ticket's branch lives — in place when the clone is clean on main,
-a worktree otherwise — and Mode A must always be able to find it: `worktree/find.sh` for
-a worktree, a plain checkout in the clone when it returns nothing. A change to Step 3's
+a worktree otherwise — and Mode A must always be able to find it: `worktree/find.sh`
+locates either, since the clone is itself a listed worktree, and a plain checkout in the
+clone is the fallback when it returns nothing. A change to Step 3's
 rule, to `create.sh`, or to `find.sh` must keep those two sides in agreement, or the other
 is silently stale. No skill reintroduces a config key, a directory convention, or a
 harness-specific mechanism for any of the four outcomes.

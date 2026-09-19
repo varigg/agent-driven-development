@@ -11,8 +11,9 @@
 # caller's fallback is then a plain checkout in the current working copy.
 #
 # Exit 0 on a successful `git worktree list`, whether or not a match was
-# found — an empty result is not a failure, it means the ticket's branch was
-# checked out in place, or never checked out at all. 2 for usage errors; a
+# found — an empty result is not a failure, it means the branch is not
+# checked out anywhere; the main checkout is itself a listed worktree, so a
+# branch checked out in place is found like any other. 2 for usage errors; a
 # nonzero git exit code propagates on failure (e.g. run outside a git
 # repository).
 set -euo pipefail
