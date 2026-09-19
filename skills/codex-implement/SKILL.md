@@ -39,10 +39,12 @@ export STATE_DIR=".claude/skills/codex-implement/state"
 
 ## Notes
 
-- `--sandbox workspace-write` on start; `codex exec resume` inherits it. Codex edits files and runs repo commands (lint/build); no network, no commits.
+- `--sandbox workspace-write` on start; `codex exec resume` inherits it. Codex edits files and runs repo commands (lint/build) inside the working tree; the sandbox refuses everything else, and three of its refusals recur in every install:
+  - **It cannot write `.git`.** Commits, stashes, checkouts, and branch switches fail inside the sandbox — the requester commits, never Codex. A git-write error in the report is the sandbox, not a repository defect.
+  - **It has no network, so no package registry** — PyPI, npm, any of them. A dependency the work needs comes back as a leftover; the requester installs it and updates the lockfile outside the sandbox while reading the diff.
+  - **A "suite blocked" or "hangs" claim is unverified until re-run outside the sandbox.** Sandbox-side hangs are frequently sandbox artifacts — a test that opens a socket, spawns a service, or waits on the network — not real defects. The requester re-runs the command in its own session before believing the report or filing anything on it.
 - **Fixes are the requester's job.** After Codex reports, the requester (`addw-implement`, reading the diff) fixes problems directly in the tree — do NOT ping-pong fixes back to Codex. Resume only for genuinely new scope (a large remainder).
 - Separate `STATE_DIR` from the review skills — the same target can hold an implementation thread and a review thread without collision.
 - Codex is instructed not to write tests (testing gate owns that) and not to touch release ceremony.
-- Network is blocked in the sandbox: if the work requires installing a new dependency, Codex will report it as a leftover — install it yourself while reading the diff.
 - **Never point Codex at a file it must edit while that file is executing.** Rewriting a running script mid-flight corrupts it — bash reads scripts incrementally — and the failure looks like a syntax error at an unrelated line.
 - Model/effort defaults live in `.claude/skills/lib/codex/_common.sh`, keyed off `STATE_DIR` (this skill's key selects the implementation-class model). Override per run with `CODEX_MODEL` / `CODEX_EFFORT`.

@@ -423,3 +423,13 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Within schema 9
+
+The Codex-sandbox quirks now ship in the skills (2026-09-17): the sandbox cannot
+write `.git`, it has no package registry, and a "suite blocked/hangs" claim is
+unverified until re-run outside it. `codex-implement`'s notes and prompt carry
+Codex's side, `addw-implement` Step 6 the requester's. Nothing fails on a stale
+install and nothing migrates — the note is here so the disposition is on
+record: an install that carried an interim inline copy in its `CLAUDE.md` or
+`AGENTS.md` can drop it at leisure.
