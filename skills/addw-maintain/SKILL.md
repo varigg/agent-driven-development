@@ -23,7 +23,7 @@ audit says so when invoking.
 
 1. @docs/ARCHITECTURE.md - Current as-built architecture
 2. @docs/charter.md - Stable intent
-3. The ADRs and the glossary — at the locations the domain-layout contract (`docs/agents/domain.md`) declares
+3. The ADRs — at the location the domain-layout contract (`docs/agents/domain.md`) declares — and the glossary: `CONTEXT.md` at the repo root, or the per-context files a root `CONTEXT-MAP.md` points at. The glossary's location is fixed to Matt's own convention, never project-declared (ADR 0014); only the ADR directory moves.
 4. Prior audits' findings live on the tracker as issues — check the open issues earlier
    audits filed via `bash .claude/skills/lib/tracker/tracker.sh snapshot` (the
    `backlog`-labeled ones and any still-open retirement tickets)

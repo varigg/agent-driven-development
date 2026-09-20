@@ -468,3 +468,69 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Schema 10 → 11
+
+The glossary is fixed to `CONTEXT.md` at the repo root (or the per-context files a root
+`CONTEXT-MAP.md` points at), matching Matt's own convention (ADR 0014). It was never
+meant to be project-declared the way the ADR directory is, but ADDW's own skill wording
+described the two symmetrically — "at the location `domain.md` declares" — and the
+mattpocock skills (`tdd`, `domain-modeling`, `diagnosing-bugs`,
+`improve-codebase-architecture`) read and write `CONTEXT.md` unconditionally regardless of
+what `domain.md` says. A project whose `domain.md` names a different glossary path got a
+split: ADDW's skills found the vocabulary there, the mattpocock skills didn't and could
+seed a second glossary at the root.
+
+### 1. Move a non-root glossary back to `CONTEXT.md`
+
+If `domain.md`'s own "File structure" text still names `CONTEXT.md` (or a
+`CONTEXT-MAP.md`-pointed per-context file), nothing to do — this is Matt's own default and
+most installs already match it. If it names something else, do it in this order, as separate
+commits — the order and the split are both load-bearing, not stylistic:
+
+1. **Reconcile first, at the declared path.** If a root `CONTEXT.md` already has its own
+   substantive entries — the mattpocock skills have been writing terms there all along,
+   split from the declared file — merge them into the declared file now, resolving any term
+   the two defined differently. This is the one part a script can't do: which of two
+   conflicting definitions is current is a domain call, not a merge algorithm's. If the root
+   `CONTEXT.md` is absent or a pointer stub (adventure-library's own precedent: a couple of
+   sentences saying the glossary lives elsewhere), there's nothing to reconcile.
+2. **Clear the target, as its own commit.** If a root `CONTEXT.md` exists — stub or
+   reconciled-into — delete it and commit that on its own: `git rm CONTEXT.md`. Skip this
+   commit entirely if no root `CONTEXT.md` exists yet.
+3. **Rename, as a separate, later commit.** `git mv <declared-path> CONTEXT.md`.
+
+Steps 2 and 3 must be different commits. Git's rename detection — and `git log --follow` —
+compares each commit's tree against its parent: a `CONTEXT.md` that already existed in the
+parent reads as *modified*, never *added*, no matter what commands produced it, so a delete
+and a rename landing in the same commit still show up as one file edited in place. Splitting
+them means step 3's commit has no `CONTEXT.md` in its parent tree, so it is a genuine
+addition git can pair with the declared path's deletion — and `--follow` then walks straight
+through to that path's own history, reconciliation commit included.
+
+Either way, update `domain.md` to describe the default structure again; it keeps declaring
+only the ADR directory from here on.
+
+### 2. Sweep citations to the old path
+
+A merged ADR or another living doc may cite the glossary at its old location. `grep` the
+tree for the path you're retiring and repoint each hit to `CONTEXT.md`. A citation inside a
+**merged** ADR follows ADR 0013's exception exactly, with no substitute evidence: the edit
+touches only the reference, `git log --follow` on `CONTEXT.md` reaches the file you moved
+it from — guaranteed by the previous step's two-commit split, in every case including the
+reconciled one — and a human approves it; this migration note is not a standing
+authorization to skip that approval. A citation in a living doc (ARCHITECTURE.md, the
+charter, another non-ADR doc) has no such restriction; just fix it.
+
+### 3. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=11
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.

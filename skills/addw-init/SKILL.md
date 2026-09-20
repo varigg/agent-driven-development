@@ -78,10 +78,14 @@ assumption.
    read it and resolve the directory it declares for ADRs. Do not hardcode a
    path and do not infer one from the layout Matt's seed template happens to
    ship — a project may have declared otherwise, and this indirection is the
-   reason ADDW skills carry no glossary or ADR paths of their own. The
-   resolved path is recorded as `ADDW_ADR_DIR` in Step 2, which is what lets
-   doctor re-check the same decision mechanically. If the contract is
-   genuinely ambiguous, ask the human to settle it before writing anything.
+   reason ADDW skills carry no ADR path of their own. The resolved path is
+   recorded as `ADDW_ADR_DIR` in Step 2, which is what lets doctor re-check
+   the same decision mechanically. If the contract is genuinely ambiguous, ask
+   the human to settle it before writing anything. The glossary carries no
+   equivalent indirection: it is always `CONTEXT.md` at the repo root (or the
+   per-context files a root `CONTEXT-MAP.md` points at), matching Matt's own
+   setup and the mattpocock skills' hardcoded reads — never project-declared,
+   so init resolves no path and records no key for it (ADR 0014).
 
 ---
 
@@ -257,7 +261,7 @@ edits the file next, and the parser rejects a violating line by number.
 # deliberately empty, which is distinct from deleting the key.
 #
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=10
+ADDW_SCHEMA=11
 ADDW_PROJECT_NAME="<project name>"
 # The file a release writes the version into. Empty is valid and means the
 # project has no version manifest to write — the release then carries the
