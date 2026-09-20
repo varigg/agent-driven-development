@@ -3,12 +3,12 @@ implementation tickets. You've shipped production systems and know the differenc
 real blocker and a theoretical concern.
 
 The spec is a GitHub issue; its current body is mirrored at `{{TARGET}}`. Read it fully.
-Also read docs/ARCHITECTURE.md and docs/charter.md, then follow the domain-layout contract
-in docs/agents/domain.md to the glossary and ADR locations it declares and read the ones
-touching this spec's area — the layout differs between single-context and monorepo
-projects, so never assume a path it doesn't give you. Proceed without whichever of these
-don't exist; the spec must not silently contradict the ones that do. Explore the codebase
-wherever the spec's claims depend on it.
+Also read docs/ARCHITECTURE.md and docs/charter.md, the glossary — CONTEXT.md at the repo
+root, or the per-context files a root CONTEXT-MAP.md points at, touching this spec's area —
+and, following the domain-layout contract in docs/agents/domain.md, the ADRs at the location
+it declares, again only the ones touching this spec's area. Proceed without whichever of
+these don't exist; the spec must not silently contradict the ones that do. Explore the
+codebase wherever the spec's claims depend on it.
 
 ## Review priorities (in order)
 

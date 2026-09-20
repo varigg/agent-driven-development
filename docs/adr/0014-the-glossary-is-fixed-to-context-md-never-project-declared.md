@@ -25,10 +25,12 @@ convention, not a per-project declaration. `domain.md` keeps declaring only the 
 
 - **Assert a stub convention via `doctor.sh`** — keep the declared-path indirection for the
   glossary too, and have doctor check that a root `CONTEXT.md` exists and either is the
-  glossary or points at it. Preserves per-project glossary placement, but adds a mechanism
-  (a stub file, a doctor check to verify it) for a seam that was never load-bearing anywhere
-  in the toolchain — nothing consumes a declared glossary path today, so there is nothing a
-  stub would be redirecting.
+  glossary or points at it. Preserves per-project glossary placement, but the indirection
+  this alternative would guard never existed at the tooling level: it lived only in the
+  agent-facing wording fixed above (Step 4 of `addw-implement` and its siblings), which sent
+  the *implementing agent* to `domain.md`'s declaration — no script ever resolved that
+  declaration into a config key the way `ADDW_ADR_DIR` is resolved. A stub and a doctor check
+  would protect a mechanical seam that doesn't exist rather than fix the wording that does.
 - **Document the split as a known gap, unfixed** — leaves every adopter who customizes
   `domain.md`'s glossary section to rediscover the split independently, which is the state
   the ticket was filed against.
@@ -36,12 +38,13 @@ convention, not a per-project declaration. `domain.md` keeps declaring only the 
 ## Consequences
 
 A project's `domain.md` may still describe its file structure however it likes in prose, but
-ADDW's own skills (`addw-init`, `addw-implement`, `addw-maintain`, `doctor.sh`,
-`docs/cycle-walkthrough.md`) now state the glossary location as fixed rather than resolving
-it from the contract. A project that had customized the glossary to a non-root path is now
-out of step with the convention this repo documents; migrating it back to `CONTEXT.md` (or a
-`CONTEXT-MAP.md`-pointed per-context file) is what restores the mattpocock skills' visibility
-into it. `ADDW_ADR_DIR` remains the only glossary/ADR-layout value any skill resolves from
+ADDW's own skills (`addw-init`, `addw-implement`, `addw-maintain`, `codex-spec-review`,
+`doctor.sh`, `docs/cycle-walkthrough.md`) now state the glossary location as fixed rather
+than resolving it from the contract. A project that had customized the glossary to a
+non-root path is now out of step with the convention this repo documents; migrating it back
+to `CONTEXT.md` (or a `CONTEXT-MAP.md`-pointed per-context file) is what restores the
+mattpocock skills' visibility into it — schema 11, `UPGRADING.md`, carries that migration
+step. `ADDW_ADR_DIR` remains the only glossary/ADR-layout value any skill resolves from
 config.
 
 ## Gate

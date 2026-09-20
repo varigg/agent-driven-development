@@ -468,3 +468,36 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Schema 10 → 11
+
+The glossary is fixed to `CONTEXT.md` at the repo root (or the per-context files a root
+`CONTEXT-MAP.md` points at), matching Matt's own convention (ADR 0014). It was never
+meant to be project-declared the way the ADR directory is, but ADDW's own skill wording
+described the two symmetrically — "at the location `domain.md` declares" — and the
+mattpocock skills (`tdd`, `domain-modeling`, `diagnosing-bugs`,
+`improve-codebase-architecture`) read and write `CONTEXT.md` unconditionally regardless of
+what `domain.md` says. A project whose `domain.md` names a different glossary path got a
+split: ADDW's skills found the vocabulary there, the mattpocock skills didn't and could
+seed a second glossary at the root.
+
+### 1. Move a non-root glossary back to `CONTEXT.md`
+
+If `domain.md`'s own "File structure" text still names `CONTEXT.md` (or a
+`CONTEXT-MAP.md`-pointed per-context file), nothing to do — this is Matt's own default and
+most installs already match it. If it names something else, move that file's content to
+`CONTEXT.md` at the repo root and update `domain.md` to describe the default structure
+again; `domain.md` keeps declaring only the ADR directory from here on.
+
+### 2. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=11
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.

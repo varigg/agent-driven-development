@@ -141,13 +141,14 @@ assert_contains "$log" "body 8" "start.sh: reads the body through the layer"
 assert_eq "$(cat "$BODY")" "$(cat "$INSTALL/state/issue-8.md")" \
   "start.sh: the buffer holds the issue body"
 
-# --- the prompt follows the domain-layout contract -------------------------
+# --- the prompt follows the domain-layout contract for ADRs, CONTEXT.md for
+# the glossary (ADR 0014: the glossary is fixed, never domain.md-declared) ---
 
 tpl="$(cat "$SKILL/prompts/start.tpl")"
 assert_contains "$tpl" "docs/agents/domain.md" \
-  "start prompt: locates the glossary via the domain-layout contract"
-assert_not_contains "$tpl" "docs/CONTEXT.md" \
-  "start prompt: no hardcoded glossary path"
+  "start prompt: locates the ADRs via the domain-layout contract"
+assert_contains "$tpl" "CONTEXT.md" \
+  "start prompt: reads the glossary at the fixed CONTEXT.md convention"
 assert_not_contains "$tpl" "docs/adr/" \
   "start prompt: no hardcoded ADR path"
 
