@@ -485,11 +485,33 @@ seed a second glossary at the root.
 
 If `domain.md`'s own "File structure" text still names `CONTEXT.md` (or a
 `CONTEXT-MAP.md`-pointed per-context file), nothing to do — this is Matt's own default and
-most installs already match it. If it names something else, move that file's content to
-`CONTEXT.md` at the repo root and update `domain.md` to describe the default structure
-again; `domain.md` keeps declaring only the ADR directory from here on.
+most installs already match it. If it names something else, check what's already sitting at
+the root before moving anything:
 
-### 2. Bump and verify
+- **No root `CONTEXT.md`** — move the declared file's content there directly.
+- **A root `CONTEXT.md` that's a pointer stub** (adventure-library's own precedent: a couple
+  of sentences saying the glossary lives elsewhere) — the mattpocock skills were already
+  finding nothing substantive there, so overwrite it with the declared file's content.
+- **A root `CONTEXT.md` with its own substantive entries** — the mattpocock skills have been
+  writing terms there all along, split from the declared file. Reconcile the two by hand —
+  merge entries, resolve any term the two glossaries defined differently — before deleting
+  either source. This is the one case a script cannot do for you: which of two conflicting
+  definitions is current is a domain call, not a merge algorithm's.
+
+Either way, update `domain.md` to describe the default structure again; it keeps declaring
+only the ADR directory from here on.
+
+### 2. Sweep citations to the old path
+
+A merged ADR or another living doc may cite the glossary at its old location. `grep` the
+tree for the path you're retiring and repoint each hit to `CONTEXT.md`. A citation inside a
+**merged** ADR follows ADR 0013's exception exactly: the edit touches only the reference,
+`git log --follow` on `CONTEXT.md` must reach the file you moved it from, and a human
+approves the edit — this migration note is not a standing authorization to skip that
+approval. A citation in a living doc (ARCHITECTURE.md, the charter, another non-ADR doc)
+has no such restriction; just fix it.
+
+### 3. Bump and verify
 
 ```bash
 # in docs/addw.env
