@@ -36,6 +36,8 @@ assert_eq "2" "$(bash "$PARSE" parent "$FIX/prose-refs.md")" \
   "parent: prose fixture still parses parent"
 assert_eq "$(printf '8\n9\n11')" "$(bash "$PARSE" blockers "$FIX/multi-ref-item.md")" \
   "blockers: multiple refs in one list item all count"
+assert_eq "$(printf '8\n10')" "$(bash "$PARSE" blockers "$FIX/blockers-subsection.md")" \
+  "blockers: a ### subsection inside Blocked by does not end the section early, and the next ## section still does"
 
 # --- adr-obligation ---
 assert_eq "One ADR for the positive decision, losing alternatives as one-liners." \
@@ -49,6 +51,14 @@ assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-mentioned-elsewhere.
   "adr-obligation: a mention outside Implementation Decisions is not an obligation"
 assert_eq "" "$(bash "$PARSE" adr-obligation "$FIX/no-parent.md")" \
   "adr-obligation: absent section yields empty"
+assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-citation-only.md")" \
+  "adr-obligation: bullets that only cite an existing ADR number are not an obligation"
+assert_eq "**ADR** (next number): supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split." \
+  "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-declaration-with-citations.md")" \
+  "adr-obligation: a declaration bullet still counts even when it also cites existing ADRs"
+assert_eq "**ADR** (next number): supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split." \
+  "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-obligation-subsection.md")" \
+  "adr-obligation: a declaration under a ### subsection of Implementation Decisions is not missed, and citation-only bullets in a sibling subsection stay excluded"
 
 # --- classify-reason ---
 assert_eq "completed" "$(bash "$PARSE" classify-reason COMPLETED)" \

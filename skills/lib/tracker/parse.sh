@@ -10,7 +10,9 @@
 # "## Implementation Decisions" section, whose list items are free prose. It
 # looks for the durable structural signal (a list item, in that section) that
 # something ADR-shaped was promised, rather than matching a specific phrase
-# anywhere in the body.
+# anywhere in the body — except to tell a promise from a citation of an
+# existing ADR number, where a phrase distinction (#167) is the only signal
+# free prose offers.
 #
 # Usage:
 #   parse.sh parent [file]            -> spec issue number, or empty (exit 0)
@@ -36,14 +38,17 @@ usage() {
 
 # Print every #N reference found in list items of the named level-2 section.
 # A ref counts only when the "#" is not glued to a preceding word character,
-# so "PR#12" and prose like "#99" outside list items never become edges.
+# so "PR#12" and prose like "#99" outside list items never become edges. Only
+# a level-2 heading (`##`, not `###`) opens or closes the section — matching
+# strip_section's own boundary — so a subsection heading never ends the scan
+# early.
 section_refs() { # section-name
   awk -v want="$1" '
-    /^#+[[:space:]]/ || /^#+$/ {
+    /^##[^#]/ {
       heading = $0
-      sub(/^#+[[:space:]]*/, "", heading)
+      sub(/^##[[:space:]]*/, "", heading)
       gsub(/[[:space:]]+$/, "", heading)
-      insec = ($0 ~ /^##[^#]/) && (tolower(heading) == tolower(want))
+      insec = (tolower(heading) == tolower(want))
       next
     }
     insec && /^[[:space:]]*[-*+][[:space:]]/ {
@@ -57,23 +62,31 @@ section_refs() { # section-name
   '
 }
 
-# Print each list item's text within "## Implementation Decisions" that
-# mentions ADR as a standalone word: padding the lowercased item with a
-# leading/trailing space lets one regex catch the word at either edge, and
-# a plural ("ADRs") counts, but "quadrant" or "hadrian" do not.
+# Print each list item's text within "## Implementation Decisions" — a
+# section that runs to the next level-2 heading, subsections included, same
+# boundary as section_refs/strip_section — whose ADR mentions are not all
+# citations of an existing number. A citation ("ADR-035", "ADR 035") is
+# stripped before the check, so a bullet that only cites existing ADRs never
+# counts; a standalone mention ("one ADR for …", "**ADR** (next number)")
+# survives the strip and counts as a declared obligation, even alongside
+# citations elsewhere in the same bullet. Padding the item with a
+# leading/trailing space lets one regex catch the word at either edge, and a
+# plural ("ADRs") counts, but "quadrant" or "hadrian" do not.
 adr_obligations() {
   awk '
-    /^#+[[:space:]]/ || /^#+$/ {
+    /^##[^#]/ {
       heading = $0
-      sub(/^#+[[:space:]]*/, "", heading)
+      sub(/^##[[:space:]]*/, "", heading)
       gsub(/[[:space:]]+$/, "", heading)
-      insec = ($0 ~ /^##[^#]/) && (tolower(heading) == "implementation decisions")
+      insec = (tolower(heading) == "implementation decisions")
       next
     }
     insec && /^[[:space:]]*[-*+][[:space:]]/ {
       item = $0
       sub(/^[[:space:]]*[-*+][[:space:]]+/, "", item)
-      padded = " " tolower(item) " "
+      stripped = tolower(item)
+      gsub(/adrs?[ -]?[0-9]+/, "", stripped)
+      padded = " " stripped " "
       if (padded ~ /[^a-z]adrs?[^a-z]/) print item
     }
   '
