@@ -488,15 +488,23 @@ If `domain.md`'s own "File structure" text still names `CONTEXT.md` (or a
 most installs already match it. If it names something else, check what's already sitting at
 the root before moving anything:
 
-- **No root `CONTEXT.md`** — move the declared file's content there directly.
+- **No root `CONTEXT.md`** — `git mv <declared-path> CONTEXT.md`. A plain rename is what
+  makes the next step's `git log --follow` work.
 - **A root `CONTEXT.md` that's a pointer stub** (adventure-library's own precedent: a couple
   of sentences saying the glossary lives elsewhere) — the mattpocock skills were already
-  finding nothing substantive there, so overwrite it with the declared file's content.
+  finding nothing substantive there, so it isn't a merge, but don't edit it in place: that
+  keeps the stub's own history at the `CONTEXT.md` path and severs the link the next step
+  needs. In the same commit, `git rm CONTEXT.md` (the stub) then `git mv <declared-path>
+  CONTEXT.md`. Git's rename detection pairs by content, so it links the new `CONTEXT.md` to
+  the file you moved, while the stub's deletion registers as a separate, unpaired delete.
 - **A root `CONTEXT.md` with its own substantive entries** — the mattpocock skills have been
   writing terms there all along, split from the declared file. Reconcile the two by hand —
   merge entries, resolve any term the two glossaries defined differently — before deleting
   either source. This is the one case a script cannot do for you: which of two conflicting
-  definitions is current is a domain call, not a merge algorithm's.
+  definitions is current is a domain call, not a merge algorithm's. A hand-merged result may
+  not be similar enough to either source for git's rename detection to catch, so `git log
+  --follow` is not guaranteed here — name both source paths explicitly in the commit message
+  instead, since that's what the next step's citation repoints will cite as evidence.
 
 Either way, update `domain.md` to describe the default structure again; it keeps declaring
 only the ADR directory from here on.
@@ -505,11 +513,13 @@ only the ADR directory from here on.
 
 A merged ADR or another living doc may cite the glossary at its old location. `grep` the
 tree for the path you're retiring and repoint each hit to `CONTEXT.md`. A citation inside a
-**merged** ADR follows ADR 0013's exception exactly: the edit touches only the reference,
-`git log --follow` on `CONTEXT.md` must reach the file you moved it from, and a human
-approves the edit — this migration note is not a standing authorization to skip that
-approval. A citation in a living doc (ARCHITECTURE.md, the charter, another non-ADR doc)
-has no such restriction; just fix it.
+**merged** ADR follows ADR 0013's exception exactly: the edit touches only the reference, a
+human approves it, and the evidence is either `git log --follow` on `CONTEXT.md` reaching
+the file you moved it from (the no-stub and stub cases above) or the commit message naming
+both source paths (the hand-reconciled case, where `--follow` isn't guaranteed) — this
+migration note is not a standing authorization to skip that approval. A citation in a living
+doc (ARCHITECTURE.md, the charter, another non-ADR doc) has no such restriction; just fix
+it.
 
 ### 3. Bump and verify
 
