@@ -28,7 +28,14 @@ living docs.>
 - ADRs are **write-once from the merge boundary**, sequence-numbered, and
   self-contained — evidence restated in the ADR's own words, citing only
   living docs and other ADRs. An unmerged ADR can still be corrected; a merged
-  one never is.
+  one never is — with one narrow exception. When a document a merged ADR cites
+  *moves*, its citation may be repointed to the new path, and only for that:
+  the edit touches nothing but the reference, and the old and new paths must
+  be provably the same document (`git log --follow` on the new path reaching
+  the old one is the check). A human approves the edit; no agent repoints a
+  citation unprompted. Anything broader — a renamed term, a corrected command,
+  a decision that changed rather than a file that moved — is not this
+  exception and does not use it.
 - The three bold fields are **mandatory and always present**. `Status` has
   exactly two states, `active` and `superseded by ADR-NNNN`. Only the first is
   ever written. Supersession is a **departure**: the superseding PR archives
