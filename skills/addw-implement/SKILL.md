@@ -199,8 +199,10 @@ reading the parent spec, run
 `bash .claude/skills/lib/tracker/tracker.sh approval-drift <parent>`. If it reports drift,
 surface it to the human before building — the tickets may descend from content the spec
 reviewer never saw. `no approval hash recorded` needs no action; it identifies a pre-feature
-approval. Then read `docs/ARCHITECTURE.md`, and the glossary and ADRs at the locations the
-domain-layout contract (`docs/agents/domain.md`) declares. Never hardcode those paths.
+approval. Then read `docs/ARCHITECTURE.md`, the glossary — `CONTEXT.md` at the repo root, or
+the per-context files a root `CONTEXT-MAP.md` points at, fixed to Matt's own convention and
+never project-declared (ADR 0014) — and the ADRs at the location the domain-layout contract
+(`docs/agents/domain.md`) declares. Never hardcode the ADR path.
 
 ### Step 5: Frozen Contract Tests
 

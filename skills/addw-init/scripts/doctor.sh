@@ -328,6 +328,11 @@ done
 # --- Matt's setup, and the tracker it configured --------------------------
 # These files are the setup skill's output, not ADDW's: their absence means
 # the setup never ran, which is a different fix from a missing living doc.
+# domain.md's only project-declared path is the ADR directory (addw-init Step
+# 1.5); the glossary is always CONTEXT.md at the repo root, per Matt's own
+# convention and never project-declared (ADR 0014). CONTEXT.md is created
+# lazily by domain-modeling, so its absence here is not a fault and doctor
+# checks nothing further about it.
 setup_ran=1
 for f in docs/agents/issue-tracker.md docs/agents/domain.md; do
     if [ -f "$f" ]; then
