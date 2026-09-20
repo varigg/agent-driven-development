@@ -71,7 +71,7 @@ issue() { # number state reason parent-or-empty labels-csv title body-extra
 OBLIGATION_BODY='
 ## Implementation Decisions
 
-- One ADR records the decision.
+- ADR: records the decision.
 '
 
 # Two snapshots: the base one answers the ordinary satisfied/unmet cases

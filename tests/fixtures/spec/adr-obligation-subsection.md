@@ -11,7 +11,7 @@ A large spec structures its Implementation Decisions into subsections.
 
 ### Documents
 
-- **ADR** (next number): supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split.
+- ADR: supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split.
 
 ## Testing Decisions
 

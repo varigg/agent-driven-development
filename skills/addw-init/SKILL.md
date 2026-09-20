@@ -261,7 +261,7 @@ edits the file next, and the parser rejects a violating line by number.
 # deliberately empty, which is distinct from deleting the key.
 #
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=11
+ADDW_SCHEMA=12
 ADDW_PROJECT_NAME="<project name>"
 # The file a release writes the version into. Empty is valid and means the
 # project has no version manifest to write — the release then carries the

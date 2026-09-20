@@ -7,12 +7,12 @@
 # and an absent section both mean "no edges" and need no special-casing.
 #
 # adr-obligation reads to-spec's contract instead: a level-2
-# "## Implementation Decisions" section, whose list items are free prose. It
-# looks for the durable structural signal (a list item, in that section) that
-# something ADR-shaped was promised, rather than matching a specific phrase
-# anywhere in the body — except to tell a promise from a citation of an
-# existing ADR number, where a phrase distinction (#167) is the only signal
-# free prose offers.
+# "## Implementation Decisions" section, whose list items are free prose. An
+# obligation is declared by convention, not inferred from prose (ADR 0015): a
+# list item whose text, after the list marker and any emphasis wrapping (*,
+# _, backtick), begins with the literal label "ADR:" (case-insensitive).
+# Everything else — a bare citation ("ADR-035", "ADR 035"), or free prose that
+# merely mentions the word — is never an obligation, whatever it says.
 #
 # Usage:
 #   parse.sh parent [file]            -> spec issue number, or empty (exit 0)
@@ -64,14 +64,12 @@ section_refs() { # section-name
 
 # Print each list item's text within "## Implementation Decisions" — a
 # section that runs to the next level-2 heading, subsections included, same
-# boundary as section_refs/strip_section — whose ADR mentions are not all
-# citations of an existing number. A citation ("ADR-035", "ADR 035") is
-# stripped before the check, so a bullet that only cites existing ADRs never
-# counts; a standalone mention ("one ADR for …", "**ADR** (next number)")
-# survives the strip and counts as a declared obligation, even alongside
-# citations elsewhere in the same bullet. Padding the item with a
-# leading/trailing space lets one regex catch the word at either edge, and a
-# plural ("ADRs") counts, but "quadrant" or "hadrian" do not.
+# boundary as section_refs/strip_section — whose text begins with the "ADR:"
+# label once leading emphasis wrapping is stripped. Only the label at the
+# item's own start counts, so a citation later in the same bullet ("ADR:
+# supersedes ADR-033's vocabulary split") rides along as the label's free
+# prose rather than disqualifying it, while a bullet with no label at all —
+# citing a number, or merely mentioning ADRs in passing — never counts.
 adr_obligations() {
   awk '
     /^##[^#]/ {
@@ -84,10 +82,9 @@ adr_obligations() {
     insec && /^[[:space:]]*[-*+][[:space:]]/ {
       item = $0
       sub(/^[[:space:]]*[-*+][[:space:]]+/, "", item)
-      stripped = tolower(item)
-      gsub(/adrs?[ -]?[0-9]+/, "", stripped)
-      padded = " " stripped " "
-      if (padded ~ /[^a-z]adrs?[^a-z]/) print item
+      label = item
+      gsub(/^[*_`[:space:]]+/, "", label)
+      if (tolower(label) ~ /^adr:/) print item
     }
   '
 }

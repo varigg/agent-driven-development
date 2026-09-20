@@ -8,7 +8,7 @@ Make the precedence explicit and documented.
 
 ## Implementation Decisions
 
-- One ADR for the positive decision, losing alternatives as one-liners.
+- ADR: records the positive decision, losing alternatives as one-liners.
 - The resolver module gains a `precedence()` helper.
 
 ## Testing Decisions

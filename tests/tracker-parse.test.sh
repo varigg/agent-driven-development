@@ -40,25 +40,50 @@ assert_eq "$(printf '8\n10')" "$(bash "$PARSE" blockers "$FIX/blockers-subsectio
   "blockers: a ### subsection inside Blocked by does not end the section early, and the next ## section still does"
 
 # --- adr-obligation ---
-assert_eq "One ADR for the positive decision, losing alternatives as one-liners." \
+assert_eq "ADR: records the positive decision, losing alternatives as one-liners." \
   "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-obligation.md")" \
-  "adr-obligation: a list item mentioning ADR is extracted"
+  "adr-obligation: a list item declaring the ADR: label is extracted"
 assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/no-adr-obligation.md")" \
-  "adr-obligation: no mention yields empty"
-assert_exit 0 "adr-obligation: no mention still exits zero" \
+  "adr-obligation: no label yields empty"
+assert_exit 0 "adr-obligation: no label still exits zero" \
   bash "$PARSE" adr-obligation "$SPEC_FIX/no-adr-obligation.md"
 assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-mentioned-elsewhere.md")" \
   "adr-obligation: a mention outside Implementation Decisions is not an obligation"
 assert_eq "" "$(bash "$PARSE" adr-obligation "$FIX/no-parent.md")" \
   "adr-obligation: absent section yields empty"
 assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-citation-only.md")" \
-  "adr-obligation: bullets that only cite an existing ADR number are not an obligation"
-assert_eq "**ADR** (next number): supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split." \
+  "adr-obligation: bullets that only cite an existing ADR number, with no ADR: label, are not an obligation"
+assert_eq "ADR: records the positive decision, losing alternatives as one-liners." \
+  "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-obligation-mixed.md")" \
+  "adr-obligation: a citation bullet and a labelled declaration side by side — only the declaration counts"
+assert_eq "ADR: supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split." \
   "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-declaration-with-citations.md")" \
-  "adr-obligation: a declaration bullet still counts even when it also cites existing ADRs"
-assert_eq "**ADR** (next number): supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split." \
+  "adr-obligation: a declaration bullet still counts even when it also cites existing ADRs after the label"
+assert_eq "**ADR:** one record for the decision." \
+  "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-emphasis-label.md")" \
+  "adr-obligation: emphasis-wrapped label (**ADR:**) still counts"
+assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-next-heading-ignored.md")" \
+  "adr-obligation: an ADR: item under the next ## section is ignored"
+assert_eq "ADR: supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split." \
   "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-obligation-subsection.md")" \
   "adr-obligation: a declaration under a ### subsection of Implementation Decisions is not missed, and citation-only bullets in a sibling subsection stay excluded"
+
+# --- section span agreement: parent/blockers/adr-obligation/strip-section
+#     all treat a level-2 section as running to the next ## heading, ###
+#     subsections included, over one shared body ---
+SPAN_FIX="$FIX/section-span-agreement.md"
+assert_eq "2" "$(bash "$PARSE" parent "$SPAN_FIX")" \
+  "section-span: parent found under a ### subsection, not the ## Decoy section's own ref"
+assert_eq "$(printf '8\n10')" "$(bash "$PARSE" blockers "$SPAN_FIX")" \
+  "section-span: blockers found under a ### subsection"
+assert_eq "ADR: supersedes ADR-033's vocabulary split." \
+  "$(bash "$PARSE" adr-obligation "$SPAN_FIX")" \
+  "section-span: adr-obligation found under a ### subsection"
+stripped_span="$(bash "$PARSE" strip-section "Implementation Decisions" "$SPAN_FIX")"
+assert_eq "0" "$(printf '%s\n' "$stripped_span" | grep -c 'ADR: supersedes' || true)" \
+  "section-span: strip-section removes the ### subsection along with its ## heading"
+assert_eq "1" "$(printf '%s\n' "$stripped_span" | grep -c '^## Decoy$')" \
+  "section-span: strip-section leaves a sibling ## section, subsection and all, untouched"
 
 # --- classify-reason ---
 assert_eq "completed" "$(bash "$PARSE" classify-reason COMPLETED)" \

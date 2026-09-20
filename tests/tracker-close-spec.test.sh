@@ -91,7 +91,7 @@ issues="$work/issues.json"
   jq -nc '
     {number: 900, title: "Spec: complete, ADR-obligated", state: "OPEN",
      stateReason: null, labels: [{name: "spec"}], assignees: [],
-     body: "## Implementation Decisions\n\n- Records one ADR for this change.\n"}'
+     body: "## Implementation Decisions\n\n- ADR: records this change.\n"}'
   printf ',\n'
   issue 901 CLOSED COMPLETED 900 ready-for-agent "Delivered child (adr-obligated spec)"
   printf '\n]\n'
