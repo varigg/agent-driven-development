@@ -550,11 +550,13 @@ declared obligation stays `partial` until a delivering commit touches the ADR di
 ### 1. Reword existing declarations to the `ADR:` label
 
 Any **open** spec whose Implementation Decisions declared an obligation in free prose reads as
-unobligated under the new rule until it's reworded. Find candidates:
+unobligated under the new rule until it's reworded. Find candidates through the tracker seam
+rather than a raw `gh issue list` — its default page size can silently miss older specs:
 
 ```bash
-gh issue list --label spec --state open --search "ADR" --json number,body \
-  --jq '.[] | select(.body | test("(?i)implementation decisions")) | .number'
+bash .claude/skills/lib/tracker/tracker.sh snapshot | \
+  jq -r '.[] | select(.state == "OPEN" and any(.labels[]; .name == "spec")
+    and (.body | test("(?i)implementation decisions"))) | .number'
 ```
 
 For each, reword the declaring bullet to open with the label — `- One ADR for the positive
