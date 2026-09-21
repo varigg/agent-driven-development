@@ -2,19 +2,11 @@
 
 Users cannot tell why the resolver picked one edge over another when both apply.
 
-## Solution
-
-Make the precedence explicit and documented.
-
 ## Implementation Decisions
 
-- ADR: records the positive decision, losing alternatives as one-liners.
+- ADR: supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split.
 - The resolver module gains a `precedence()` helper.
 
 ## Testing Decisions
 
 - Unit tests for `precedence()` covering every documented case.
-
-## Out of Scope
-
-Nothing else changes.

@@ -14,7 +14,13 @@ lives inside `skills/` rather than at the repo root.
     section encoding (`## Parent` / `## Blocked by`) and close-reason
     classification, plus `adr-obligation` over a spec body's
     `## Implementation Decisions` section, which `resolve.sh`'s completeness
-    verdict reads directly.
+    verdict reads directly. An obligation is declared by convention, not
+    inferred from prose (ADR 0015): a list item counts only when its text,
+    after the list marker and any emphasis wrapping, begins with the literal
+    label `ADR:` — a bare citation of an existing record, or prose that
+    merely mentions the word, never does. `adr-obligation`, `parent`, and
+    `blockers` all treat a level-2 section as spanning every `###`
+    subsection beneath it, the same boundary `strip-section` already used.
   - `resolve.sh` — pure frontier and spec-completion resolution over an issue
     snapshot (the `gh --json` shape), building on `parse.sh`. Needs `jq` and
     bash ≥ 4 (associative arrays; guarded at startup). No network: fed a

@@ -7,10 +7,12 @@
 # and an absent section both mean "no edges" and need no special-casing.
 #
 # adr-obligation reads to-spec's contract instead: a level-2
-# "## Implementation Decisions" section, whose list items are free prose. It
-# looks for the durable structural signal (a list item, in that section) that
-# something ADR-shaped was promised, rather than matching a specific phrase
-# anywhere in the body.
+# "## Implementation Decisions" section, whose list items are free prose. An
+# obligation is declared by convention, not inferred from prose (ADR 0015): a
+# list item whose text, after the list marker and any emphasis wrapping (*,
+# _, backtick), begins with the literal label "ADR:" (case-insensitive).
+# Everything else — a bare citation ("ADR-035", "ADR 035"), or free prose that
+# merely mentions the word — is never an obligation, whatever it says.
 #
 # Usage:
 #   parse.sh parent [file]            -> spec issue number, or empty (exit 0)
@@ -36,14 +38,17 @@ usage() {
 
 # Print every #N reference found in list items of the named level-2 section.
 # A ref counts only when the "#" is not glued to a preceding word character,
-# so "PR#12" and prose like "#99" outside list items never become edges.
+# so "PR#12" and prose like "#99" outside list items never become edges. Only
+# a level-2 heading (`##`, not `###`) opens or closes the section — matching
+# strip_section's own boundary — so a subsection heading never ends the scan
+# early.
 section_refs() { # section-name
   awk -v want="$1" '
-    /^#+[[:space:]]/ || /^#+$/ {
+    /^##[^#]/ {
       heading = $0
-      sub(/^#+[[:space:]]*/, "", heading)
+      sub(/^##[[:space:]]*/, "", heading)
       gsub(/[[:space:]]+$/, "", heading)
-      insec = ($0 ~ /^##[^#]/) && (tolower(heading) == tolower(want))
+      insec = (tolower(heading) == tolower(want))
       next
     }
     insec && /^[[:space:]]*[-*+][[:space:]]/ {
@@ -57,24 +62,29 @@ section_refs() { # section-name
   '
 }
 
-# Print each list item's text within "## Implementation Decisions" that
-# mentions ADR as a standalone word: padding the lowercased item with a
-# leading/trailing space lets one regex catch the word at either edge, and
-# a plural ("ADRs") counts, but "quadrant" or "hadrian" do not.
+# Print each list item's text within "## Implementation Decisions" — a
+# section that runs to the next level-2 heading, subsections included, same
+# boundary as section_refs/strip_section — whose text begins with the "ADR:"
+# label once leading emphasis wrapping is stripped. Only the label at the
+# item's own start counts, so a citation later in the same bullet ("ADR:
+# supersedes ADR-033's vocabulary split") rides along as the label's free
+# prose rather than disqualifying it, while a bullet with no label at all —
+# citing a number, or merely mentioning ADRs in passing — never counts.
 adr_obligations() {
   awk '
-    /^#+[[:space:]]/ || /^#+$/ {
+    /^##[^#]/ {
       heading = $0
-      sub(/^#+[[:space:]]*/, "", heading)
+      sub(/^##[[:space:]]*/, "", heading)
       gsub(/[[:space:]]+$/, "", heading)
-      insec = ($0 ~ /^##[^#]/) && (tolower(heading) == "implementation decisions")
+      insec = (tolower(heading) == "implementation decisions")
       next
     }
     insec && /^[[:space:]]*[-*+][[:space:]]/ {
       item = $0
       sub(/^[[:space:]]*[-*+][[:space:]]+/, "", item)
-      padded = " " tolower(item) " "
-      if (padded ~ /[^a-z]adrs?[^a-z]/) print item
+      label = item
+      gsub(/^[*_`[:space:]]+/, "", label)
+      if (tolower(label) ~ /^adr:/) print item
     }
   '
 }

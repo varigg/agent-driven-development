@@ -14,7 +14,11 @@ codebase wherever the spec's claims depend on it.
 
 1. **Decision coherence** — do the Implementation Decisions contradict each other, the user
    stories, the existing codebase, or an ADR? Would building exactly what they say produce
-   wrong behavior, lose data, or paint the project into a corner?
+   wrong behavior, lose data, or paint the project into a corner? The tracker recognizes an ADR
+   obligation only when a bullet opens with the literal label `ADR:` — a bare citation of an
+   existing record, or prose that merely mentions a new one is needed, registers as nothing. If
+   a bullet's intent reads as promising a new ADR but doesn't use the label, flag it as P1: the
+   promise would silently vanish from the completeness check.
 2. **Completeness** — what would an implementer have to guess? User stories with no
    covering decision, missing schema/API/contract decisions, undecided behavior at the
    boundaries between decisions.

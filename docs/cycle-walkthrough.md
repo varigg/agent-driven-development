@@ -191,7 +191,9 @@ listing also surfaces complete specs so you notice at your next session
    `tracker.sh close-spec`, never a side effect of a tag. Its single guard is that no spec is
    **Partial** — some children delivered, others still open — since a tag must never ship half
    an intent; the refusal names each such spec and its open tickets, and you may override it
-   knowingly. A spec whose Implementation Decisions declared an ADR obligation has that
+   knowingly. A spec whose Implementation Decisions declared an ADR obligation — a list item
+   opening with the literal label `ADR:`, once any subsection heading and emphasis wrapping is
+   set aside (ADR 0015); a bare citation of an existing record never counts — has that
    obligation folded into its completeness verdict: it remains `partial`, not `complete`, until a
    delivering commit adds or modifies a file under the ADR directory — closed tickets alone were
    never proof, as spec #84 showed (#137). A **Complete** spec is surfaced and left open, naming

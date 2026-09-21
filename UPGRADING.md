@@ -534,3 +534,50 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Schema 11 → 12
+
+An ADR obligation in a spec's `## Implementation Decisions` section is now declared by
+convention rather than inferred from prose (ADR 0015): a list item counts only when its text,
+after the list marker and any emphasis wrapping (`*`, `_`, backtick), begins with the literal
+label `ADR:` (case-insensitive). A bare citation of an existing record (`ADR-035`, `ADR 035`)
+or free prose that merely mentions the word ("one ADR for the decision") no longer registers —
+only the label does. The section itself now spans every `###` subsection beneath its `##`
+heading, matching `strip-section`'s existing boundary, so a declaration placed under a
+subsection is no longer missed either. The completeness contract from #149 is unchanged: a
+declared obligation stays `partial` until a delivering commit touches the ADR directory.
+
+### 1. Reword existing declarations to the `ADR:` label
+
+Any **open** spec whose Implementation Decisions declared an obligation in free prose reads as
+unobligated under the new rule until it's reworded. Find candidates through the tracker seam
+rather than a raw `gh issue list` — its default page size can silently miss older specs:
+
+```bash
+bash .claude/skills/lib/tracker/tracker.sh snapshot | \
+  jq -r '.[] | select(.state == "OPEN" and any(.labels[]; .name == "spec")
+    and (.body | test("(?i)implementation decisions"))) | .number'
+```
+
+For each, reword the declaring bullet to open with the label — `- One ADR for the positive
+decision.` becomes `- ADR: the positive decision.` — leaving every citation of an existing
+record elsewhere in the body untouched; those never needed to avoid the word "ADR" and still
+don't.
+
+Because spec bodies are approval-hashed (ADR 0009), this reword changes the body a prior
+`codex-spec-review` verdict approved. `tracker.sh approval-drift <n>` reports the drift after
+the edit — that is expected, not a regression — and the spec needs a fresh review pass before
+its next decomposition or close, the same as any other post-approval edit.
+
+### 2. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=12
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed.
