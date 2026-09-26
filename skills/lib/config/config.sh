@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared reader for the project config, docs/addw.env. Source-only: source
-# this file, then call an entry point. The config is DATA parsed by this one
+# this file from bash, then call an entry point. The config is DATA parsed by this one
 # reader, never sourced as shell — why the layer exists, and the defect
 # history behind it: ../README.md (the config/ section).
 #
@@ -32,6 +32,15 @@
 # violates the grammar, with every offending line reported to stderr by
 # number. Whether a missing config is fatal stays the caller's policy; under
 # `set -e` an unhandled non-zero return exits the caller with that status.
+#
+# Bash only: sourced into any other shell it refuses with status 1 before
+# parsing anything. Callers that may not be bash — SKILL.md snippets — run
+# the executed entry point vars.sh instead.
+
+if [ -z "${BASH_VERSION:-}" ]; then
+    echo 'config.sh: bash only — from another shell use: eval "$(bash .claude/skills/lib/config/vars.sh KEY... || echo "(exit $?)")"' >&2
+    return 1
+fi
 
 ADDW_CONFIG_FILE="docs/addw.env"
 
