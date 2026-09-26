@@ -208,11 +208,21 @@ lives inside `skills/` rather than at the repo root.
     facts.
 
 - `config/config.sh` — the shared reader for `docs/addw.env`, and the only
-  code that opens it: every consumer — scripts and SKILL.md snippets alike —
-  goes through `config_get` (line-per-key stdout) or `config_source`
-  (set-in-the-caller, unset-first). The config is **data** in a restricted
-  `KEY=value` grammar, never sourced; the grammar itself lives in the
-  script's header, and this section owns the why.
+  code that opens it: every consumer goes through `config_get` (line-per-key
+  stdout) or `config_source` (set-in-the-caller, unset-first). The config is
+  **data** in a restricted `KEY=value` grammar, never sourced; the grammar
+  itself lives in the script's header, and this section owns the why.
+  The reader is bash, and only bash scripts source it. SKILL.md snippets run
+  in whatever shell drives the session — zsh, often — where its arrays and
+  `BASH_REMATCH` misparse silently (#181), so they reach it through
+  `config/vars.sh` instead: an executed script that runs `config_source` in
+  bash and prints assignments for the snippet to `eval`, carrying the
+  unset-first contract and the reader's statuses across the process
+  boundary. A reader-level portability rewrite was rejected: it would trade
+  the readable regex parser for `case`/`expr` gymnastics to support a caller
+  one wrapper removes. `config.sh` also refuses loudly when sourced into any
+  other shell, so a snippet that bypasses the wrapper fails honestly rather
+  than reading wrong values.
   Parse-don't-execute is the design. A config that nothing executes has no
   exit status, no stdout, no way to `exit` the tool, no partial application
   on a mid-file error — and unset-first means an exported environment value

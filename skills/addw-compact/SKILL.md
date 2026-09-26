@@ -35,7 +35,7 @@ First, load the project's budgets and measure the actual token count using the
 bundled script:
 
 ```bash
-. .claude/skills/lib/config/config.sh && config_source ADDW_COMPACT_THRESHOLD ADDW_COMPACT_TARGET_MIN ADDW_COMPACT_TARGET_MAX
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_COMPACT_THRESHOLD ADDW_COMPACT_TARGET_MIN ADDW_COMPACT_TARGET_MAX || echo "(exit $?)")"
 bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md
 ```
 
@@ -67,7 +67,7 @@ answer decides where the compression lands.
 The rewrite rides its own PR, so branch before editing:
 
 ```bash
-. .claude/skills/lib/config/config.sh && config_source ADDW_MAIN_BRANCH
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH || echo "(exit $?)")"
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b docs/compact-architecture
 ```
