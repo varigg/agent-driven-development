@@ -26,11 +26,13 @@ new_project() { # <name> <config-body|NONE> -> project root on stdout
   printf '%s' "$root"
 }
 
-# zsh is the shell the ticket (#181) exists for, so its absence fails the
-# suite rather than quietly narrowing it; dash is covered where present.
-command -v zsh >/dev/null 2>&1 || fail "zsh is required: the non-bash contract is untested without it"
-shells=(bash zsh)
-command -v dash >/dev/null 2>&1 && shells+=(dash)
+# POSIX sh is the baseline every snippet shell meets, and always present, so
+# it is the one required caller. zsh — the shell #181 was found in — and dash
+# are covered too wherever they are installed.
+shells=(bash sh)
+for s in zsh dash; do
+  command -v "$s" >/dev/null 2>&1 && shells+=("$s")
+done
 
 # run_in <shell> <root> <script> — run a snippet in <shell> from <root>, with
 # ADDW_LEAK exported so unset-first is observable. Prints the snippet's stdout;
@@ -121,7 +123,8 @@ assert_eq 64 "$status" "no keys: usage error 64"
 # --- the guard: config.sh refuses a non-bash shell loudly --------------------
 
 for sh in "${shells[@]}"; do
-  [ "$sh" = bash ] && continue
+  # Where sh is bash in POSIX mode (macOS), it may source the reader.
+  [ -z "$("$sh" -c 'printf %s "${BASH_VERSION:-}"')" ] || continue
   status=0
   # The snippet idiom: `. config.sh && ...` — a returning guard must stop it.
   err="$(cd "$forms" && LIB="$LIB" "$sh" -c '. "$LIB" && echo sourced-and-continued' 2>&1)" \
