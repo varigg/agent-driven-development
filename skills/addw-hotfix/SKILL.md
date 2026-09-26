@@ -35,7 +35,7 @@ Before proceeding, confirm this is a genuine hotfix:
 ## Step 2: Create Hotfix Branch
 
 ```bash
-eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH)"
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH || echo "(exit $?)")"
 git checkout "$ADDW_MAIN_BRANCH" && git pull
 git checkout -b hotfix/[short-description]
 ```

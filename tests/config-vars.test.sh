@@ -26,10 +26,11 @@ new_project() { # <name> <config-body|NONE> -> project root on stdout
   printf '%s' "$root"
 }
 
-shells=(bash)
-for s in zsh dash; do
-  command -v "$s" >/dev/null 2>&1 && shells+=("$s")
-done
+# zsh is the shell the ticket (#181) exists for, so its absence fails the
+# suite rather than quietly narrowing it; dash is covered where present.
+command -v zsh >/dev/null 2>&1 || fail "zsh is required: the non-bash contract is untested without it"
+shells=(bash zsh)
+command -v dash >/dev/null 2>&1 && shells+=(dash)
 
 # run_in <shell> <root> <script> — run a snippet in <shell> from <root>, with
 # ADDW_LEAK exported so unset-first is observable. Prints the snippet's stdout;
@@ -83,6 +84,21 @@ unset" "$sh: a rejected config applies nothing and still unsets"
     >/dev/null 2>&1 || status=$?
   assert_eq 66 "$status" "$sh: missing config surfaces as 66"
 
+  unreadable="$(new_project "unreadable-$sh" 'ADDW_A=v')"
+  chmod 000 "$unreadable/docs/addw.env"
+  status=0
+  run_in "$sh" "$unreadable" 'eval "$(bash "$VARS" ADDW_A)"' \
+    >/dev/null 2>&1 || status=$?
+  chmod 644 "$unreadable/docs/addw.env"
+  assert_eq 77 "$status" "$sh: unreadable config surfaces as 77"
+
+  # The snippet idiom's `|| echo` fails the eval when vars.sh never ran; a
+  # bare eval of an empty substitution would report success.
+  status=0
+  run_in "$sh" "$forms" 'eval "$(bash "$VARS.missing" ADDW_A || echo "(exit $?)")"' \
+    >/dev/null 2>&1 || status=$?
+  [ "$status" -ne 0 ] || fail "$sh: the snippet idiom must fail when vars.sh cannot run"
+
   # A bad key name is refused before anything is emitted — it would otherwise
   # be spliced into code the caller evals.
   status=0
@@ -91,6 +107,12 @@ unset" "$sh: a rejected config applies nothing and still unsets"
   assert_eq 64 "$status" "$sh: invalid key name surfaces as 64"
   [ ! -e "$forms/pwned" ] || fail "$sh: an invalid key name was executed"
 done
+
+# Quote escaping must not depend on bash 4.3's quote removal in pattern
+# replacements — macOS still ships bash 3.2.
+out="$(cd "$forms" && BASH_COMPAT=42 bash "$VARS" ADDW_DOUBLE)"
+assert_eq "it's quoted" "$(bash -c "$out"'; printf %s "$ADDW_DOUBLE"')" \
+  "an embedded single quote round-trips under pre-4.3 bash semantics"
 
 status=0
 (cd "$forms" && bash "$VARS") >/dev/null 2>&1 || status=$?

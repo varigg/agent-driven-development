@@ -38,7 +38,7 @@
 # the executed entry point vars.sh instead.
 
 if [ -z "${BASH_VERSION:-}" ]; then
-    echo 'config.sh: bash only — from another shell use: eval "$(bash .claude/skills/lib/config/vars.sh KEY...)"' >&2
+    echo 'config.sh: bash only — from another shell use: eval "$(bash .claude/skills/lib/config/vars.sh KEY... || echo "(exit $?)")"' >&2
     return 1
 fi
 

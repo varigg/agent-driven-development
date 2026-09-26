@@ -3,7 +3,10 @@
 # SKILL.md snippets, which run in whatever shell drives the session. Runs
 # config_source here, in bash, and prints shell code the caller evals:
 #
-#   eval "$(bash .claude/skills/lib/config/vars.sh KEY...)"
+#   eval "$(bash .claude/skills/lib/config/vars.sh KEY... || echo "(exit $?)")"
+#
+# The `|| echo` is what makes a vars.sh that never ran — wrong directory, no
+# bash — fail the eval too: an empty substitution evals to success.
 #
 # Output, valid in bash, zsh, and POSIX sh: `unset KEY...` for every requested
 # key, then one KEY='value' line per key the config sets (single-quoted, so
@@ -37,8 +40,11 @@ _vars_status=0
 config_source "$@" || _vars_status=$?
 [ "$_vars_status" -eq 0 ] || _vars_fail "$_vars_status"
 
+# A ' inside a single-quoted value becomes '\'' — held in a variable because
+# bash before 4.3 skips quote removal on a literal replacement string.
+_vars_q="'\\''"
 for _vars_key in "$@"; do
     [ -n "${!_vars_key+x}" ] || continue
     _vars_value="${!_vars_key}"
-    printf "%s='%s'\n" "$_vars_key" "${_vars_value//\'/\'\\\'\'}"
+    printf "%s='%s'\n" "$_vars_key" "${_vars_value//\'/$_vars_q}"
 done

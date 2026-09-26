@@ -138,7 +138,7 @@ The branch and the assignment are the **in-progress marker** the frontier listin
 not a lock. Push before building, so a second session sees the work exists.
 
 ```bash
-eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH)"
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH || echo "(exit $?)")"
 ```
 
 Four outcomes. The branch name is the only shape they prescribe; where the branch is
@@ -234,7 +234,7 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
   scope**, because the adapter cannot read the tracker:
 
   ```bash
-  eval "$(bash .claude/skills/lib/config/vars.sh ADDW_IMPLEMENT_SKILL)"
+  eval "$(bash .claude/skills/lib/config/vars.sh ADDW_IMPLEMENT_SKILL || echo "(exit $?)")"
   bash ".claude/skills/${ADDW_IMPLEMENT_SKILL:-codex-implement}/scripts/start.sh" \
       <issue-number> "<what to build, from the ticket and the spec's decisions>. \
   Make the tests in <paths> pass. Do NOT modify any test file."
@@ -356,7 +356,7 @@ merge-base-to-working-tree diff** — everything the PR will deliver, not the la
 the ticket and parent spec as context, which the adapter fetches for itself.
 
 ```bash
-eval "$(bash .claude/skills/lib/config/vars.sh ADDW_CODE_REVIEW_SKILL)"
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_CODE_REVIEW_SKILL || echo "(exit $?)")"
 bash ".claude/skills/${ADDW_CODE_REVIEW_SKILL:-codex-code-review}/scripts/start.sh" \
     <issue-number> "$GATE_SUMMARY"
 ```
@@ -403,7 +403,7 @@ uncovered.
 Push the branch and open the PR against `$ADDW_MAIN_BRANCH`:
 
 ```bash
-eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH)"
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH || echo "(exit $?)")"
 git push
 gh pr create --base "$ADDW_MAIN_BRANCH" --title "<conventional subject>" --body-file <file>
 ```

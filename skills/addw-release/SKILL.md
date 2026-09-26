@@ -27,7 +27,7 @@ Pull requests and GitHub Releases are not tracker operations and use `gh pr` and
 ## Step 0: Preconditions
 
 ```bash
-eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH ADDW_VERSION_FILE ADDW_RECIPE_LOCKFILE_SYNC ADDW_LOCKFILE)"
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH ADDW_VERSION_FILE ADDW_RECIPE_LOCKFILE_SYNC ADDW_LOCKFILE || echo "(exit $?)")"
 git checkout "$ADDW_MAIN_BRANCH" && git fetch origin && git pull
 git status --short
 git rev-parse HEAD "origin/$ADDW_MAIN_BRANCH"
