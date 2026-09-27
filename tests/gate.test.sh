@@ -6,10 +6,14 @@
 # Reads the recipe ladder from docs/addw.env through the shared config reader
 # — there is no path flag, so every case runs from a fixture directory,
 # exactly as production runs from a project root — and runs the rungs in
-# fixed order via bash -c: lint (ADDW_RECIPE_LINT), typecheck
-# (ADDW_RECIPE_TYPECHECK), tests (ADDW_RECIPE_TESTS_AFFECTED). Every rung
-# runs even after an earlier one fails; recipe output goes to the gate's
-# stderr. Stdout is exactly one summary line:
+# fixed order via a recipe shell (bash -o pipefail -c): lint
+# (ADDW_RECIPE_LINT), typecheck (ADDW_RECIPE_TYPECHECK), tests
+# (ADDW_RECIPE_TESTS_AFFECTED). The recipe shell has pipefail on and neither
+# errexit nor nounset, so a failing non-final pipeline component fails its
+# rung with that component's status, while a recipe that tolerates one on
+# purpose says so with ordinary shell recovery (`cmd | filter || true`).
+# Every rung runs even after an earlier one fails; recipe output goes to the
+# gate's stderr. Stdout is exactly one summary line:
 #
 #   gate: lint <status> | typecheck <status> | tests <status>
 #
@@ -56,6 +60,35 @@ assert_eq "gate: lint ok | typecheck FAIL (exit 3) | tests ok" "$out" \
 err="$(run_gate fail-typecheck 2>&1 >/dev/null)" || true
 assert_contains "$err" "tests-ran-after-fail" \
   "fail: rungs after a failure still run"
+
+# --- pipelines: the recipe shell runs with pipefail ---
+# A failing non-final component is a failing recipe; without pipefail the
+# rung would report cat's 0 and hide the linter's failure (#185).
+status=0
+out="$(run_gate pipe-fail 2>/dev/null)" || status=$?
+assert_eq "1" "$status" "pipefail: a failing pipeline component fails the gate"
+assert_eq "gate: lint FAIL (exit 1) | typecheck skipped (no recipe) | tests ok" "$out" \
+  "pipefail: the rung reports the failing component's exit status"
+err="$(run_gate pipe-fail 2>&1 >/dev/null)" || true
+assert_contains "$err" "tests-ran-after-pipe-fail" \
+  "pipefail: rungs after a pipeline failure still run"
+assert_not_contains "$out" "tests-ran-after-pipe-fail" \
+  "pipefail: stdout stays exactly the summary line"
+
+out="$(run_gate pipe-pass 2>/dev/null)"
+assert_eq "gate: lint ok | typecheck ok | tests ok" "$out" \
+  "pipefail: a fully successful pipeline still passes"
+err="$(run_gate pipe-pass 2>&1 >/dev/null)"
+assert_contains "$err" "lint-ran" \
+  "pipefail: pipeline output still reaches stderr"
+
+# Explicit recovery keeps ordinary shell semantics: no errexit is imposed on
+# the recipe, so a documented `|| true` handler still yields ok.
+status=0
+out="$(run_gate pipe-recover 2>/dev/null)" || status=$?
+assert_eq 0 "$status" "pipefail: recipe-level recovery exits zero"
+assert_eq "gate: lint ok | typecheck ok | tests ok" "$out" \
+  "pipefail: recipe-level recovery reports ok"
 
 # --- missing and empty keys are skipped visibly ---
 out="$(run_gate no-keys 2>/dev/null)"
