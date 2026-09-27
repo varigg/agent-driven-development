@@ -299,9 +299,11 @@ ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
 # ADDW_CODEX_MODEL_REVIEW="..."
 # ADDW_CODEX_EFFORT="..."
 # Optional agent role adapters — each names a skill folder under
-# .claude/skills/ providing scripts/start.sh and scripts/resume.sh. The
-# reserved value `inline` on the implement key means no adapter: the main
-# agent drives `tdd` itself.
+# .claude/skills/ providing scripts/start.sh and scripts/resume.sh. Unset or
+# empty, the defaults below apply, and doctor checks whichever adapter is in
+# effect — the default included — so an omitted key is never an unchecked
+# one. The reserved value `inline` on the implement key means no adapter: the
+# main agent drives `tdd` itself. It is not valid on the review key.
 # ADDW_IMPLEMENT_SKILL=codex-implement
 # ADDW_CODE_REVIEW_SKILL=codex-code-review
 # Optional addw-compact token budgets — unset, the defaults below apply. The

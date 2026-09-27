@@ -13,10 +13,10 @@
 # plugin, and even then could not tell two plugins' same-named skills apart,
 # which only the agent's own roster does. And there is nothing here to gate
 # on: the review ADDW cannot proceed without is its cross-model loop, whose
-# adapter IS checked below, while Matt's code-review is a pre-filter that
-# addw-implement already permits skipping. A step the flow may skip cannot be
-# a dependency that blocks an install. addw-init takes an inventory in prose
-# and reports it; nothing about it is a gate.
+# effective adapter IS checked below, while Matt's code-review is a pre-filter
+# that addw-implement already permits skipping. A step the flow may skip
+# cannot be a dependency that blocks an install. addw-init takes an inventory
+# in prose and reports it; nothing about it is a gate.
 set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
@@ -304,24 +304,56 @@ if [ -n "${ADDW_MAIN_BRANCH:-}" ]; then
     fi
 fi
 
-# --- role adapters (checked only when overridden in addw.env) -------------
+# --- role adapters (the effective ones, defaults included) ----------------
 # Live roles only. Retired role keys are handled above, so a survivor is never
 # mistaken here for an adapter whose scripts went missing — or, worse, blessed
 # as a live one wherever its skill folder happens to survive.
+#
+# The adapter checked is the one the workflow will call: addw-implement
+# expands `${KEY:-default}`, so an absent key and an empty one both select
+# the default, and doctor resolves them the same way rather than treating
+# "no key" as "nothing to check" — which is how an install missing the very
+# adapter the flow runs used to report healthy (#186). Every line names the
+# role and the effective adapter, and says when it was defaulted, so an
+# omitted key never hides which adapter was checked. Both entry points are
+# required, and each missing one gets its own line naming the path.
 for key in ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL; do
     value="${!key:-}"
-    [ -z "$value" ] && continue
-    # `inline` is the reserved non-adapter value: the main agent drives `tdd`
-    # itself, so there is no skill folder to find.
-    if [ "$key" = ADDW_IMPLEMENT_SKILL ] && [ "$value" = inline ]; then
-        ok "$key=inline (no adapter — the main agent implements)"
+    case "$key" in
+        ADDW_IMPLEMENT_SKILL) default_adapter=codex-implement ;;
+        ADDW_CODE_REVIEW_SKILL) default_adapter=codex-code-review ;;
+    esac
+
+    # `inline` is the reserved non-adapter value for the implement role: the
+    # main agent drives `tdd` itself, so there is no skill folder to find. On
+    # the review role it names nothing — the flow would look for a skill
+    # folder literally called inline — so there it is a fault, not a mode.
+    if [ "$value" = inline ]; then
+        if [ "$key" = ADDW_IMPLEMENT_SKILL ]; then
+            ok "$key=inline (no adapter — the main agent implements)"
+        else
+            bad "$key=inline — inline is reserved for the implement role; name a review adapter or delete the key"
+        fi
         continue
     fi
-    if [ -f ".claude/skills/$value/scripts/start.sh" ] &&
-        [ -f ".claude/skills/$value/scripts/resume.sh" ]; then
-        ok "$key=$value adapter scripts present"
+
+    if [ -n "$value" ]; then
+        adapter="$value"
+        role="$key=$value"
     else
-        bad "$key=$value but .claude/skills/$value/scripts/{start,resume}.sh missing"
+        adapter="$default_adapter"
+        role="$key unset — effective adapter $adapter (default)"
+    fi
+    missing=0
+    for entry_point in start resume; do
+        entry_path=".claude/skills/$adapter/scripts/$entry_point.sh"
+        if [ ! -f "$entry_path" ]; then
+            bad "$role but $entry_path missing"
+            missing=1
+        fi
+    done
+    if [ "$missing" -eq 0 ]; then
+        ok "$role, adapter scripts present"
     fi
 done
 
