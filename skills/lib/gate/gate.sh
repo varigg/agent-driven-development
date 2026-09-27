@@ -12,6 +12,9 @@
 # Recipes come from docs/addw.env through the shared config reader — the
 # reader answers from the file alone, so an exported ADDW_RECIPE_* never
 # stands in for a key the config doesn't set.
+# Each non-empty recipe runs in a shell with pipefail enabled, but without
+# errexit or nounset. A recipe intentionally tolerating an upstream failure
+# must recover explicitly, such as with "cmd | filter || true".
 #
 # Rung order is fixed: lint (ADDW_RECIPE_LINT), typecheck
 # (ADDW_RECIPE_TYPECHECK), tests (ADDW_RECIPE_TESTS_AFFECTED). Every rung runs
@@ -48,7 +51,7 @@ run_rung() { # recipe — runs it, leaves the status text in RUNG_STATUS
     RUNG_STATUS="skipped (no recipe)"
     return
   fi
-  bash -c "$recipe" >&2 || status=$?
+  bash -o pipefail -c "$recipe" >&2 || status=$?
   if [ "$status" -eq 0 ]; then
     RUNG_STATUS="ok"
   else

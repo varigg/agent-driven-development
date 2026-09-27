@@ -270,7 +270,10 @@ lives inside `skills/` rather than at the repo root.
   first thing that broke, and an absent recipe reports a visible skip rather
   than silence. Affected-test selection stays agent judgment while execution
   and reporting are mechanical, which is why the tests recipe is a template
-  the gate fills in rather than a fixed command.
+  the gate fills in rather than a fixed command. Recipe shells run with
+  pipefail so a failing linter piped through a formatter or log collector still
+  fails the rung; recipes that intentionally tolerate an upstream failure need
+  explicit recovery such as `cmd | filter || true`.
 
 - `release/derive.sh` — the mechanical release derivations, run from a
   project's repo root. One commit-collection pass feeds every subcommand, so

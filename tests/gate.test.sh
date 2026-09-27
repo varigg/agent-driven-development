@@ -6,10 +6,14 @@
 # Reads the recipe ladder from docs/addw.env through the shared config reader
 # — there is no path flag, so every case runs from a fixture directory,
 # exactly as production runs from a project root — and runs the rungs in
-# fixed order via bash -c: lint (ADDW_RECIPE_LINT), typecheck
-# (ADDW_RECIPE_TYPECHECK), tests (ADDW_RECIPE_TESTS_AFFECTED). Every rung
-# runs even after an earlier one fails; recipe output goes to the gate's
-# stderr. Stdout is exactly one summary line:
+# fixed order via a recipe shell (bash -o pipefail -c): lint
+# (ADDW_RECIPE_LINT), typecheck (ADDW_RECIPE_TYPECHECK), tests
+# (ADDW_RECIPE_TESTS_AFFECTED). The recipe shell has pipefail on and neither
+# errexit nor nounset, so a failing non-final pipeline component fails its
+# rung with that component's status, while a recipe that tolerates one on
+# purpose says so with ordinary shell recovery (`cmd | filter || true`).
+# Every rung runs even after an earlier one fails; recipe output goes to the
+# gate's stderr. Stdout is exactly one summary line:
 #
 #   gate: lint <status> | typecheck <status> | tests <status>
 #
