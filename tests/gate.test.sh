@@ -57,6 +57,35 @@ err="$(run_gate fail-typecheck 2>&1 >/dev/null)" || true
 assert_contains "$err" "tests-ran-after-fail" \
   "fail: rungs after a failure still run"
 
+# --- pipelines: the recipe shell runs with pipefail ---
+# A failing non-final component is a failing recipe; without pipefail the
+# rung would report cat's 0 and hide the linter's failure (#185).
+status=0
+out="$(run_gate pipe-fail 2>/dev/null)" || status=$?
+assert_eq "1" "$status" "pipefail: a failing pipeline component fails the gate"
+assert_eq "gate: lint FAIL (exit 1) | typecheck skipped (no recipe) | tests ok" "$out" \
+  "pipefail: the rung reports the failing component's exit status"
+err="$(run_gate pipe-fail 2>&1 >/dev/null)" || true
+assert_contains "$err" "tests-ran-after-pipe-fail" \
+  "pipefail: rungs after a pipeline failure still run"
+assert_not_contains "$out" "tests-ran-after-pipe-fail" \
+  "pipefail: stdout stays exactly the summary line"
+
+out="$(run_gate pipe-pass 2>/dev/null)"
+assert_eq "gate: lint ok | typecheck ok | tests ok" "$out" \
+  "pipefail: a fully successful pipeline still passes"
+err="$(run_gate pipe-pass 2>&1 >/dev/null)"
+assert_contains "$err" "lint-ran" \
+  "pipefail: pipeline output still reaches stderr"
+
+# Explicit recovery keeps ordinary shell semantics: no errexit is imposed on
+# the recipe, so a documented `|| true` handler still yields ok.
+status=0
+out="$(run_gate pipe-recover 2>/dev/null)" || status=$?
+assert_eq 0 "$status" "pipefail: recipe-level recovery exits zero"
+assert_eq "gate: lint ok | typecheck ok | tests ok" "$out" \
+  "pipefail: recipe-level recovery reports ok"
+
 # --- missing and empty keys are skipped visibly ---
 out="$(run_gate no-keys 2>/dev/null)"
 assert_eq \
