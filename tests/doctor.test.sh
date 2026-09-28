@@ -39,6 +39,16 @@
 #      must be GitHub, the tracker CLI must be authenticated with issues
 #      enabled, and the three labels the frontier keys on must exist. A missing
 #      frontier label would otherwise fail silently as a forever-empty frontier.
+#   4. Role adapters (#186). The implement and review roles are validated at
+#      the adapter the workflow will actually call: the role key's value when
+#      set, and the same default addw-implement falls back to when the key is
+#      absent or empty — codex-implement and codex-code-review. Each effective
+#      adapter must provide scripts/start.sh and scripts/resume.sh, and every
+#      line names the role, the effective adapter, and — on failure — the
+#      missing path, so an omitted key never hides which adapter was checked.
+#      `inline` stays the reserved implement-only value: no adapter is looked
+#      for, and it is a fault on the review key. The config is the only
+#      source: an exported role key never stands in for the file's.
 # Deliberately absent: any check that Matt's skills are installed. Nothing
 # there is load-bearing — the review ADDW cannot proceed without is its
 # cross-model loop, whose adapter this file does check, while Matt's
@@ -139,6 +149,16 @@ ENV
 
   printf '# Project\n\n## ADR format\n\n`%s` is the authoritative ADR format.\n' \
     "$SHIPPED_TEMPLATE" > CLAUDE.md
+
+  # The minimum adapter structure the workflow calls: the two default role
+  # adapters, each with both entry points. The healthy config sets neither
+  # role key, so this is what makes "healthy" mean the defaults were checked
+  # rather than skipped (#186).
+  for adapter in codex-implement codex-code-review; do
+    mkdir -p ".claude/skills/$adapter/scripts"
+    printf '#!/usr/bin/env bash\n' > ".claude/skills/$adapter/scripts/start.sh"
+    printf '#!/usr/bin/env bash\n' > ".claude/skills/$adapter/scripts/resume.sh"
+  done
 
   git init -q -b main .
   git config user.email fixture@example.com
@@ -647,14 +667,153 @@ assert_eq 1 "$RUN_STATUS" "branch: a remote-qualified main branch is unhealthy"
 assert_contains "$RUN_OUT" "bare branch name" \
   "branch: the failing line says what shape is required"
 
-# added at codex round 1: `inline` is the reserved non-adapter value for the
-# implement role — the main agent drives `tdd` itself — so there is no skill
-# folder to look for and doctor must not go looking for one.
+# --- role adapters (#186) --------------------------------------------------
+
+# The healthy config sets neither role key, and the workflow then falls back
+# to codex-implement and codex-code-review. Doctor must check exactly those,
+# and say so: an omitted key must not read as "nothing to check".
+d="$(case_dir defaultspresent)"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "adapter: absent role keys with the default adapters present is healthy"
+assert_contains "$RUN_OUT" "ADDW_IMPLEMENT_SKILL" \
+  "adapter: the implement role is reported even though its key is absent"
+assert_contains "$RUN_OUT" "codex-implement" \
+  "adapter: the effective implement adapter is named"
+assert_contains "$RUN_OUT" "ADDW_CODE_REVIEW_SKILL" \
+  "adapter: the review role is reported even though its key is absent"
+assert_contains "$RUN_OUT" "codex-code-review" \
+  "adapter: the effective review adapter is named"
+assert_contains "$RUN_OUT" "default" \
+  "adapter: a defaulted role says it was defaulted"
+
+# The blind spot this section exists for: an absent key used to skip the check,
+# so an install missing the very adapter the workflow calls reported healthy.
+d="$(case_dir defaultmissing)"
+rm -r "$d/project/.claude/skills/codex-implement"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adapter: an absent key whose default adapter is missing is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_IMPLEMENT_SKILL" \
+  "adapter: the failing line names the role"
+assert_contains "$RUN_OUT" "codex-implement" \
+  "adapter: the failing line names the effective adapter"
+assert_contains "$RUN_OUT" ".claude/skills/codex-implement/scripts/start.sh" \
+  "adapter: the failing line names the missing path"
+assert_contains "$RUN_OUT" "UNHEALTHY: fix the FAIL lines above" \
+  "adapter: terminal line reports the failure"
+
+# Doctor stays read-only and keeps checking: a missing adapter and an unrelated
+# fault both get their line, and the adapter directory is not created.
+d="$(case_dir adapterplusother)"
+rm -r "$d/project/.claude/skills/codex-code-review"
+sed -i 's|^ADDW_VERSION_FILE=.*|ADDW_VERSION_FILE="Cargo.toml"|' "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adapter: independent faults are all reported"
+assert_contains "$RUN_OUT" "FAIL: ADDW_CODE_REVIEW_SKILL" \
+  "adapter: the missing review adapter gets its line"
+assert_contains "$RUN_OUT" "version file Cargo.toml missing" \
+  "adapter: the unrelated fault still gets its line"
+[ ! -e "$d/project/.claude/skills/codex-code-review" ] ||
+  fail "adapter: doctor must not create the adapter it found missing"
+
+# An explicitly empty key is the same choice as an absent one — addw-implement
+# expands `${KEY:-default}` — so it selects the same default and validates it.
+d="$(case_dir emptykeys)"
+printf 'ADDW_IMPLEMENT_SKILL=""\nADDW_CODE_REVIEW_SKILL=""\n' >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "adapter: explicitly empty role keys with defaults present are healthy"
+assert_contains "$RUN_OUT" "codex-implement" \
+  "adapter: an empty implement key resolves to the default adapter"
+assert_contains "$RUN_OUT" "codex-code-review" \
+  "adapter: an empty review key resolves to the default adapter"
+
+rm -r "$d/project/.claude/skills/codex-code-review"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adapter: an empty key whose default adapter is missing is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_CODE_REVIEW_SKILL" \
+  "adapter: the failing line names the role behind the empty key"
+assert_contains "$RUN_OUT" ".claude/skills/codex-code-review/scripts/start.sh" \
+  "adapter: the failing line names the missing default path"
+
+# A custom adapter is validated where the config points, and the default it
+# replaced is not looked for at all.
+d="$(case_dir customadapters)"
+(
+  cd "$d/project"
+  printf 'ADDW_IMPLEMENT_SKILL=my-impl\nADDW_CODE_REVIEW_SKILL=my-review\n' >> docs/addw.env
+  rm -r .claude/skills/codex-implement .claude/skills/codex-code-review
+  for adapter in my-impl my-review; do
+    mkdir -p ".claude/skills/$adapter/scripts"
+    printf '#!/usr/bin/env bash\n' > ".claude/skills/$adapter/scripts/start.sh"
+    printf '#!/usr/bin/env bash\n' > ".claude/skills/$adapter/scripts/resume.sh"
+  done
+) >/dev/null
+run "$d"
+assert_eq 0 "$RUN_STATUS" "adapter: custom adapters at their configured paths are healthy"
+assert_contains "$RUN_OUT" "my-impl" "adapter: the custom implement adapter is named"
+assert_contains "$RUN_OUT" "my-review" "adapter: the custom review adapter is named"
+assert_not_contains "$RUN_OUT" "codex-implement" \
+  "adapter: a replaced default is not mentioned"
+assert_not_contains "$RUN_OUT" "codex-code-review" \
+  "adapter: a replaced default is not mentioned"
+
+# Both entry points are required, and the line names the one that is missing
+# rather than the pair.
+d="$(case_dir oneentrypoint)"
+(
+  cd "$d/project"
+  printf 'ADDW_CODE_REVIEW_SKILL=my-review\n' >> docs/addw.env
+  mkdir -p .claude/skills/my-review/scripts
+  printf '#!/usr/bin/env bash\n' > .claude/skills/my-review/scripts/start.sh
+) >/dev/null
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adapter: an adapter missing one entry point is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_CODE_REVIEW_SKILL" \
+  "adapter: the failing line names the role"
+assert_contains "$RUN_OUT" ".claude/skills/my-review/scripts/resume.sh" \
+  "adapter: the failing line names the missing entry point"
+assert_not_contains "$RUN_OUT" ".claude/skills/my-review/scripts/start.sh missing" \
+  "adapter: the present entry point is not reported missing"
+
+# `inline` is the reserved non-adapter value for the implement role — the main
+# agent drives `tdd` itself — so there is no skill folder to look for and doctor
+# must not go looking for one. The review role still needs its adapter.
 d="$(case_dir inline)"
 printf 'ADDW_IMPLEMENT_SKILL=inline\n' >> "$d/project/docs/addw.env"
+rm -r "$d/project/.claude/skills/codex-implement"
 run "$d"
-assert_eq 0 "$RUN_STATUS" "role: ADDW_IMPLEMENT_SKILL=inline is healthy"
-assert_not_contains "$RUN_OUT" "FAIL:" "role: inline needs no adapter scripts"
+assert_eq 0 "$RUN_STATUS" "adapter: ADDW_IMPLEMENT_SKILL=inline is healthy without an implement adapter"
+assert_not_contains "$RUN_OUT" "FAIL:" "adapter: inline needs no adapter scripts"
+assert_contains "$RUN_OUT" "inline" "adapter: the inline choice is reported"
+assert_contains "$RUN_OUT" "codex-code-review" \
+  "adapter: the review adapter is still checked beside inline"
+
+rm -r "$d/project/.claude/skills/codex-code-review"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adapter: inline does not excuse a missing review adapter"
+assert_contains "$RUN_OUT" "FAIL: ADDW_CODE_REVIEW_SKILL" \
+  "adapter: the failing line names the review role"
+
+# `inline` is implement-only. On the review key it names no adapter and no
+# mode, and the workflow would try to run .claude/skills/inline/scripts/.
+d="$(case_dir reviewinline)"
+printf 'ADDW_CODE_REVIEW_SKILL=inline\n' >> "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "adapter: ADDW_CODE_REVIEW_SKILL=inline is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_CODE_REVIEW_SKILL" \
+  "adapter: the failing line names the review role"
+assert_contains "$RUN_OUT" "inline" \
+  "adapter: the failing line says inline is the problem"
+
+# The config is the only source. An exported role key must neither point doctor
+# at a different adapter nor stand in for a key the file does not set.
+d="$(case_dir adapterenvleak)"
+run "$d" ADDW_IMPLEMENT_SKILL=ghost-impl ADDW_CODE_REVIEW_SKILL=ghost-review
+assert_eq 0 "$RUN_STATUS" \
+  "adapter: exported role keys never substitute for the config's"
+assert_contains "$RUN_OUT" "codex-implement" \
+  "adapter: the default is checked despite an exported implement key"
+assert_not_contains "$RUN_OUT" "ghost" \
+  "adapter: an exported value is never the adapter checked"
 
 # --- tracker validation ----------------------------------------------------
 
