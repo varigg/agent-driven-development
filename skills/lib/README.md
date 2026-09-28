@@ -267,8 +267,17 @@ lives inside `skills/` rather than at the repo root.
   project's own lint, typecheck, and test recipes from the config and emits
   that line itself. Every rung runs even after an earlier one fails, because
   what a reviewer needs is the whole picture of what is broken rather than the
-  first thing that broke, and an absent recipe reports a visible skip rather
-  than silence. Affected-test selection stays agent judgment while execution
+  first thing that broke, and an empty recipe reports a visible skip rather
+  than silence. Empty is the *only* skip: a recipe key absent from the config
+  is refused before any rung runs, with every missing key named. Absent and
+  empty once meant the same thing (#4), which let an omitted or accidentally
+  deleted key weaken verification after installation while the runtime gate
+  stayed green — the doctor already called an absent key a gap, and #184
+  brought the gate to the same policy. The check is the gate's own three-line
+  presence loop rather than a shared validator, because the two callers report
+  differently (the doctor per key as a FAIL line, the gate as one refusal) and
+  presence is the reader's set-but-empty distinction, not new parsing.
+  Affected-test selection stays agent judgment while execution
   and reporting are mechanical, which is why the tests recipe is a template
   the gate fills in rather than a fixed command. Recipe shells run with
   pipefail so a failing linter piped through a formatter or log collector still

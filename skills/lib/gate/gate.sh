@@ -11,18 +11,21 @@
 #
 # Recipes come from docs/addw.env through the shared config reader — the
 # reader answers from the file alone, so an exported ADDW_RECIPE_* never
-# stands in for a key the config doesn't set.
+# stands in for a key the config doesn't set. All three recipe keys must be
+# present: an explicit empty assignment (KEY=) is the one way to skip a rung,
+# and a key absent from the file is a configuration error — refused before
+# any rung runs, every missing key named on stderr, exit 78.
 # Each non-empty recipe runs in a shell with pipefail enabled, but without
 # errexit or nounset. A recipe intentionally tolerating an upstream failure
 # must recover explicitly, such as with "cmd | filter || true".
 #
 # Rung order is fixed: lint (ADDW_RECIPE_LINT), typecheck
 # (ADDW_RECIPE_TYPECHECK), tests (ADDW_RECIPE_TESTS_AFFECTED). Every rung runs
-# even after an earlier one fails, and a missing or empty key reports
-# "skipped (no recipe)". Stdout carries exactly one summary line; recipe output
-# goes to stderr. Exit 0 iff no rung failed, 1 on any failure, 2 on usage
-# errors; a missing, unreadable, or invalid config exits 66, 77, or 78
-# (EX_CONFIG) with the reader's diagnostic.
+# even after an earlier one fails, and an empty key reports "skipped (no
+# recipe)". Stdout carries exactly one summary line; recipe output goes to
+# stderr. Exit 0 iff no rung failed, 1 on any failure, 2 on usage errors; a
+# missing or unreadable config exits 66 or 77, and one the grammar rejects or
+# one missing a recipe key exits 78 (EX_CONFIG), each with a diagnostic.
 set -euo pipefail
 
 case "${1:-}" in
@@ -35,6 +38,19 @@ esac
 # shellcheck source=../config/config.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/config.sh"
 config_source ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED
+
+# Presence, not value: config_source leaves an absent key unset and an
+# explicit KEY= set-but-empty, and only the latter is a skip. Checked for all
+# three before any rung runs, so one refusal names everything to fix.
+missing=0
+for key in ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED; do
+  if ! declare -p "$key" >/dev/null 2>&1; then
+    printf '%s: %s absent — a rung is skipped only by an explicit %s= assignment\n' \
+      "$ADDW_CONFIG_FILE" "$key" "$key" >&2
+    missing=1
+  fi
+done
+[ "$missing" -eq 0 ] || exit 78
 
 quoted_paths=""
 sep=""
