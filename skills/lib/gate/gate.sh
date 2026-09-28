@@ -37,13 +37,14 @@ esac
 
 # shellcheck source=../config/config.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/config.sh"
-config_source ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED
+recipe_keys=(ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED)
+config_source "${recipe_keys[@]}"
 
 # Presence, not value: config_source leaves an absent key unset and an
 # explicit KEY= set-but-empty, and only the latter is a skip. Checked for all
 # three before any rung runs, so one refusal names everything to fix.
 missing=0
-for key in ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED; do
+for key in "${recipe_keys[@]}"; do
   if ! declare -p "$key" >/dev/null 2>&1; then
     printf '%s: %s absent — a rung is skipped only by an explicit %s= assignment\n' \
       "$ADDW_CONFIG_FILE" "$key" "$key" >&2

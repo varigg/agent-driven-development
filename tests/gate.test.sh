@@ -112,15 +112,13 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 GATE_OUT="$tmp/received" export GATE_OUT
 
-for missing in lint typecheck tests; do
-  case "$missing" in
-    lint) key=ADDW_RECIPE_LINT ;;
-    typecheck) key=ADDW_RECIPE_TYPECHECK ;;
-    tests) key=ADDW_RECIPE_TESTS_AFFECTED ;;
-  esac
+for pair in missing-lint:ADDW_RECIPE_LINT missing-typecheck:ADDW_RECIPE_TYPECHECK \
+    missing-tests:ADDW_RECIPE_TESTS_AFFECTED; do
+  fixture="${pair%%:*}"
+  key="${pair#*:}"
   rm -f "$GATE_OUT"
   status=0
-  out="$(run_gate "missing-$missing" 2>"$tmp/err")" || status=$?
+  out="$(run_gate "$fixture" 2>"$tmp/err")" || status=$?
   assert_eq 78 "$status" "missing $key: exits 78 (EX_CONFIG)"
   assert_eq "" "$out" "missing $key: no summary line on stdout"
   assert_contains "$(cat "$tmp/err")" "$key" \
