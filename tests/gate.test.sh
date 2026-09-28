@@ -17,13 +17,17 @@
 #
 #   gate: lint <status> | typecheck <status> | tests <status>
 #
-# where <status> is "ok", "FAIL (exit N)", or "skipped (no recipe)" (unset and
-# empty keys alike — skips are visible, never silent). In the tests recipe,
-# every {paths} occurrence is replaced by the shell-quoted, space-joined test
-# paths; a recipe without the placeholder runs as-is. Exit 0 iff no rung
-# failed, 1 on any failure, 2 on usage errors (an option-shaped argument —
-# the retired --config among them), 78 on a config the grammar rejects, 66 on
-# no config at all.
+# where <status> is "ok", "FAIL (exit N)", or "skipped (no recipe)". A skip
+# is earned only by an explicit empty assignment (KEY=, KEY="", KEY=''): a
+# recipe key absent from the config is a configuration error, refused with
+# exit 78 before any rung runs, with a stderr diagnostic naming every missing
+# key and no summary line (#184). An exported ADDW_RECIPE_* never stands in
+# for a missing key. In the tests recipe, every {paths} occurrence is replaced
+# by the shell-quoted, space-joined test paths; a recipe without the
+# placeholder runs as-is. Exit 0 iff no rung failed, 1 on any failure, 2 on
+# usage errors (an option-shaped argument — the retired --config among them),
+# 78 on a config the grammar rejects or one missing a recipe key, 66 on no
+# config at all.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 . ./lib.sh
@@ -90,27 +94,63 @@ assert_eq 0 "$status" "pipefail: recipe-level recovery exits zero"
 assert_eq "gate: lint ok | typecheck ok | tests ok" "$out" \
   "pipefail: recipe-level recovery reports ok"
 
-# --- missing and empty keys are skipped visibly ---
-out="$(run_gate no-keys 2>/dev/null)"
+# --- explicit empty keys are skipped visibly ---
+out="$(run_gate all-skips 2>/dev/null)"
 assert_eq \
   "gate: lint skipped (no recipe) | typecheck skipped (no recipe) | tests skipped (no recipe)" \
-  "$out" "skip: unset and empty keys both report skipped"
+  "$out" "skip: an explicitly empty key, in any quoting, reports skipped"
 status=0
-run_gate no-keys >/dev/null 2>&1 || status=$?
+run_gate all-skips >/dev/null 2>&1 || status=$?
 assert_eq 0 "$status" "skip: an all-skipped gate exits zero"
 
-# added at codex round 1: recipes come from the config alone — inherited
-# environment values must not stand in for keys the config doesn't set
-out="$(ADDW_RECIPE_LINT="echo env-leak" ADDW_RECIPE_TESTS_AFFECTED="echo env-leak" \
-  run_gate no-keys 2>/dev/null)"
-assert_eq \
-  "gate: lint skipped (no recipe) | typecheck skipped (no recipe) | tests skipped (no recipe)" \
-  "$out" "skip: exported ADDW_RECIPE_* never substitutes for missing keys"
-
-# --- {paths} substitution ---
+# --- absent keys are a configuration error, refused before any rung ---
+# Empty and absent used to be the same skip; since #184 only KEY= skips, so
+# a deleted key cannot quietly weaken the gate. The sentinel recipes in these
+# fixtures write $GATE_OUT — its absence afterwards is the proof that refusal
+# came before execution.
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 GATE_OUT="$tmp/received" export GATE_OUT
+
+for missing in lint typecheck tests; do
+  case "$missing" in
+    lint) key=ADDW_RECIPE_LINT ;;
+    typecheck) key=ADDW_RECIPE_TYPECHECK ;;
+    tests) key=ADDW_RECIPE_TESTS_AFFECTED ;;
+  esac
+  rm -f "$GATE_OUT"
+  status=0
+  out="$(run_gate "missing-$missing" 2>"$tmp/err")" || status=$?
+  assert_eq 78 "$status" "missing $key: exits 78 (EX_CONFIG)"
+  assert_eq "" "$out" "missing $key: no summary line on stdout"
+  assert_contains "$(cat "$tmp/err")" "$key" \
+    "missing $key: the diagnostic names the missing key"
+  [ ! -e "$GATE_OUT" ] || fail "missing $key: a recipe ran before the refusal"
+done
+
+# every missing key is named in one refusal, not just the first found
+rm -f "$GATE_OUT"
+status=0
+err="$(run_gate missing-two 2>&1 >/dev/null)" || status=$?
+assert_eq 78 "$status" "missing two: exits 78"
+assert_contains "$err" "ADDW_RECIPE_LINT" "missing two: names the lint key"
+assert_contains "$err" "ADDW_RECIPE_TESTS_AFFECTED" "missing two: names the tests key"
+assert_not_contains "$err" "ADDW_RECIPE_TYPECHECK" \
+  "missing two: does not name the key that is present"
+[ ! -e "$GATE_OUT" ] || fail "missing two: the configured rung ran before the refusal"
+
+# added at codex round 1 (#4), kept under the new contract: recipes come from
+# the config alone — an inherited environment value cannot satisfy a key the
+# config does not set, so the refusal stands even with the keys exported
+rm -f "$GATE_OUT"
+status=0
+ADDW_RECIPE_LINT="echo env-leak" ADDW_RECIPE_TESTS_AFFECTED="echo env-leak" \
+  run_gate missing-two >/dev/null 2>&1 || status=$?
+assert_eq 78 "$status" "missing: exported ADDW_RECIPE_* never substitutes for missing keys"
+[ ! -e "$GATE_OUT" ] || fail "missing: an exported recipe let a rung run"
+
+# --- {paths} substitution ---
+rm -f "$GATE_OUT"
 run_gate paths tests/a.test.sh "tests/b c.test.sh" >/dev/null 2>&1
 assert_eq "tests/a.test.sh tests/b c.test.sh" "$(cat "$GATE_OUT")" \
   "paths: {paths} receives every selected path, space-safe"
