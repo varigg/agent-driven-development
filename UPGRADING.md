@@ -593,3 +593,93 @@ the gate stayed green. Nothing migrates: an install whose doctor is `HEALTHY` al
 carries all three keys, and a stale one fails loudly — the gate exits 78 naming every
 missing key before any recipe runs. Restore the key as `KEY=` if the skip was
 deliberate, or with its recipe if it was not.
+
+## Schema 12 → 13
+
+ADDW stops owning a description of the code (ADR 0016). The as-built half of
+`docs/ARCHITECTURE.md` — overview, stack, structure, build, configuration, data
+flow — is something a session re-derives by exploring, and it was the half that
+drifted. The normative half — principles, per-layer conventions, pitfalls — is
+what review enforces, and it now lives wherever the project keeps its rules,
+named by a new `ADDW_CONVENTIONS` key and read whole by implementation, review,
+and hotfix. `addw-compact`, `docs/ARCHITECTURE-rules.md`, and the
+`ADDW_COMPACT_*` keys retire with the document they existed to manage. Nothing
+here is automated; there is no upgrade skill.
+
+The **admission test**, used in steps 3 and 5: could a reviewer cite a diff as
+violating this passage? A rule passes; a description of what the code looks
+like does not.
+
+### 1. Replace the skills
+
+Replace `.claude/skills/` wholesale. This removes `addw-compact`.
+
+### 2. Delete the retired rules file and keys
+
+```bash
+git rm docs/ARCHITECTURE-rules.md
+```
+
+Delete `ADDW_COMPACT_THRESHOLD`, `ADDW_COMPACT_TARGET_MIN`, and
+`ADDW_COMPACT_TARGET_MAX` from `docs/addw.env`, if you ever set them.
+
+### 3. Split `docs/ARCHITECTURE.md`
+
+The default keeps the normative half where it already is and drops the rest:
+
+```bash
+git mv docs/ARCHITECTURE.md docs/CONVENTIONS.md
+```
+
+Then delete every section of `docs/CONVENTIONS.md` that fails the admission
+test. Nothing is merged into `CLAUDE.md` or `AGENTS.md`; the file stays its own
+source.
+
+The alternative is to delete the document and have an agent run **only**
+`addw-init` §2.4, rule-source discovery — never the other Generate steps, which
+would overwrite the charter, `TESTING.md`, `docs/addw.env`, and `CHANGELOG.md`.
+The caveat: §2.4's conventions interview runs only when no existing rule file
+qualifies, so a project that already has a `CLAUDE.md` with any rule in it
+gets no interview. Carry the normative content over to a rule file **first** if
+you want to keep it.
+
+### 4. Write `ADDW_CONVENTIONS`
+
+List `docs/CONVENTIONS.md` if it exists, plus any of the project's own rule
+files — single-quoted, space-separated, files only, no paths with spaces:
+
+```bash
+# in docs/addw.env
+ADDW_CONVENTIONS='docs/CONVENTIONS.md CLAUDE.md'
+```
+
+If the project has no rules at all, write the key empty — `ADDW_CONVENTIONS=`
+— and review will say it ran without a conventions check. Do not delete the
+key instead: an absent key is a doctor FAIL, and the readers refuse it.
+
+### 5. Sweep the references
+
+```bash
+grep -rn ARCHITECTURE --exclude-dir=.claude .
+```
+
+In a living doc, repoint a reference to the rules to `docs/CONVENTIONS.md` (or
+whichever source now holds them), and delete a reference that was only
+orientation. `CHANGELOG.md` and the ADRs are exempt: dated records are never
+retro-edited. ADR 0013 permits repointing a merged ADR's citation of a moved
+file but does not require it.
+
+### 6. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=13
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+The migration has landed when doctor reports `HEALTHY` **with no `WARN`** line.
+A `WARN` naming `docs/ARCHITECTURE.md` means step 3 or 4 was skipped: the
+document survives but no skill reads it.

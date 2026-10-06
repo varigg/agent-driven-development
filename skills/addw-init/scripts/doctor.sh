@@ -21,7 +21,7 @@ set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
 # UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
-EXPECTED_SCHEMA=12
+EXPECTED_SCHEMA=13
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
