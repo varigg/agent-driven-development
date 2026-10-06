@@ -22,6 +22,11 @@
 # question, not this adapter's — doctor already fails an install missing it,
 # and refusing to review would withhold the check that finds problems from the
 # install least likely to have none.
+# The conventions sources (ADDW_CONVENTIONS, ADR 0016) travel the same way and
+# under the same policy: listed files are named for the reviewer to read
+# whole, an absent key is reported as not performed, and an explicit empty
+# value — the project's declared choice of no rules — is reported as a review
+# that ran without a conventions check.
 
 set -euo pipefail
 
@@ -48,7 +53,7 @@ require_issue_number() {
 # build_context <issue-number> <buffer-file>
 # Writes the ticket and, when declared, its parent spec into the buffer.
 build_context() {
-    local issue="$1" file="$2" body parent adr_dir
+    local issue="$1" file="$2" body parent adr_dir conventions_state source sources
     mkdir -p "$(dirname "$file")"
     body="$(bash "$TRACKER" body "$issue")"
 
@@ -62,6 +67,15 @@ build_context() {
         [ "$config_status" -eq 66 ] || exit "$config_status"
         adr_dir=""
     }
+    # Absent and empty mean different things here, which config_get's
+    # line-per-key output cannot tell apart; config_source can.
+    conventions_state=absent
+    if config_source ADDW_CONVENTIONS 2>/dev/null; then
+        if declare -p ADDW_CONVENTIONS >/dev/null 2>&1; then
+            conventions_state=listed
+            [ -n "$ADDW_CONVENTIONS" ] || conventions_state=empty
+        fi
+    fi
 
     {
         printf '# Ticket #%s — %s\n\n' "$issue" "$(bash "$TRACKER" title "$issue")"
@@ -87,4 +101,19 @@ build_context() {
         printf '\n---\n\nADR directory for guardrail review: none. `ADDW_ADR_DIR` did not resolve from this project'"'"'s config, so the guardrail-ADR checklist item cannot be performed. Do not guess a path, and do not pass the item quietly: report it as **not performed**, naming `ADDW_ADR_DIR` as the reason.\n' \
             >> "$file"
     fi
+
+    case "$conventions_state" in
+        listed)
+            printf '\n---\n\nConventions sources for the convention checklist items — read each one whole:\n\n' >> "$file"
+            read -ra sources <<< "$ADDW_CONVENTIONS"
+            for source in "${sources[@]}"; do
+                printf -- '- `%s`\n' "$source" >> "$file"
+            done ;;
+        empty)
+            printf '\n---\n\nConventions sources: none — the project declares no rules (`ADDW_CONVENTIONS=`). Skip the convention checklist items and say in the review that it ran without a conventions check.\n' \
+                >> "$file" ;;
+        absent)
+            printf '\n---\n\nConventions sources: none. `ADDW_CONVENTIONS` is absent from this project'"'"'s config, so the convention checklist items cannot be performed. Do not guess at rule files, and do not pass the items quietly: report them as **not performed**, naming `ADDW_CONVENTIONS` as the reason.\n' \
+                >> "$file" ;;
+    esac
 }

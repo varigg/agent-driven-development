@@ -17,6 +17,10 @@
 #      and validated only when set: half a pair, a named lockfile that is not
 #      there, or a pair beside an empty ADDW_VERSION_FILE fails; with both
 #      keys absent, doctor says nothing about it at all.
+#   1b. Conventions sources (ADR 0016). ADDW_CONVENTIONS copies the recipe
+#      grammar — absent fails, explicit empty is a project with no rules — and
+#      every listed path must be a file. A docs/ARCHITECTURE.md the key does
+#      not list is a WARN: printed, exit code unchanged.
 #   2. Docs contract. The living docs, the ADR template at the location
 #      ADDW_ADR_TEMPLATE names — the shipped one under
 #      `.claude/skills/lib/templates/` by default, a project's own when it
@@ -115,7 +119,7 @@ mkdir -p "$BASE/project" "$BASE/home"
   # backtick belongs, and an expanding one would corrupt it silently. The one
   # interpolated value is appended instead.
   cat > docs/addw.env <<'ENV'
-ADDW_SCHEMA=12
+ADDW_SCHEMA=13
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
@@ -124,6 +128,7 @@ ADDW_ADR_DIR="docs/adr"
 ADDW_RECIPE_LINT="true"
 ADDW_RECIPE_TYPECHECK=""
 ADDW_RECIPE_TESTS_AFFECTED="true"
+ADDW_CONVENTIONS='CLAUDE.md docs/CONVENTIONS.md'
 ENV
   printf 'ADDW_ADR_TEMPLATE="%s"\n' "$SHIPPED_TEMPLATE" >> docs/addw.env
 
@@ -132,8 +137,7 @@ ENV
   printf '# Domain Docs\n\nSingle-context: CONTEXT.md and docs/adr/.\n' \
     > docs/agents/domain.md
 
-  printf '# Architecture\n' > docs/ARCHITECTURE.md
-  printf '# Architecture Documentation Rules\n' > docs/ARCHITECTURE-rules.md
+  printf '# Conventions\n' > docs/CONVENTIONS.md
   printf '# Charter\n' > docs/charter.md
   printf '# Changelog\n' > CHANGELOG.md
   printf '{ "version": "0.1.0" }\n' > package.json
@@ -286,6 +290,63 @@ run "$d"
 assert_eq 1 "$RUN_STATUS" "version: a named-but-missing version file is unhealthy"
 assert_contains "$RUN_OUT" "version file Cargo.toml missing" \
   "version: the failing line names the file the config points at"
+
+# --- the conventions sources (ADR 0016) -----------------------------------
+# ADDW_CONVENTIONS lists the files normative readers read whole. It copies the
+# recipe keys' grammar: absent is a gap, an explicit empty value is a project
+# with no rules (review says it ran without a conventions check), and every
+# listed file must exist. The healthy fixture lists two files, space-separated
+# inside single quotes, and passed above.
+d="$(case_dir noconventions)"
+grep -v '^ADDW_CONVENTIONS=' "$d/project/docs/addw.env" \
+  > "$d/project/docs/addw.env.new"
+mv "$d/project/docs/addw.env.new" "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "conventions: an absent ADDW_CONVENTIONS is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_CONVENTIONS absent from docs/addw.env" \
+  "conventions: the failing line names the absent key"
+# The config is the only source here too.
+run "$d" ADDW_CONVENTIONS="CLAUDE.md"
+assert_eq 1 "$RUN_STATUS" "conventions: an exported value never substitutes for the key"
+
+d="$(case_dir emptyconventions)"
+sed -i 's|^ADDW_CONVENTIONS=.*|ADDW_CONVENTIONS=|' "$d/project/docs/addw.env"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "conventions: an explicit empty value is healthy"
+assert_contains "$RUN_OUT" "ADDW_CONVENTIONS defined (empty: no project rules" \
+  "conventions: an empty value reads as a considered choice, not a silent pass"
+
+d="$(case_dir missingconventions)"
+rm "$d/project/docs/CONVENTIONS.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "conventions: a listed file that is missing is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: conventions source docs/CONVENTIONS.md missing" \
+  "conventions: the failing line names the missing file"
+assert_contains "$RUN_OUT" "OK:   conventions source CLAUDE.md exists" \
+  "conventions: each listed file is checked on its own line"
+
+# Files only: a directory would be read "whole" as nothing at all.
+d="$(case_dir dirconventions)"
+mkdir -p "$d/project/rules"
+sed -i "s|^ADDW_CONVENTIONS=.*|ADDW_CONVENTIONS='rules'|" "$d/project/docs/addw.env"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "conventions: a listed directory is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: conventions source rules is not a file" \
+  "conventions: the failing line says a directory is not a source"
+
+# A leftover ARCHITECTURE.md that no reader lists is the unfinished schema-13
+# migration: a WARN, which prints but never changes the exit code.
+d="$(case_dir strayarch)"
+printf '# Architecture\n' > "$d/project/docs/ARCHITECTURE.md"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "conventions: an unlisted ARCHITECTURE.md leaves the exit code alone"
+assert_contains "$RUN_OUT" "WARN: docs/ARCHITECTURE.md exists but is not listed in ADDW_CONVENTIONS" \
+  "conventions: an unlisted ARCHITECTURE.md warns"
+assert_contains "$RUN_OUT" "HEALTHY" "conventions: a WARN does not make an install unhealthy"
+
+sed -i "s|^ADDW_CONVENTIONS=.*|ADDW_CONVENTIONS='docs/ARCHITECTURE.md'|" "$d/project/docs/addw.env"
+run "$d"
+assert_not_contains "$RUN_OUT" "WARN:" "conventions: a listed ARCHITECTURE.md is a source, not a stray"
 
 # --- the lockfile-sync pair (#126) ----------------------------------------
 

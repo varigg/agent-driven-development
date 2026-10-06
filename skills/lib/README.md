@@ -255,12 +255,30 @@ lives inside `skills/` rather than at the repo root.
   loose quoting, which accepts files whose shell and parsed readings
   silently diverge, and a Python reader, a new runtime dependency for a job
   this small.
+  `ADDW_CONVENTIONS` is the second key standing on the `KEY=`-versus-absent
+  distinction, after the recipes, and copies their grammar: absent is a gap —
+  doctor FAILs, implement and hotfix refuse to start, and code review runs
+  but reports its convention items as not performed, the same policy it
+  applies to a missing `ADDW_ADR_DIR` — and an explicit empty value is a
+  project with no rules, where review skips the conventions check and says
+  so. Its value is a list of files — single-quoted, space-separated, read
+  whole by every normative reader (ADR 0016). Paths containing spaces are
+  unsupported rather than escaped: a quoting scheme inside a value would be
+  a second grammar for one reader to get wrong, and rule files are named by
+  the project, which can pick names without spaces. Files only, never
+  directories, so "read whole" always means one concrete thing; `addw-init`
+  expands a confirmed directory before writing the key.
 
 - `templates/` — shipped, project-agnostic templates that ride along with the
   wholesale skills copy. `adr.md` holds the ADR format and its authoring rules;
   it belongs with the skills because the format is not project state and a
   template change should arrive with the next skills install, rather than
   requiring every project to migrate a generated copy by hand.
+  `conventions.md` is a seed, not a source: `addw-init` starts its fallback
+  conventions interview from it and prunes it into a project-owned
+  `docs/CONVENTIONS.md`. It is never listed in `ADDW_CONVENTIONS`, because a
+  rule set that changes under the project on every skills upgrade is not the
+  project's rules.
 
 - `gate/gate.sh` — the deterministic testing gate, and the reason a PR body's
   verification evidence is a line nobody had to compose: the gate runs the
@@ -322,8 +340,9 @@ lives inside `skills/` rather than at the repo root.
   argument disagreeing with the one the release PR committed.
 
 - `docs/` — living-document probes and the one operation performed on a living
-  document, shared because the release runs the probes as its backstop sweep
-  and the maintenance audit runs them deliberately.
+  document, shared because more than one skill reaches them: the release
+  runs the audit-cadence probe, the maintenance audit the accretion probe,
+  and both file retirements whose recipe is the archive operation.
   - `check-doc-accretion.sh` — version density is the signal a living design
     document is narrating its own history: it describes the system as it is, so
     a release rewrites the passages it affects rather than appending to them,
@@ -332,7 +351,9 @@ lives inside `skills/` rather than at the repo root.
     comparison is against the previous release rather than against a limit. A
     handful of references are legitimate (the as-built statement, a dependency
     pin, a hazard predating its fix), so the probe names what it counted and is
-    advisory, never a gate.
+    advisory, never a gate. It has no default target: the document it was
+    written for, `ARCHITECTURE.md`, retired with ADR 0016, and a probe that
+    silently measured a missing default would report on nothing.
   - `audit-nudge.sh` — the maintenance-audit cadence check, so that a stack of
     releases with no audit behind it is something the flow says out loud rather
     than something the human has to remember.

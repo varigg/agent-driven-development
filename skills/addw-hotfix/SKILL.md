@@ -44,7 +44,13 @@ git checkout -b hotfix/[short-description]
 
 ## Step 3: Minimal Investigation
 
-First, read `docs/ARCHITECTURE.md`'s Core Architecture Principles section plus the section(s) covering the affected layer — pick them via the change-type table in `docs/ARCHITECTURE-rules.md`. (Scoped read is deliberate: this is the urgent path; the full ARCHI read belongs to the normal ticket flow.) Then explore the codebase and read the files relevant to the issue.
+First, read the project's rules — every file `ADDW_CONVENTIONS` lists, each whole (ADR 0016):
+
+```bash
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_CONVENTIONS || echo "(exit $?)")"
+```
+
+Unset means the key is absent: stop and tell the human to list the rule files, or set `ADDW_CONVENTIONS=` for none. Empty means the project declares no rules; the PR body says the fix ran without a conventions check. Then explore the codebase and read the files relevant to the issue.
 
 Quickly identify:
 

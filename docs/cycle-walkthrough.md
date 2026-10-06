@@ -12,8 +12,8 @@ live under `.claude/skills/...`.
 
 **Before any cycle**: `addw-init` has run once, on top of Matt Pocock's
 `setup-matt-pocock-skills`. His setup configures the tracker (GitHub — the overlay is
-GitHub-only) and the domain layout; ADDW's init adds the living docs (ARCHITECTURE.md,
-charter.md, TESTING.md), the project config `docs/addw.env`, the `spec` and `backlog` labels,
+GitHub-only) and the domain layout; ADDW's init adds the living docs (charter.md,
+TESTING.md), the conventions sources `ADDW_CONVENTIONS` names, the project config `docs/addw.env`, the `spec` and `backlog` labels,
 and the line declaring the ADR template authoritative — the template itself ships with the
 skills — then gates on doctor (`addw-init` § *Step 2: Generate — ADDW's artifacts only*).
 Skills are never edited per project; everything project-specific lives in those files.
@@ -228,11 +228,9 @@ Not part of the cycle, but reachable from it:
   ask — the invocation's arguments are what narrows scope. Substantive findings are
   never fixed in place but filed as tracker issues (§ *Step 3: Triage & Apply*), and the
   audit itself ships as a PR (§ *Step 4: Ship the Audit*). The docs sweep also detects
-  documents untrue in whole and size-checks ARCHITECTURE.md mechanically (`addw-compact`'s
-  `count-tokens.sh`, `ADDW_COMPACT_THRESHOLD` — 20k default); retirement and compaction filings alike land as
-  `backlog` tickets carrying their recipe, and the merge of the audit PR whose record lists
-  them graduates them (§ *Step 3: Triage & Apply*, ADR 0007). Maintain is the
-  watchdog; `addw-compact` is the surgeon.
+  documents untrue in whole; retirement filings land as `backlog` tickets carrying their
+  recipe, and the merge of the audit PR whose record lists them graduates them
+  (§ *Step 3: Triage & Apply*, ADR 0007).
 - **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
   immediately (§ *Step 7: Open the Expedited PR*). Even an emergency rides a PR a human
   merges — there is no direct-push path to `main` (ADR 0005). The expedited path reorders
@@ -240,13 +238,6 @@ Not part of the cycle, but reachable from it:
   checks it deferred — regression test, codex review, doc impact — and the PR body names
   the filing, so the human's merge graduates it to the frontier (§ *Step 6: File the
   Deferred-Scrutiny Ticket*, ADR 0007).
-- **`addw-compact`** — shrinks ARCHITECTURE.md when it outgrows its token budget
-  (§ *Step 3: Compaction Strategies*); within range it reports and stops. Reached by
-  the compaction ticket `addw-maintain`'s size check files, or directly. The rewrite
-  lands as its own PR (§ *Step 6: Measure & Open the PR*) — result feedback arrives at
-  the Boundary, not in conversation. Two intent forks survive: bloat triage (which
-  sections are load-bearing) and the split proposal when honest compression can't reach
-  the target.
 - **`codex-ask`** — a grounded second opinion on anything. Advisory only: no verdicts,
   nothing gated.
 
@@ -262,7 +253,6 @@ Not part of the cycle, but reachable from it:
 | Glossary | `CONTEXT.md` at the repo root, or the per-context files a root `CONTEXT-MAP.md` points at — fixed to Matt's own convention, never project-declared | `domain-modeling`, during alignment |
 | Version + changelog | A release PR, then a tag and GitHub Release | `addw-release` |
 | Audit record | The audit commit's message (subject `chore: maintenance audit <date>`), via a PR | `addw-maintain` |
-| Compacted ARCHITECTURE.md | Its own PR | `addw-compact` |
 
 ## Every question you'll be asked
 

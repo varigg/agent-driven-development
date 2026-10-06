@@ -10,7 +10,7 @@ End to end: **spec → tickets → per-ticket PR → release** — with a second
 
 ## Origins & inspirations
 
-- ADDW began as a fork of [TRIP](https://github.com/PiLastDigit/TRIP-workflow), the deliberately minimal three-step workflow this repo grew out of. The plan → implement → release core, the living `ARCHITECTURE.md`, and the init interview all trace back there.
+- ADDW began as a fork of [TRIP](https://github.com/PiLastDigit/TRIP-workflow), the deliberately minimal three-step workflow this repo grew out of. The plan → implement → release core and the init interview trace back there, as did the living `ARCHITECTURE.md` ADDW has since retired (ADR 0016).
 - [mattpocock/skills](https://github.com/mattpocock/skills) supplies the overlay's foundation: `grill-with-docs` for alignment, `to-spec` for specification, `to-tickets` for decomposition into tracer-bullet GitHub issues with blocking edges, and `tdd` / `code-review` for implementation discipline. ADDW builds on these rather than competing with them.
 - [ShopDevX/adeptlydev](https://github.com/ShopDevX/adeptlydev) inspired the determinism posture: wherever a check can be a small verifiable script instead of an agent's judgment, it is one.
 
@@ -30,11 +30,11 @@ End to end: **spec → tickets → per-ticket PR → release** — with a second
 4. **Implement, one ticket per session** — `addw-implement` wraps the loop: frozen contract tests → implementation (delegated to `codex-implement`, or driven inline with `tdd`) → deterministic gate → `codex-code-review` convergence → open the PR and stop. You review and merge on GitHub.
 5. **Release** — on demand, `addw-release` opens a release PR carrying the derived version bump and the mechanical changelog, refusing when a spec is Partial. Your merge is the confirmation; the tag and GitHub Release follow automatically.
 
-Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencies), `codex-ask` (second opinions), and `addw-compact` (doc size control) — see the reference below.
+Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencies), and `codex-ask` (second opinions) — see the reference below.
 
 ## The living docs
 
-`ARCHITECTURE.md` is the agent's long-term memory of your codebase: an always-current, as-built snapshot read at the start of each task, so the agent doesn't re-derive your structure from scratch every session — or worse, guess it. It is flanked by `docs/charter.md`, which holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and a set of dated ADRs that are write-once from the moment they merge — `active` until superseded, including guardrail ADRs that record what you deliberately do *not* build so no future change reintroduces it.
+ADDW keeps no structural description of your code; if agents repeatedly get lost, add a short, failure-derived where-to-look note to your own `CLAUDE.md` / `AGENTS.md`. The rules review enforces live wherever your project already keeps them, listed in `ADDW_CONVENTIONS`. Beside them sit `docs/charter.md`, which holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and a set of dated ADRs that are write-once from the moment they merge — `active` until superseded, including guardrail ADRs that record what you deliberately do *not* build so no future change reintroduces it.
 
 ## One config file, zero skill edits
 
@@ -46,7 +46,7 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 
 1. Install [Matt Pocock's skills](https://github.com/mattpocock/skills) and run his setup skill (it configures the tracker, labels, and domain layout).
 2. Copy this repo's `skills/` contents into your project's `.claude/skills/`.
-3. Run `/addw-init` — it verifies the setup (GitHub tracker, authenticated `gh`, the `ready-for-agent` label), interviews you for the charter, generates `ARCHITECTURE.md`, `TESTING.md`, and `docs/addw.env`, declares the shipped ADR template authoritative, and finishes with a doctor check of the whole install.
+3. Run `/addw-init` — it verifies the setup (GitHub tracker, authenticated `gh`, the `ready-for-agent` label), interviews you for the charter, confirms which of your files hold the project's rules, generates `TESTING.md` and `docs/addw.env`, declares the shipped ADR template authoritative, and finishes with a doctor check of the whole install.
 4. Bring a feature: `grill-with-docs` → `to-spec` → `/codex-spec-review` → `to-tickets` → `/addw-implement` per ticket → merge PRs → `/addw-release`.
 
 ## Skills reference
@@ -59,7 +59,6 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. Refuses when a spec is Partial; closes nothing. |
 | `/addw-maintain` | Periodic audit with three skippable sweeps: living-docs drift, coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
 | `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Even an emergency rides a PR a human merges — no direct-push path to main. |
-| `/addw-compact` | Shrinks `ARCHITECTURE.md` through summarization and restructuring when it outgrows its token budget (rule of thumb: ~10% of the context window). |
 | `/codex-implement` | Implementation delegated to Codex CLI in a workspace-write sandbox, with a persistent thread per target for resumable context. |
 | `/codex-code-review` | The code-review loop adapter: reviews a ticket's whole branch diff against the ticket and its spec — read-only sandbox, checklist-driven, multi-round with verdict tags. |
 | `/codex-ask` | A grounded second opinion on anything — architecture calls, debugging hypotheses. Advisory only: no verdicts, nothing gated. |

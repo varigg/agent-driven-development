@@ -7,15 +7,16 @@ build, because you cannot read the tracker the ticket lives on.
 
 ## Read first
 
-1. `docs/ARCHITECTURE.md` — architecture single source of truth
-2. The project's agent instructions (`AGENTS.md` or `CLAUDE.md`) — conventions and commands
+1. The project's agent instructions (`AGENTS.md` or `CLAUDE.md`) — conventions and commands
+2. Every file listed in `ADDW_CONVENTIONS` in `docs/addw.env` (single-quoted, space-separated)
+   — the project's rules, each read whole. An empty value means the project declares none.
 
 ## Scope & rules
 
 - Implement exactly what the instruction block says — nothing more. Where it narrows the scope
   or puts files out of bounds, do not exceed it.
-- Follow the existing codebase patterns documented in ARCHITECTURE.md (module boundaries, error
-  handling, naming). Apply DRY and KISS.
+- Follow the patterns the conventions files document (module boundaries, error handling,
+  naming), and where they are silent, the existing codebase's. Apply DRY and KISS.
 - Run the project's lint and type-check/build commands (from the agent instructions) when done;
   fix your own failures before finishing.
 - Do NOT write tests unless the instruction block explicitly asks — the requester owns the

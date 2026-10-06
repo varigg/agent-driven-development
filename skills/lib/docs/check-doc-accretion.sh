@@ -4,16 +4,17 @@
 # tag, and name the lines counted. Why version density is the signal, which
 # references legitimately stay, and why no verdict is ever a gate: ../README.md.
 #
-# Usage: check-doc-accretion.sh [file ...]   (default docs/ARCHITECTURE.md)
-# Run from the repo root. Exit 0 on any verdict; 1 if a named file is missing.
+# Usage: check-doc-accretion.sh file...
+# Run from the repo root. Exit 0 on any verdict; 1 if a named file is missing;
+# 64 (EX_USAGE) when no file is named — there is no default target.
 
 set -euo pipefail
 
 if [ $# -eq 0 ]; then
-    FILES=(docs/ARCHITECTURE.md)
-else
-    FILES=("$@")
+    echo "Usage: check-doc-accretion.sh file..." >&2
+    exit 64
 fi
+FILES=("$@")
 
 VERSION_RE='v?[0-9]+\.[0-9]+\.[0-9]+'
 # Dotted quads are addresses, not versions; drop them before counting.

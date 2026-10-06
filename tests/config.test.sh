@@ -76,6 +76,13 @@ assert_eq "embedded 'single' quotes are fine" \
 assert_eq "last" "$(get_in "$forms" ADDW_DUP)" \
   "duplicate key: the last assignment wins, as sourcing would have it"
 
+# ADDW_CONVENTIONS (ADR 0016) is a file list: single-quoted, space-separated.
+# The reader hands it over verbatim as one line; splitting is the reader's.
+lists="$(new_project lists "ADDW_CONVENTIONS='CLAUDE.md docs/CONVENTIONS.md'
+")"
+assert_eq "CLAUDE.md docs/CONVENTIONS.md" "$(get_in "$lists" ADDW_CONVENTIONS)" \
+  "file list: single-quoted, space-separated value arrives as one line"
+
 # One line per requested key, in request order; an absent key is an empty line.
 out="$(get_in "$forms" ADDW_DUP ADDW_ABSENT ADDW_BARE)"
 assert_eq "last

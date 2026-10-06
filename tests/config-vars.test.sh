@@ -63,6 +63,12 @@ set:
 unset
 set:from-the-file' "$out" "$sh: values round-trip literally; empty is set, absent is unset"
 
+  # A file list (ADDW_CONVENTIONS) survives eval as one value in every shell.
+  out="$(run_in "$sh" "$(new_project "list-$sh" "ADDW_CONVENTIONS='CLAUDE.md docs/CONVENTIONS.md'
+")" "$report"'
+    eval "$(bash "$VARS" ADDW_CONVENTIONS)"; report ADDW_CONVENTIONS')"
+  assert_eq "set:CLAUDE.md docs/CONVENTIONS.md" "$out" "$sh: a space-separated file list round-trips"
+
   # Unset-first: an absent key never inherits the environment.
   out="$(run_in "$sh" "$(new_project "absent-$sh" 'ADDW_OTHER=v')" "$report"'
     eval "$(bash "$VARS" ADDW_LEAK)"; report ADDW_LEAK')"

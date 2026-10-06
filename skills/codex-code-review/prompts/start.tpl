@@ -21,8 +21,7 @@ than reviewing nothing.
 ## Prerequisites — read first
 
 1. `{{TARGET}}` — the ticket and its parent spec.
-2. `docs/ARCHITECTURE.md`
-3. `.claude/skills/codex-code-review/checklist.md` — single source of truth for the review
+2. `.claude/skills/codex-code-review/checklist.md` — single source of truth for the review
    checklist, severity classification, and the approval gate.
 
 ## Review priorities (in order)

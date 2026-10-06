@@ -21,10 +21,9 @@ audit says so when invoking.
 
 ## Prerequisites - Read First
 
-1. @docs/ARCHITECTURE.md - Current as-built architecture
-2. @docs/charter.md - Stable intent
-3. The ADRs — at the location the domain-layout contract (`docs/agents/domain.md`) declares — and the glossary: `CONTEXT.md` at the repo root, or the per-context files a root `CONTEXT-MAP.md` points at. The glossary's location is fixed to Matt's own convention, never project-declared (ADR 0014); only the ADR directory moves.
-4. Prior audits' findings live on the tracker as issues — check the open issues earlier
+1. @docs/charter.md - Stable intent
+2. The ADRs — at the location the domain-layout contract (`docs/agents/domain.md`) declares — and the glossary: `CONTEXT.md` at the repo root, or the per-context files a root `CONTEXT-MAP.md` points at. The glossary's location is fixed to Matt's own convention, never project-declared (ADR 0014); only the ADR directory moves.
+3. Prior audits' findings live on the tracker as issues — check the open issues earlier
    audits filed via `bash .claude/skills/lib/tracker/tracker.sh snapshot` (the
    `backlog`-labeled ones and any still-open retirement tickets)
 
@@ -34,7 +33,7 @@ audit says so when invoking.
 
 ### Sweep A: Docs Drift
 
-Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary — plus the process files (`.claude/skills/`).
+Scope: the living docs — the charter, the ADRs, the glossary, the conventions sources — plus the process files (`.claude/skills/`).
 
 **Vocabulary**
 
@@ -91,17 +90,7 @@ Scope: the living docs — ARCHITECTURE.md, the charter, the ADRs, the glossary 
   `bash .claude/skills/lib/docs/check-doc-accretion.sh <file>...`
   counts a document's version references against its copy at the previous tag.
   A count climbing release over release means the document is narrating its own
-  history. Point it at ARCHITECTURE.md and at every runbook — the release step
-  runs it on ARCHITECTURE.md only.
-- Size has one too:
-  `bash .claude/skills/addw-compact/count-tokens.sh docs/ARCHITECTURE.md`
-  estimates the document's token count. Over the project's threshold
-  (`${ADDW_COMPACT_THRESHOLD:-20000}` tokens, from `docs/addw.env`) it has
-  outgrown its budget. Detection ends the sweep's job — compress nothing here; file
-  the finding under **Compaction filing** in Step 3. This audit is the
-  watchdog, `addw-compact` is the surgeon: the check is mechanical, so a
-  script owns it (the ADR 0004 pattern), while the compression is judgment
-  and gets its own session.
+  history. Point it at every runbook.
 - **Design records are not work logs.** When auditing an ADR: an alternative
   earns its place only if a competent reader would independently propose it
   and act on it; evidence earns its place only if the decision would change
@@ -143,14 +132,7 @@ Per finding: severity (trivial / substantive), evidence (file:line or command ou
   bash .claude/skills/lib/tracker/tracker.sh create "docs: retire <path>" <body-file> backlog
   ```
 
-  The body carries the path, the kind (`adr` or `proposal`), why the document stopped being true, and the command that retires it — `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` — so whoever picks the ticket rediscovers none of the finding. The filing is `backlog` however determined the work: frontier entry is a spending decision that stays human (ADR 0007). The audit record already lists every filing, so the merge of the audit PR is the naming act that graduates these tickets to the frontier — the same mechanic the compaction filing below rides. The ticket carries **no `## Parent`**, so it gates no spec's completion and no release. Another detector may file the same document; the duplicate costs one close, which is cheaper than a tracker query to prevent it.
-- **Compaction filing**: an oversize ARCHITECTURE.md (Sweep A's size check) files one ticket, carrying its recipe the way retirement tickets carry their `archive-doc.sh` command — the picker rediscovers nothing:
-
-  ```bash
-  bash .claude/skills/lib/tracker/tracker.sh create "docs: compact ARCHITECTURE.md" <body-file> backlog
-  ```
-
-  The body carries the measured count, the threshold it crossed, and the recipe: run `/addw-compact`. The filing is `backlog`, and its number goes in the audit record like every other filing — which is exactly what graduates it: the merge of the audit PR whose record lists the filing is the human act that admits it to the frontier (ADR 0007's graduation mechanic). Another audit may find the document still oversize and file again; the duplicate costs one close.
+  The body carries the path, the kind (`adr` or `proposal`), why the document stopped being true, and the command that retires it — `bash .claude/skills/lib/docs/archive-doc.sh <path> <adr|proposal> "<reason>"` — so whoever picks the ticket rediscovers none of the finding. The filing is `backlog` however determined the work: frontier entry is a spending decision that stays human (ADR 0007). The audit record already lists every filing, so the merge of the audit PR is the naming act that graduates these tickets to the frontier — ADR 0007's graduation mechanic. The ticket carries **no `## Parent`**, so it gates no spec's completion and no release. Another detector may file the same document; the duplicate costs one close, which is cheaper than a tracker query to prevent it.
 - **Process findings** (a skill is wrong): file separately against the ADDW repo — skills change via dedicated process commits, never inside an audit fix.
 
 ## Step 4: Ship the Audit
