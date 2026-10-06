@@ -39,7 +39,9 @@ which checks the ticket's PR runs, so every fix rides a ticket through
 Approval-shaped asks upstream of the boundary do not exist. Anticipatory
 filings are `backlog` filings, and they graduate mechanically when a merged
 PR whose body names them lands — the merge is the human act naming the work.
-Two exceptions are codified: a **closed carve-out list** of non-fork asks,
+That rail is general, not hotfix's: where a merged ADR names `addw-hotfix`'s
+deferred-scrutiny follow-up as one of its riders, the rider is retired and the
+rail stands. Two exceptions are codified: a **closed carve-out list** of non-fork asks,
 holding one class — destructive or real-money actions outside the repo —
 which grows only by superseding this ADR; and a **bootstrap exception** —
 before the repo's first commit no PR machinery exists, so addw-init's
