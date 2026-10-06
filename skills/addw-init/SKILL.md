@@ -280,8 +280,9 @@ ADDW_ADR_DIR="<resolved ADR directory>"
 # The shipped ADR template, or a project-owned replacement:
 ADDW_ADR_TEMPLATE=".claude/skills/lib/templates/adr.md"
 # Testing-gate recipes, from TESTING.md's Verification Recipes. All three keys
-# are always present: an empty value is a step this project does not have, and
-# the gate reports it as a visible skip.
+# must be present: an empty value is a step this project does not have, and
+# the gate reports it as a visible skip — deleting a key instead makes the
+# gate refuse to run.
 ADDW_RECIPE_LINT="<command or empty>"
 ADDW_RECIPE_TYPECHECK="<command or empty>"
 # {paths} is replaced by the affected test paths; a recipe without it runs as-is:

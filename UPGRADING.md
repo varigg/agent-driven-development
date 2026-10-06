@@ -581,3 +581,15 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 ```
 
 `HEALTHY` means the migration landed.
+
+## Within schema 12
+
+The testing gate now refuses a `docs/addw.env` missing any of the three recipe keys
+(2026-09-28, #184): `ADDW_RECIPE_LINT`, `ADDW_RECIPE_TYPECHECK`, and
+`ADDW_RECIPE_TESTS_AFFECTED` must all be present, and an explicit empty assignment
+(`KEY=`) is the only way to skip a rung. Before, an absent key and an empty key were
+the same visible skip (#4), so a key deleted by accident silently dropped a rung while
+the gate stayed green. Nothing migrates: an install whose doctor is `HEALTHY` already
+carries all three keys, and a stale one fails loudly — the gate exits 78 naming every
+missing key before any recipe runs. Restore the key as `KEY=` if the skip was
+deliberate, or with its recipe if it was not.
