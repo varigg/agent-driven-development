@@ -272,6 +272,11 @@ lives inside `skills/` rather than at the repo root.
   it belongs with the skills because the format is not project state and a
   template change should arrive with the next skills install, rather than
   requiring every project to migrate a generated copy by hand.
+  `conventions.md` is a seed, not a source: `addw-init` starts its fallback
+  conventions interview from it and prunes it into a project-owned
+  `docs/CONVENTIONS.md`. It is never listed in `ADDW_CONVENTIONS`, because a
+  rule set that changes under the project on every skills upgrade is not the
+  project's rules.
 
 - `gate/gate.sh` — the deterministic testing gate, and the reason a PR body's
   verification evidence is a line nobody had to compose: the gate runs the

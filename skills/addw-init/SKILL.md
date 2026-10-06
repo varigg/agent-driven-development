@@ -122,16 +122,22 @@ bash .claude/skills/lib/tracker/tracker.sh create-label <label>
 
 `ready-for-agent` is Matt's and is never recreated or modified.
 
-### 2.3 Explore and classify the codebase
+### 2.3 Explore the codebase
 
-The living docs are written from evidence, not from the project's name. Read
-the root and the source tree: the build/package manifest identifies language
-and toolchain, framework config files (`next.config.*`, `tauri.conf.*`,
-`platformio.ini`, `serverless.yml`, a linker script) identify the runtime
-shape, and the source layout identifies the architecture — `src/components/`,
-`src/hal/`, and `cmd/` are three different kinds of project. Also gather
-dependencies and their purposes, entry points, the configuration approach,
-and the test framework and conventions.
+What init writes — the testing guide, the config, and the candidate answers
+for the conventions interview — comes from evidence, not from the project's
+name. Read the root and the source tree: the build/package manifest
+identifies language and toolchain, framework config files (`next.config.*`,
+`tauri.conf.*`, `platformio.ini`, `serverless.yml`, a linker script) identify
+the runtime shape, and the source layout shows how the code divides —
+`src/components/`, `src/hal/`, and `cmd/` are three different kinds of
+project. Also gather entry points, the configuration approach, and the test
+framework and conventions.
+
+Use the domain's own vocabulary — firmware has *peripherals*, a CLI has
+*commands*, neither has "components". A **layer** is a component type, not a
+directory: the names you find here are what the conventions interview in 2.4
+asks about, should it run.
 
 Record the current version and its format (SemVer, CalVer, custom) from
 `package.json`, `Cargo.toml`, `pyproject.toml`, `version.h`, `__version__`,
@@ -140,53 +146,49 @@ often have no such file, and inventing one solely to name it here is not the
 goal: `ADDW_VERSION_FILE` may be left empty, and releases then carry the
 version in the tag and the changelog alone.
 
-Then classify:
+Nothing here is written down as a description of the code. ADDW keeps none —
+sessions explore for themselves (ADR 0016).
 
-| Type | Typical signals | Concerns to capture |
-| --- | --- | --- |
-| Web frontend | React, Vue, Angular, Svelte, components, routing | components, state, styling, routing, API calls |
-| Web backend | Express, FastAPI, Gin, Spring, routes, middleware | endpoints, database, auth, middleware, errors |
-| Full-stack web | frontend and backend in one tree | both sides, plus the API contracts between them |
-| Desktop app | Electron, Tauri, Qt, GTK, WinForms | windows, native APIs, IPC, cross-platform behavior |
-| Mobile app | React Native, Flutter, Swift, Kotlin | screens, navigation, platform APIs, offline behavior |
-| CLI tool | entry point and argument parsing, no GUI | commands, configuration, I/O, exit codes |
-| Library/SDK | public exports, no application entry point | API surface, compatibility, versioning |
-| Embedded/firmware | HAL, interrupts, memory-mapped I/O | hardware, memory, real-time behavior, boot, peripherals |
-| Game | game loop, rendering, entities | loop, rendering, physics, input, assets |
-| Data/ML pipeline | notebooks, processing, models | data flow, training, inference, pipelines |
+### 2.4 Rule-source discovery
 
-Note the primary type, any secondary aspects (a CLI that is also a library),
-and domain-specific concerns such as real-time or compliance constraints.
-These decide which architecture sections earn a place.
+Reviewers enforce the project's rules, and most projects already keep them
+somewhere. Find those files rather than starting a second home for rules.
+Probe:
 
-### 2.4 `docs/ARCHITECTURE.md`
+- `CLAUDE.md` and `AGENTS.md`, nested copies included
+- `CONTRIBUTING.md`
+- `.github/copilot-instructions.md`
+- `.cursor/rules/`
+- `docs/*conventions*` and `docs/*style*`
 
-Write it as an **as-built** description of the system as it currently is.
-Every project gets the universal sections: how to read the document,
-overview, technology stack, project structure, core architecture principles,
-build system and toolchain, and configuration. It closes with the applicable
-ones: data-flow diagrams, error-handling strategy, testing strategy,
-performance, security, deployment, and a short conclusion.
+and add anything else exploration turned up that plainly holds rules. Filter
+every candidate through the **admission test**: could a reviewer cite a diff
+as violating something it says? A file of build commands or orientation notes
+fails; a file stating "domain code never reads the request" passes. A file
+need not be *only* rules to qualify.
 
-Between them go the sections **this** project needs, from the classification
-and from what exploration actually found. A frontend earns component
-organization, state, routing, and API integration; a backend earns API
-design, request lifecycle, database layer, and auth; firmware earns the HAL,
-memory map, interrupts, and boot sequence. Add a section whenever the
-codebase holds an aspect a newcomer would otherwise reverse-engineer — a
-caching strategy, a plugin system, multi-tenancy, offline sync, migrations,
-feature flags. Omit any section the project has no real answer for: an empty
-heading is worse than no heading.
+Present the survivors with `AskUserQuestion` as a **multi-select** and let
+the human confirm the list. A confirmed directory expands to the files it
+holds — `ADDW_CONVENTIONS` lists files only — and the expanded list is what
+goes into the key (2.7), single-quoted and space-separated. A path containing
+a space cannot be listed; say so if one is confirmed.
 
-Use the domain's own vocabulary — firmware has *peripherals*, a CLI has
-*commands*, neither has "components". Document **per-layer conventions**:
-patterns, quality expectations, and common pitfalls per component type. These
-are what implementation and review derive from later, so a layer with no
-written conventions is a gap, not a blank.
+**When the confirmed list is empty**, offer to write `docs/CONVENTIONS.md`:
 
-Then **present it and ask the user to approve it** with `AskUserQuestion` —
-approve, request changes, or add sections. Revise and re-present until they
-approve explicitly; nothing further is written before that.
+- **Accepted** — interview the human **per layer, one topic at a time**,
+  starting from the shipped seed `.claude/skills/lib/templates/conventions.md`
+  and pruning it rule by rule. Exploration supplies the layer names and may
+  offer observed patterns as candidate answers, never as rules: a pattern the
+  code happens to follow becomes a rule only when the human says so. The
+  admission test governs every entry, seed rules included. The result is
+  `ADDW_CONVENTIONS='docs/CONVENTIONS.md'`.
+- **Declined** — write `ADDW_CONVENTIONS=`, the explicit no-rules value. The
+  report says review runs without a conventions check.
+
+Never list the seed template itself: it ships with the skills and changes
+under the project on every upgrade. When the confirmed sources look thin for
+what exploration found, note it in the report — do not interview a project
+that already has rule files.
 
 ### 2.5 `docs/charter.md`
 
@@ -279,6 +281,10 @@ ADDW_AUDIT_NUDGE_N=5
 ADDW_ADR_DIR="<resolved ADR directory>"
 # The shipped ADR template, or a project-owned replacement:
 ADDW_ADR_TEMPLATE=".claude/skills/lib/templates/adr.md"
+# The project's rule files (Step 2.4), read whole by implementation and review:
+# single-quoted, space-separated, files only. Empty means the project declares
+# no rules, and review says it ran without a conventions check:
+ADDW_CONVENTIONS='<confirmed rule files, or empty>'
 # Testing-gate recipes, from TESTING.md's Verification Recipes. All three keys
 # must be present: an empty value is a step this project does not have, and
 # the gate reports it as a visible skip — deleting a key instead makes the
@@ -307,14 +313,6 @@ ADDW_RECIPE_TESTS_AFFECTED="<command template or empty>"
 # main agent drives `tdd` itself. It is not valid on the review key.
 # ADDW_IMPLEMENT_SKILL=codex-implement
 # ADDW_CODE_REVIEW_SKILL=codex-code-review
-# Optional addw-compact token budgets — unset, the defaults below apply. The
-# threshold triggers compaction (addw-maintain's size check watches it too);
-# the target range is where a compaction aims, and its upper bound doubles as
-# the split trigger. Rule of thumb for choosing a threshold: ARCHITECTURE.md
-# should stay around ~10% of the context window.
-# ADDW_COMPACT_THRESHOLD=20000
-# ADDW_COMPACT_TARGET_MIN=10000
-# ADDW_COMPACT_TARGET_MAX=15000
 ```
 
 Fill every value (audit nudge 5 unless the user chooses otherwise). Do not
@@ -347,17 +345,7 @@ naming `.claude/skills/lib/templates/adr.md` has not declared
 `skills/lib/templates/adr.md`, and it is the near-miss, not the obvious
 mismatch, that this check exists to catch.
 
-### 2.9 `docs/ARCHITECTURE-rules.md` and `CHANGELOG.md`
-
-`docs/ARCHITECTURE-rules.md` records how ARCHITECTURE.md is maintained,
-naming that document's actual sections: update after any change to project
-structure, technology stack, data flow, component interactions, or build and
-deployment; **rewrite, never append** — restate the affected passage as the
-system now stands and delete descriptions of machinery that no longer
-exists; be factual and concise; update diagrams when data flow changes;
-reference real paths. Version history belongs in `CHANGELOG.md`, not here — a
-version number earns a place only when it is a live fact a reader must act
-on, such as a dependency pin.
+### 2.9 `CHANGELOG.md`
 
 The root `CHANGELOG.md` is write-only for the workflow: the release skills
 prepend entries and no skill reads it as context. Create it with the header
@@ -374,8 +362,8 @@ read it, agents don't.
 
 chore: initialize the ADDW workflow
 
-- Initialized ADDW — architecture, charter, testing guide, ADR declaration, and
-  project config.
+- Initialized ADDW — charter, testing guide, ADR declaration, conventions
+  sources, and project config.
 ```
 
 Author no release history beyond that entry.
@@ -401,8 +389,9 @@ version the `CHANGELOG.md` entry carries. Stage by **explicit paths**, and
 stage the paths this run actually wrote and no others: the
 project-instructions file is whichever of `CLAUDE.md` or `AGENTS.md` Matt's
 setup chose, and the ADR directory now holds nothing init produced — the
-template ships with the skills. Naming a path this run did not write aborts
-the whole `git add` on a pathspec error, taking the commit with it.
+template ships with the skills. `docs/CONVENTIONS.md` is staged only when the
+2.4 interview wrote it. Naming a path this run did not write aborts the whole
+`git add` on a pathspec error, taking the commit with it.
 
 ```bash
 git commit -m "chore: initialize the ADDW workflow"
@@ -411,3 +400,10 @@ git tag vX.Y.Z
 
 If the user declines the tag, tell them the first `addw-release` will assume
 a tag baseline exists.
+
+Close with a report: the skill inventory from Step 1.4, the conventions
+sources `ADDW_CONVENTIONS` now lists — or that review runs without a
+conventions check, when the human declined — and any thin-coverage note from
+2.4. When the project already had rule sources, name
+`.claude/skills/lib/templates/conventions.md` as optional reading: a base set
+of language-agnostic rules worth comparing against.
