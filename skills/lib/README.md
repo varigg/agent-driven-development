@@ -255,6 +255,17 @@ lives inside `skills/` rather than at the repo root.
   loose quoting, which accepts files whose shell and parsed readings
   silently diverge, and a Python reader, a new runtime dependency for a job
   this small.
+  `ADDW_CONVENTIONS` is the second key standing on the `KEY=`-versus-absent
+  distinction, after the recipes, and copies their grammar: absent is a gap
+  (doctor FAILs, normative readers refuse), and an explicit empty value is a
+  project with no rules, where review skips the conventions check and says
+  so. Its value is a list of files — single-quoted, space-separated, read
+  whole by every normative reader (ADR 0016). Paths containing spaces are
+  unsupported rather than escaped: a quoting scheme inside a value would be
+  a second grammar for one reader to get wrong, and rule files are named by
+  the project, which can pick names without spaces. Files only, never
+  directories, so "read whole" always means one concrete thing; `addw-init`
+  expands a confirmed directory before writing the key.
 
 - `templates/` — shipped, project-agnostic templates that ride along with the
   wholesale skills copy. `adr.md` holds the ADR format and its authoring rules;

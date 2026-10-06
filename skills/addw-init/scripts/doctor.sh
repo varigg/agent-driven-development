@@ -25,6 +25,9 @@ EXPECTED_SCHEMA=12
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
+# A WARN prints and leaves the exit code alone: something a finished migration
+# would not leave behind, but nothing the workflow breaks on.
+warn() { printf 'WARN: %s\n' "$1"; }
 bad() {
     printf 'FAIL: %s\n' "$1"
     doctor_fail=1
@@ -59,7 +62,7 @@ config_source ADDW_SCHEMA ADDW_PROJECT_NAME ADDW_VERSION_FILE ADDW_MAIN_BRANCH \
     ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED \
     ADDW_RECIPE_LOCKFILE_SYNC ADDW_LOCKFILE \
     ADDW_PLAN_REVIEW_SKILL ADDW_ASK_SKILL \
-    ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL
+    ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_CONVENTIONS
 
 required_keys=(
     ADDW_SCHEMA
@@ -107,6 +110,37 @@ else
     bad "ADDW_SCHEMA=${ADDW_SCHEMA:-unset} but the installed skills expect $EXPECTED_SCHEMA — apply UPGRADING.md"
 fi
 
+# --- conventions sources (ADR 0016) -----------------------------------------
+# ADDW_CONVENTIONS names the files normative readers read whole: single-quoted,
+# space-separated, no paths with spaces. It copies the recipe grammar — absent
+# is a gap, empty is a project with no rules — and readers refuse an absent
+# key, so it fails here rather than at the first review. Files only: a
+# directory "read whole" is nothing, which is why init expands one first.
+conventions_listed=" "
+if ! declare -p ADDW_CONVENTIONS >/dev/null 2>&1; then
+    bad "ADDW_CONVENTIONS absent from docs/addw.env — list the project's rule files, or set ADDW_CONVENTIONS= for none (see UPGRADING.md)"
+elif [ -z "$ADDW_CONVENTIONS" ]; then
+    ok "ADDW_CONVENTIONS defined (empty: no project rules — review runs without a conventions check)"
+else
+    read -ra conventions_files <<< "$ADDW_CONVENTIONS"
+    for file in "${conventions_files[@]}"; do
+        conventions_listed+="$file "
+        if [ -f "$file" ]; then
+            ok "conventions source $file exists"
+        elif [ -e "$file" ]; then
+            bad "conventions source $file is not a file — list the files it holds instead"
+        else
+            bad "conventions source $file missing"
+        fi
+    done
+fi
+# The schema-13 migration either lists ARCHITECTURE.md as a source or moves
+# its normative half out and deletes it. A survivor nothing lists is that
+# migration left half-done: no reader will ever look at it again.
+if [ -f docs/ARCHITECTURE.md ] && [[ "$conventions_listed" != *" docs/ARCHITECTURE.md "* ]]; then
+    warn "docs/ARCHITECTURE.md exists but is not listed in ADDW_CONVENTIONS — no skill reads it (see UPGRADING.md)"
+fi
+
 # --- docs contract ---------------------------------------------------------
 # No bare-directory existence check: git tracks files, not directories, so a
 # directory ADDW creates but never writes into (the ADR directory) exists only
@@ -114,8 +148,6 @@ fi
 # clone. The testing directory needs no separate check either — it is proven
 # by the assertion on its TESTING.md below, which is a committed file.
 doc_files=(
-    docs/ARCHITECTURE.md
-    docs/ARCHITECTURE-rules.md
     docs/charter.md
     docs/testing/TESTING.md
     CHANGELOG.md
