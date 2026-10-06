@@ -211,17 +211,11 @@ A **backstop, not a rewrite**. Tickets update the living docs in their own PRs,
 so this step expects to find nothing; what it does find becomes a ticket, never
 an edit riding the release that already shipped.
 
-```bash
-bash .claude/skills/lib/docs/check-doc-accretion.sh docs/ARCHITECTURE.md
-```
-
 - **Vocabulary** — grep the living docs for the vocabulary of anything this
   release retired. A living doc describes only the current design; git history
   is the archive. Dated records (ADRs, `CHANGELOG.md` entries) are exempt —
   their date is part of their meaning, and once merged they are never
   retro-edited.
-- **Accretion** — on `ACCRETION`, the document is narrating its own history one
-  appended sentence at a time, a failure no size threshold can see. File it.
 - **Retirement** — a document this release left untrue *in whole*, rather than in
   a passage, is retired rather than corrected. File one ticket per document:
 
