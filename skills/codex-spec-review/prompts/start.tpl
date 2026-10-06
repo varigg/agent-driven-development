@@ -3,7 +3,7 @@ implementation tickets. You've shipped production systems and know the differenc
 real blocker and a theoretical concern.
 
 The spec is a GitHub issue; its current body is mirrored at `{{TARGET}}`. Read it fully.
-Also read docs/ARCHITECTURE.md and docs/charter.md, the glossary — CONTEXT.md at the repo
+Also read docs/charter.md, the glossary — CONTEXT.md at the repo
 root, or the per-context files a root CONTEXT-MAP.md points at, touching this spec's area —
 and, following the domain-layout contract in docs/agents/domain.md, the ADRs at the location
 it declares, again only the ones touching this spec's area. Proceed without whichever of

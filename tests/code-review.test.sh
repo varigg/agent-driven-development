@@ -100,6 +100,7 @@ run_resume() { # <project-root> <state-dir> <issue> [args…]
 # An ADR directory other than docs/adr/ — the whole point of the fixture.
 CONFIGURED='ADDW_MAIN_BRANCH="master"
 ADDW_ADR_DIR="docs/decisions"
+ADDW_CONVENTIONS="CLAUDE.md docs/CONVENTIONS.md"
 '
 project="$(new_project configured "$CONFIGURED")"
 state="$work/state-configured"
@@ -120,6 +121,12 @@ assert_contains "$buf" "A ticket body." \
   "start: the buffer still carries the ticket body"
 assert_contains "$(cat "$TRACKER_LOG")" "body 12" \
   "start: the ticket is read through the tracker layer"
+# The conventions sources travel the same way (ADR 0016): each listed file by
+# name, for the reviewer to read whole.
+assert_contains "$buf" '- `CLAUDE.md`' \
+  "start: the buffer lists the first conventions source"
+assert_contains "$buf" '- `docs/CONVENTIONS.md`' \
+  "start: the buffer lists the second conventions source"
 
 # Resume rebuilds the buffer from scratch, so it must interpolate too — a
 # reviewer that saw the directory on turn 1 and lost it on turn 2 is the same
@@ -132,6 +139,8 @@ assert_contains "$buf" "docs/decisions" \
   "resume: the buffer names the configured ADR directory"
 assert_not_contains "$buf" "docs/adr" \
   "resume: the buffer names no hardcoded ADR directory"
+assert_contains "$buf" '- `docs/CONVENTIONS.md`' \
+  "resume: the buffer lists the conventions sources"
 
 # --- no directory configured: say so, never guess --------------------------
 
@@ -148,6 +157,10 @@ assert_contains "$buf" "ADDW_ADR_DIR" \
   "no ADR dir: the buffer names the key whose absence disabled the check"
 assert_contains "$buf" "not performed" \
   "no ADR dir: the reviewer reports the item unperformed rather than passing it"
+# The unconfigured fixture lacks ADDW_CONVENTIONS too: same policy — the
+# review runs, and the conventions items are reported as not performed.
+assert_contains "$buf" "Conventions sources: none. \`ADDW_CONVENTIONS\` is absent" \
+  "no conventions key: the buffer says the key is absent"
 
 # An exported value must not stand in for an absent key: a session that happens
 # to carry ADDW_ADR_DIR from elsewhere would otherwise hand the reviewer some
@@ -207,5 +220,25 @@ assert_contains "$checklist" "Only when the diff touches a write-once artifact" 
 implement_md="$(cat "$REPO/skills/addw-implement/SKILL.md")"
 assert_contains "$implement_md" 'ADR `Gate`' \
   "addw-implement: Step 6 obliges the caller to carry an ADR Gate into the instruction block"
+
+
+# --- conventions sources: absent vs deliberately empty -----------------------
+# Same policy as the ADR directory: doctor fails an install missing the key,
+# and the review still runs — the conventions items are reported, never passed
+# quietly. An absent key is "not performed"; an explicit empty value is the
+# project's declared choice to have no rules.
+
+project="$(new_project norules 'ADDW_MAIN_BRANCH="master"
+ADDW_ADR_DIR="docs/decisions"
+ADDW_CONVENTIONS=
+')"
+state="$work/state-norules"
+out="$(run_start "$project" "$state" 14 2>&1)" \
+  || fail "start.sh (empty conventions): exited non-zero: $out"
+buf="$(cat "$state/issue-14.context.md")"
+assert_contains "$buf" "Conventions sources: none — the project declares no rules" \
+  "empty conventions: the buffer states the declared choice"
+assert_contains "$buf" "without a conventions check" \
+  "empty conventions: the reviewer is told to say the check did not run"
 
 echo "code-review: ADR directory from configuration, on start and resume; Gate in the instruction block"

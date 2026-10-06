@@ -199,10 +199,20 @@ reading the parent spec, run
 `bash .claude/skills/lib/tracker/tracker.sh approval-drift <parent>`. If it reports drift,
 surface it to the human before building — the tickets may descend from content the spec
 reviewer never saw. `no approval hash recorded` needs no action; it identifies a pre-feature
-approval. Then read `docs/ARCHITECTURE.md`, the glossary — `CONTEXT.md` at the repo root, or
+approval. Then read the glossary — `CONTEXT.md` at the repo root, or
 the per-context files a root `CONTEXT-MAP.md` points at, fixed to Matt's own convention and
 never project-declared (ADR 0014) — and the ADRs at the location the domain-layout contract
 (`docs/agents/domain.md`) declares. Never hardcode the ADR path.
+
+Resolve the project's rule files now, though they are read at self-review (Step 6):
+
+```bash
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_CONVENTIONS || echo "(exit $?)")"
+```
+
+Unset means the key is **absent**: stop and tell the human to list the project's rule files
+in `ADDW_CONVENTIONS`, or set `ADDW_CONVENTIONS=` for none — doctor fails the install until
+they do. An empty value is the project's declared choice of no rules (ADR 0016).
 
 ### Step 5: Frozen Contract Tests
 
@@ -257,9 +267,10 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
   you re-run the command outside the sandbox — sandbox hangs are usually sandbox artifacts,
   not defects, and one filed as a ticket sends a human chasing the sandbox.
 
-Either way, **read the full diff yourself** afterwards against the ticket, ARCHITECTURE.md
-patterns, and project conventions. What happens to a problem depends on whether the ticket
-covers it:
+Either way, **read the full diff yourself** afterwards against the ticket and the project's
+conventions: every file listed in `ADDW_CONVENTIONS`, each read whole. With the key empty
+there are none to check against — say in the PR body that self-review ran without a
+conventions check. What happens to a problem depends on whether the ticket covers it:
 
 - **In scope** — a finding against the ticket's own Deliverable: fix it in-branch yourself,
   never ping-pong fixes back to the adapter.
@@ -296,7 +307,7 @@ human review). A skip is not free: it is **disclosed in the PR body**, with the 
 ### Step 8: Doc Impact
 
 If this ticket changed documented design, update the affected living-doc passages **now** —
-ARCHITECTURE.md, the charter, an ADR — so the reviewed diff carries them and the docs are
+a conventions file, the charter, an ADR — so the reviewed diff carries them and the docs are
 reviewed alongside the code that changed them. A new decision gets an ADR from the project's
 template, with the ticket or PR as its Origin; use `.claude/skills/lib/docs/next-adr-number.sh`
 to get its number.
