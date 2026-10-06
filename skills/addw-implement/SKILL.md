@@ -229,7 +229,7 @@ mismatch surfaces later, you fix the test yourself and say why in the PR body. W
 the critical-path floor skips this step; its tests are authored in Step 9. Freezing is an
 agent discipline against implementer drift, not a human gate: test code receives **no
 pre-Boundary approval** — PR review is where tests are judged, like every other part of the
-diff (ADR 0005).
+diff (ADR 0017).
 
 ### Step 6: Implementation
 
@@ -281,7 +281,7 @@ conventions check. What happens to a problem depends on whether the ticket cover
   bash .claude/skills/lib/tracker/tracker.sh create "<conventional subject>" <body-file> backlog
   ```
 
-  `backlog` because frontier entry is a spending decision that stays human (ADR 0005
+  `backlog` because frontier entry is a spending decision that stays human (ADR 0017
   gate 3) and the PR ships one Deliverable (ADR 0006). Deliberately no merge-graduation
   via the PR body naming the filing: a mid-implementation discovery has no prior
   authorizing act, unlike the hotfix follow-up — graduation is an explicit human label
