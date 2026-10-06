@@ -256,8 +256,10 @@ lives inside `skills/` rather than at the repo root.
   silently diverge, and a Python reader, a new runtime dependency for a job
   this small.
   `ADDW_CONVENTIONS` is the second key standing on the `KEY=`-versus-absent
-  distinction, after the recipes, and copies their grammar: absent is a gap
-  (doctor FAILs, normative readers refuse), and an explicit empty value is a
+  distinction, after the recipes, and copies their grammar: absent is a gap —
+  doctor FAILs, implement and hotfix refuse to start, and code review runs
+  but reports its convention items as not performed, the same policy it
+  applies to a missing `ADDW_ADR_DIR` — and an explicit empty value is a
   project with no rules, where review skips the conventions check and says
   so. Its value is a list of files — single-quoted, space-separated, read
   whole by every normative reader (ADR 0016). Paths containing spaces are
