@@ -1,6 +1,6 @@
 ---
 name: addw-maintain
-description: Periodic maintenance audit - sweep living-docs drift, coverage debt, and dependency health; record findings, triage fixes
+description: Periodic maintenance audit - sweep living docs for retirement and dead links, coverage debt, and dependency health; record findings, triage fixes
 disable-model-invocation: true
 argument-hint: "optional: which sweeps to run (default: all three)"
 ---
@@ -11,7 +11,7 @@ You are now in **maintenance mode**.
 
 **Audit and triage — not repair.** This skill sweeps the project, records what it finds, applies only trivial mechanical fixes, and routes everything substantive to the tracker as issues. It never implements big refactors itself — that would bypass exactly the ticket-scoped review gates (codex loop, human PR review) that make the workflow trustworthy.
 
-This audit covers what the rest of the toolchain doesn't: the living docs, the coverage-debt ledger, and dependencies. Code health belongs to `improve-codebase-architecture` and tracker hygiene to `triage` (Matt Pocock's skills) — don't duplicate them here.
+This audit covers what the rest of the toolchain doesn't: documents the tree has moved past, dead pointers, the coverage-debt ledger, and dependencies. Code health belongs to `improve-codebase-architecture` and tracker hygiene to `triage` (Matt Pocock's skills) — don't duplicate them here.
 
 Maintenance: $ARGUMENTS
 
@@ -21,9 +21,10 @@ audit says so when invoking.
 
 ## Prerequisites - Read First
 
-1. @docs/charter.md - Stable intent
-2. The ADRs — at the location the domain-layout contract (`docs/agents/domain.md`) declares — and the glossary: `CONTEXT.md` at the repo root, or the per-context files a root `CONTEXT-MAP.md` points at. The glossary's location is fixed to Matt's own convention, never project-declared (ADR 0014); only the ADR directory moves.
-3. Prior audits' findings live on the tracker as issues — check the open issues earlier
+1. The ADRs, at the location the domain-layout contract (`docs/agents/domain.md`)
+   declares, and any proposal documents the project keeps: these are what Sweep A's
+   retirement check reads.
+2. Prior audits' findings live on the tracker as issues — check the open issues earlier
    audits filed via `bash .claude/skills/lib/tracker/tracker.sh snapshot` (the
    `backlog`-labeled ones and any still-open retirement tickets)
 
@@ -33,70 +34,23 @@ audit says so when invoking.
 
 ### Sweep A: Docs Drift
 
-Scope: the living docs — the charter, the ADRs, the glossary, the conventions sources — plus the process files (`.claude/skills/`).
+Two checks, and only two: both find something an install can act on through ADDW's own
+tools (ADR 0018). Prose in a project's own docs is the project's to police, and a defect in
+`.claude/skills/` is a **process finding** (Step 3), never a Sweep A target.
 
-**Vocabulary**
-
-- **Vocabulary agrees with the active ADRs.** Read the ADRs whose `Status` is
-  `active` and check the living docs — process files included — for terms their
-  decisions replaced. The superseded ADRs are deliberately *not* the input: they
-  have left the tree, and fetching one back would read a document of stale
-  present-tense claims into the one session auditing the tree for exactly that.
-  Every hit must be a dated record, an explicit negation, or a standing lesson.
-- Living docs describe only current design — flag anything narrating history outside dated records (CHANGELOG.md, ADRs, and incident notes are exempt: their date is part of their meaning; never retro-edit a merged one).
-- A rename pass is **prose only**. Identifiers, script names, and paths are
-  code changes — file them as tracker issues, don't do them here.
-- Verify a rename by listing what survived, never by trusting the edit.
-  Multi-word protections fail silently when the phrase wraps a line, and a
-  blanket substitution reads plausibly while meaning something new.
-
-**Structure & claims**
-
-- **Link liveness.** Follow the living docs' pointers and flag any whose
-  target no longer resolves — with one standing exemption: **ADR Origin
-  lines are never flagged.** Origin citations are historical provenance,
-  dated records expected to outlive their targets; a dead origin link is
-  correct history, not drift.
-- **Line-scoped pointers** (`file.md:94-95`) drift the moment the target is
-  edited, and read as precise while pointing at nothing. Replace with a
-  named section or entry.
-- **A document that summarizes its own body will drift out of agreement with
-  it.** Header counts, status preambles, and "current state" summaries
-  restating what the sections below already say get updated in one place and
-  not the other, and the file then contradicts itself while both halves look
-  authoritative. Report the duplicated structure — reconciling the two numbers
-  and leaving the arrangement in place only resets the clock.
-- **A document must not restate a fact it has itself delegated.** Where a doc
-  names another as authoritative for some topic, any figure, path, or count it
-  then states on that same topic is a second copy nothing keeps in sync — and
-  the two diverge silently while both read as current. Check this by following
-  the document's own pointers and looking for overlap, not by judging
-  importance. The same applies to facts owned by the operator's machine rather
-  than the project — addresses, hostnames, local paths, hardware — which no
-  repository can keep true.
-- **A procedure that has been performed and cannot be performed again is
-  spent.** Runbooks accrete one-time migrations, resets, and cutovers that
-  keep reading as legitimate reference long after the fact — a description of
-  a completed action does not look stale the way a description of a retired
-  mechanism does. Delete the steps; keep only what they taught, as a lesson or
-  a warning.
-- **A document untrue *in whole*** — a design the tree moved past, a proposal
-  whose implementation landed elsewhere, an ADR something has superseded — is
-  retired rather than corrected. The test is whether a reader can act on it: a
-  document whose reader must diff it against something else to learn which half
-  still holds is one of these. Do not delete, edit or archive it here; file it
-  under **Retirement filing** in Step 3.
-- Accretion has a cheap measurement:
-  `bash .claude/skills/lib/docs/check-doc-accretion.sh <file>...`
-  counts a document's version references against its copy at the previous tag.
-  A count climbing release over release means the document is narrating its own
-  history. Point it at every runbook.
-- **Design records are not work logs.** When auditing an ADR: an alternative
-  earns its place only if a competent reader would independently propose it
-  and act on it; evidence earns its place only if the decision would change
-  when the evidence changes. Counts, filenames, and dated verifications
-  belong in the work log. Options invented to frame a decision are not
-  design history.
+- **Retirement.** An ADR or proposal untrue *in whole* — a design the tree moved past, a
+  proposal whose implementation landed elsewhere, an ADR something has superseded — is
+  retired rather than corrected. The test is whether a reader can act on it: a document
+  whose reader must diff it against something else to learn which half still holds is one
+  of these. Do not delete, edit or archive it here; file it under **Retirement filing** in
+  Step 3.
+- **Link liveness.** Follow the pointers in the charter, the ADRs, any proposals, the
+  glossary and the conventions sources (the files `ADDW_CONVENTIONS` lists), and flag
+  any whose target no longer resolves — with one standing exemption: **ADR Origin lines are never flagged.** Origin citations
+  are historical provenance, dated records expected to outlive their targets; a dead
+  origin link is correct history, not drift. A pointer that resolves but names line
+  numbers (`file.md:94-95`) is flagged too: it drifts the moment the target is edited and
+  reads as precise while pointing at nothing. Replace it with a named section or entry.
 
 ### Sweep B: Coverage Debt
 

@@ -51,3 +51,8 @@ living docs.>
   forced it, or the literal `design session` when the decision predates any
   tracker artifact. Origins are never backfilled and are exempt from
   dead-link checking — they are expected to outlive what they cite.
+- **An ADR is a design record, not a work log.** An alternative earns its
+  place only if a competent reader would independently propose it and act on
+  it; options invented to frame a decision are not design history. Evidence
+  earns its place only if the decision would change when the evidence changed.
+  Counts, filenames and dated verifications belong in the work log.

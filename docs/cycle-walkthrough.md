@@ -213,7 +213,7 @@ listing also surfaces complete specs so you notice at your next session
    (§ *Step 5: The Post-Merge Tail*). It closes nothing. It is re-runnable: each step skips what
    is already done.
 
-5. **A verification sweep** over the living docs — vocabulary, accretion, charter fit — as a
+5. **A verification sweep** over the living docs — retirement, charter fit — as a
    backstop, not a bulk rewrite (§ *Step 6: Verification Sweep*). Reconciliation is small
    here precisely because Phase 4 step 6 already did it per ticket.
 
@@ -224,13 +224,13 @@ listing also surfaces complete specs so you notice at your next session
 Not part of the cycle, but reachable from it:
 
 - **`addw-maintain`** — the periodic audit, on cadence rather than as a pipeline phase. Three
-  sweeps (living-docs drift, coverage debt, dependencies), all run by default with no opening
+  sweeps (docs drift, coverage debt, dependencies), all run by default with no opening
   ask — the invocation's arguments are what narrows scope. Substantive findings are
   never fixed in place but filed as tracker issues (§ *Step 3: Triage & Apply*), and the
-  audit itself ships as a PR (§ *Step 4: Ship the Audit*). The docs sweep also detects
-  documents untrue in whole; retirement filings land as `backlog` tickets carrying their
-  recipe, and the merge of the audit PR whose record lists them graduates them
-  (§ *Step 3: Triage & Apply*, ADR 0007).
+  audit itself ships as a PR (§ *Step 4: Ship the Audit*). The docs sweep runs two checks
+  only, dead pointers and documents untrue in whole (ADR 0018); retirement filings land as
+  `backlog` tickets carrying their recipe, and the merge of the audit PR whose record
+  lists them graduates them (§ *Step 3: Triage & Apply*, ADR 0007).
 - **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
   immediately (§ *Step 7: Open the Expedited PR*). Even an emergency rides a PR a human
   merges — there is no direct-push path to `main` (ADR 0017). The expedited path reorders

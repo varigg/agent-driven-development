@@ -341,19 +341,9 @@ lives inside `skills/` rather than at the repo root.
 
 - `docs/` — living-document probes and the one operation performed on a living
   document, shared because more than one skill reaches them: the release
-  runs the audit-cadence probe, the maintenance audit the accretion probe,
-  and both file retirements whose recipe is the archive operation.
-  - `check-doc-accretion.sh` — version density is the signal a living design
-    document is narrating its own history: it describes the system as it is, so
-    a release rewrites the passages it affects rather than appending to them,
-    and appending is invisible to a size threshold — a document stays well
-    under budget while its overview turns into a changelog — which is why the
-    comparison is against the previous release rather than against a limit. A
-    handful of references are legitimate (the as-built statement, a dependency
-    pin, a hazard predating its fix), so the probe names what it counted and is
-    advisory, never a gate. It has no default target: the document it was
-    written for, `ARCHITECTURE.md`, retired with ADR 0016, and a probe that
-    silently measured a missing default would report on nothing.
+  runs the audit-cadence probe, implementation numbers and archives ADRs, and
+  the release and the maintenance audit both file retirements whose recipe is
+  the archive operation.
   - `audit-nudge.sh` — the maintenance-audit cadence check, so that a stack of
     releases with no audit behind it is something the flow says out loud rather
     than something the human has to remember.
