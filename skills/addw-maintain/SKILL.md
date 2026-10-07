@@ -45,12 +45,13 @@ tools (ADR 0018). Prose in a project's own docs is the project's to police, and 
   of these. Do not delete, edit or archive it here; file it under **Retirement filing** in
   Step 3.
 - **Link liveness.** Follow the pointers in the charter, the ADRs, any proposals, the
-  glossary and the conventions sources (the files `ADDW_CONVENTIONS` lists), and flag
-  any whose target no longer resolves — with one standing exemption: **ADR Origin lines are never flagged.** Origin citations
-  are historical provenance, dated records expected to outlive their targets; a dead
-  origin link is correct history, not drift. A pointer that resolves but names line
-  numbers (`file.md:94-95`) is flagged too: it drifts the moment the target is edited and
-  reads as precise while pointing at nothing. Replace it with a named section or entry.
+  glossary and the conventions sources (the files `ADDW_CONVENTIONS` lists), and flag any
+  whose target no longer resolves — with one standing exemption: **ADR Origin lines are
+  never flagged.** Origin citations are historical provenance, dated records expected to
+  outlive their targets; a dead origin link is correct history, not drift. A pointer that
+  resolves but names line numbers (`file.md:94-95`) is flagged too: it drifts the moment
+  the target is edited and reads as precise while pointing at nothing. Replace it with a
+  named section or entry.
 
 ### Sweep B: Coverage Debt
 

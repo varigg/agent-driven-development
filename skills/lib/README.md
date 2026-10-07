@@ -339,8 +339,8 @@ lives inside `skills/` rather than at the repo root.
   does not contain its own notes. That lookup is also what catches a version
   argument disagreeing with the one the release PR committed.
 
-- `docs/` — living-document probes and the one operation performed on a living
-  document, shared because more than one skill reaches them: the release
+- `docs/` — a living-document probe and the operations performed on living
+  documents, shared because more than one skill reaches them: the release
   runs the audit-cadence probe, implementation numbers and archives ADRs, and
   the release and the maintenance audit both file retirements whose recipe is
   the archive operation.
