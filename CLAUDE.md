@@ -47,6 +47,27 @@ merge of a PR whose body names the filing; ADR 0007). They carry no `## Parent`.
   owns its usage block, flags, and exit codes. A header explaining why the
   design is what it is has started a second copy of a document it delegated to.
 
+## Prose conventions
+
+ADDW's shipped audit does not police prose (ADR 0018), so these hold here, at the
+PR that would introduce the drift.
+
+- **A living doc describes only current design.** No narration of how it got here;
+  git history and dated records are the archive. Dated records themselves (ADRs,
+  `CHANGELOG.md`, `UPGRADING.md` history) are exempt from this rule alone.
+- **No document summarizes its own body.** A header count or "current state" preamble
+  restating the sections below gets updated in one place and not the other.
+- **No document restates a fact it delegates.** Where a doc names another as
+  authoritative for a topic, it states no figure, path or count on that topic itself.
+  Facts owned by the operator's machine (addresses, hostnames, local paths, hardware)
+  stay out of the repo entirely.
+- **A PR that lands an ADR sweeps the whole tree, skills included, for the vocabulary
+  that ADR replaces**, and fixes the hits in that PR. A hit may remain only as a dated
+  record, an explicit negation or a standing lesson. The rename is prose only:
+  identifiers, script names and paths are code changes with tickets of their own. Verify
+  it by listing what survived, never by trusting the edit, since a phrase that wraps a
+  line escapes a blanket substitution.
+
 ## Dogfood conventions
 
 - **Ticket worktrees live under `.claude/worktrees/<issue>-<slug>`.** The implement

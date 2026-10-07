@@ -683,3 +683,12 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 The migration has landed when doctor reports `HEALTHY` **with no `WARN`** line.
 A `WARN` naming `docs/ARCHITECTURE.md` means step 3 or 4 was skipped: the
 document survives but no skill reads it.
+
+## Within schema 13
+
+`skills/lib/docs/check-doc-accretion.sh` is gone (2026-10-07, #224). ADR 0018 limits
+the maintenance audit's docs sweep to retirement and link liveness, so the probe lost
+its last caller; the docs sweep no longer checks vocabulary, narration or self-summary.
+Nothing migrates for an install that only ran the probe through `addw-maintain`. If
+your own scripts or docs call it, the replacing skills copy no longer carries it: keep
+your own copy from the previous release, or drop the call.
