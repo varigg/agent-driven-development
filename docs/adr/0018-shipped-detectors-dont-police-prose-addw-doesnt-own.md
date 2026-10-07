@@ -38,6 +38,12 @@ the PR that would introduce the drift.
   against active ADRs, history narration, self-summary and restated delegated facts.
   Vocabulary is enforced when an ADR lands: the PR that merges an ADR sweeps the whole tree
   for the vocabulary that ADR replaces.
+- **ADR 0003's vocabulary check moves here.** ADR 0003 reframed the shipped sweep as a
+  positive check that living-doc vocabulary agrees with the active ADRs. That positive
+  check leaves the shipped sweep and becomes this repo's ADR-landing rule above. ADR
+  0003's other consequence still holds unchanged: the author of a superseding ADR sweeps
+  the retired vocabulary in the PR that supersedes. Its decision and Gate are untouched,
+  so it stays active.
 - **Cut:** the spent-procedure check and the accretion probe. The work-log tests for design
   records move into the ADR template's rules.
 
