@@ -17,11 +17,12 @@
 #      and validated only when set: half a pair, a named lockfile that is not
 #      there, or a pair beside an empty ADDW_VERSION_FILE fails; with both
 #      keys absent, doctor says nothing about it at all.
-#   1b. Conventions sources (ADR 0016). ADDW_CONVENTIONS copies the recipe
-#      grammar — absent fails, explicit empty is a project with no rules — and
-#      every listed path must be a file. A docs/ARCHITECTURE.md the key does
-#      not list is a WARN: printed, exit code unchanged.
-#   2. Docs contract. The living docs, the ADR template at the location
+#   1b. Declared sources (ADR 0016, ADR 0019). ADDW_CONVENTIONS and
+#      ADDW_CHARTER copy the recipe grammar — absent fails, explicit empty is a
+#      project that declares none — and every listed path must be a file. A
+#      file ADDW no longer owns (TESTING.md, an unlisted ARCHITECTURE.md) draws
+#      no line at all.
+#   2. Docs contract. CHANGELOG.md, the ADR template at the location
 #      ADDW_ADR_TEMPLATE names — the shipped one under
 #      `.claude/skills/lib/templates/` by default, a project's own when it
 #      declares one, and never a path derived from ADDW_ADR_DIR or hardcoded
@@ -113,13 +114,13 @@ mkdir -p "$BASE/project" "$BASE/home"
 
 (
   cd "$BASE/project"
-  mkdir -p docs/agents docs/testing docs/adr
+  mkdir -p docs/agents docs/adr
 
   # Quoted heredoc: a config is exactly where a recipe carrying `$` or a
   # backtick belongs, and an expanding one would corrupt it silently. The one
   # interpolated value is appended instead.
   cat > docs/addw.env <<'ENV'
-ADDW_SCHEMA=13
+ADDW_SCHEMA=14
 ADDW_PROJECT_NAME="fixture"
 ADDW_VERSION_FILE="package.json"
 ADDW_MAIN_BRANCH="main"
@@ -129,6 +130,7 @@ ADDW_RECIPE_LINT="true"
 ADDW_RECIPE_TYPECHECK=""
 ADDW_RECIPE_TESTS_AFFECTED="true"
 ADDW_CONVENTIONS='CLAUDE.md docs/CONVENTIONS.md'
+ADDW_CHARTER='README.md docs/charter.md'
 ENV
   printf 'ADDW_ADR_TEMPLATE="%s"\n' "$SHIPPED_TEMPLATE" >> docs/addw.env
 
@@ -138,11 +140,10 @@ ENV
     > docs/agents/domain.md
 
   printf '# Conventions\n' > docs/CONVENTIONS.md
+  printf '# Fixture\n\nWhy this project exists.\n' > README.md
   printf '# Charter\n' > docs/charter.md
   printf '# Changelog\n' > CHANGELOG.md
   printf '{ "version": "0.1.0" }\n' > package.json
-  printf '# Testing Guidelines\n\n## Verification Recipes\n\n## Integration / E2E Impact Rules\n' \
-    > docs/testing/TESTING.md
 
   # The real shipped template, not a paraphrase of it. Copying is what makes
   # the healthy case assert that the file this repo actually ships satisfies
@@ -334,19 +335,60 @@ assert_eq 1 "$RUN_STATUS" "conventions: a listed directory is unhealthy"
 assert_contains "$RUN_OUT" "FAIL: conventions source rules is not a file" \
   "conventions: the failing line says a directory is not a source"
 
-# A leftover ARCHITECTURE.md that no reader lists is the unfinished schema-13
-# migration: a WARN, which prints but never changes the exit code.
-d="$(case_dir strayarch)"
-printf '# Architecture\n' > "$d/project/docs/ARCHITECTURE.md"
+# --- the charter sources (ADR 0019) ---------------------------------------
+# ADDW_CHARTER lists the files intent readers read whole, with
+# ADDW_CONVENTIONS' grammar. The healthy fixture lists two, and passed above.
+d="$(case_dir nocharter)"
+grep -v '^ADDW_CHARTER=' "$d/project/docs/addw.env" \
+  > "$d/project/docs/addw.env.new"
+mv "$d/project/docs/addw.env.new" "$d/project/docs/addw.env"
 run "$d"
-assert_eq 0 "$RUN_STATUS" "conventions: an unlisted ARCHITECTURE.md leaves the exit code alone"
-assert_contains "$RUN_OUT" "WARN: docs/ARCHITECTURE.md exists but is not listed in ADDW_CONVENTIONS" \
-  "conventions: an unlisted ARCHITECTURE.md warns"
-assert_contains "$RUN_OUT" "HEALTHY" "conventions: a WARN does not make an install unhealthy"
+assert_eq 1 "$RUN_STATUS" "charter: an absent ADDW_CHARTER is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: ADDW_CHARTER absent from docs/addw.env" \
+  "charter: the failing line names the absent key"
+run "$d" ADDW_CHARTER="README.md"
+assert_eq 1 "$RUN_STATUS" "charter: an exported value never substitutes for the key"
 
-sed -i "s|^ADDW_CONVENTIONS=.*|ADDW_CONVENTIONS='docs/ARCHITECTURE.md'|" "$d/project/docs/addw.env"
+d="$(case_dir emptycharter)"
+sed -i 's|^ADDW_CHARTER=.*|ADDW_CHARTER=|' "$d/project/docs/addw.env"
+rm "$d/project/docs/charter.md"
 run "$d"
-assert_not_contains "$RUN_OUT" "WARN:" "conventions: a listed ARCHITECTURE.md is a source, not a stray"
+assert_eq 0 "$RUN_STATUS" "charter: an explicit empty value is healthy without docs/charter.md"
+assert_contains "$RUN_OUT" "ADDW_CHARTER defined (empty: no declared intent" \
+  "charter: an empty value reads as a considered choice, not a silent pass"
+
+d="$(case_dir missingcharter)"
+rm "$d/project/docs/charter.md"
+run "$d"
+assert_eq 1 "$RUN_STATUS" "charter: a listed file that is missing is unhealthy"
+assert_contains "$RUN_OUT" "FAIL: charter source docs/charter.md missing" \
+  "charter: the failing line names the missing file"
+assert_contains "$RUN_OUT" "OK:   charter source README.md exists" \
+  "charter: each listed file is checked on its own line"
+
+# The charter path is declared, never fixed: an install listing only its README
+# needs no docs/charter.md.
+d="$(case_dir readmecharter)"
+sed -i "s|^ADDW_CHARTER=.*|ADDW_CHARTER='README.md'|" "$d/project/docs/addw.env"
+rm "$d/project/docs/charter.md"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "charter: a charter declared elsewhere needs no docs/charter.md"
+
+# --- files ADDW no longer owns (ADR 0019) ----------------------------------
+# A leftover TESTING.md, or an ARCHITECTURE.md nothing lists, may be kept for
+# the project's own reasons. Doctor checks only what ADDW owns or a key lists,
+# so neither draws a line of any kind.
+d="$(case_dir unowned)"
+printf '# Architecture\n' > "$d/project/docs/ARCHITECTURE.md"
+mkdir -p "$d/project/docs/testing"
+printf '# Testing\n' > "$d/project/docs/testing/TESTING.md"
+run "$d"
+assert_eq 0 "$RUN_STATUS" "unowned: leftover TESTING.md and ARCHITECTURE.md stay healthy"
+assert_not_contains "$RUN_OUT" "ARCHITECTURE" "unowned: an unlisted ARCHITECTURE.md draws no line"
+assert_not_contains "$RUN_OUT" "TESTING" "unowned: a leftover TESTING.md draws no line"
+assert_not_contains "$RUN_OUT" "WARN:" "unowned: doctor has no WARN level"
+
+# Nor is TESTING.md required: the healthy fixture has none and passed above.
 
 # --- the lockfile-sync pair (#126) ----------------------------------------
 

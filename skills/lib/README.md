@@ -268,6 +268,11 @@ lives inside `skills/` rather than at the repo root.
   the project, which can pick names without spaces. Files only, never
   directories, so "read whole" always means one concrete thing; `addw-init`
   expands a confirmed directory before writing the key.
+  `ADDW_CHARTER` is the third, with the same grammar and the same list form,
+  naming the files intent readers — spec review, release's charter-fit check,
+  maintenance's link sweep — read whole (ADR 0019). Absent, doctor FAILs and
+  each reader reports its intent check as not performed; empty, the project
+  declares no charter and the readers skip the check and say so.
 
 - `templates/` — shipped, project-agnostic templates that ride along with the
   wholesale skills copy. `adr.md` holds the ADR format and its authoring rules;

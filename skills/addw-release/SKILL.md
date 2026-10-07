@@ -232,10 +232,14 @@ an edit riding the release that already shipped.
   withholding a release over a documentation deletion would be disproportionate.
   Never archive or delete the document here — that is the retirement ticket's own
   PR, reviewed like any other.
-- **Charter fit** — re-read the charter and verify the release did not
-  invalidate its purpose, principles, scope, or non-goals. If it did, flag it to
-  the human: the charter changes only by their explicit decision, never as a
-  side effect of shipping.
+- **Charter fit** — re-read every file `ADDW_CHARTER` lists, each whole, and
+  verify the release did not invalidate the intent they state: purpose,
+  principles, scope, non-goals. If it did, flag it to the human: a charter
+  source changes only by their explicit decision, never as a side effect of
+  shipping, and ADDW never edits one. An absent key means the check cannot run:
+  report it as not performed, naming `ADDW_CHARTER` — doctor fails the install
+  until it is set. An empty `ADDW_CHARTER=` means the project declares no
+  charter, so skip the check and say so.
 
 Finally, the maintenance nudge:
 

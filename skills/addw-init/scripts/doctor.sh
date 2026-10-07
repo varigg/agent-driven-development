@@ -21,13 +21,10 @@ set -uo pipefail
 
 # The schema generation THESE skills expect. Structural upgrade steps in
 # UPGRADING.md end by bumping the install's ADDW_SCHEMA to match.
-EXPECTED_SCHEMA=13
+EXPECTED_SCHEMA=14
 doctor_fail=0
 
 ok() { printf 'OK:   %s\n' "$1"; }
-# A WARN prints and leaves the exit code alone: something a finished migration
-# would not leave behind, but nothing the workflow breaks on.
-warn() { printf 'WARN: %s\n' "$1"; }
 bad() {
     printf 'FAIL: %s\n' "$1"
     doctor_fail=1
@@ -62,7 +59,7 @@ config_source ADDW_SCHEMA ADDW_PROJECT_NAME ADDW_VERSION_FILE ADDW_MAIN_BRANCH \
     ADDW_RECIPE_TYPECHECK ADDW_RECIPE_TESTS_AFFECTED \
     ADDW_RECIPE_LOCKFILE_SYNC ADDW_LOCKFILE \
     ADDW_PLAN_REVIEW_SKILL ADDW_ASK_SKILL \
-    ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_CONVENTIONS
+    ADDW_IMPLEMENT_SKILL ADDW_CODE_REVIEW_SKILL ADDW_CONVENTIONS ADDW_CHARTER
 
 required_keys=(
     ADDW_SCHEMA
@@ -110,55 +107,50 @@ else
     bad "ADDW_SCHEMA=${ADDW_SCHEMA:-unset} but the installed skills expect $EXPECTED_SCHEMA — apply UPGRADING.md"
 fi
 
-# --- conventions sources (ADR 0016) -----------------------------------------
-# ADDW_CONVENTIONS names the files normative readers read whole: single-quoted,
-# space-separated, no paths with spaces. It copies the recipe grammar — absent
-# is a gap, empty is a project with no rules — and readers refuse an absent
-# key, so it fails here rather than at the first review. Files only: a
-# directory "read whole" is nothing, which is why init expands one first.
-conventions_listed=" "
-if ! declare -p ADDW_CONVENTIONS >/dev/null 2>&1; then
-    bad "ADDW_CONVENTIONS absent from docs/addw.env — list the project's rule files, or set ADDW_CONVENTIONS= for none (see UPGRADING.md)"
-elif [ -z "$ADDW_CONVENTIONS" ]; then
-    ok "ADDW_CONVENTIONS defined (empty: no project rules — review runs without a conventions check)"
-else
-    read -ra conventions_files <<< "$ADDW_CONVENTIONS"
-    for file in "${conventions_files[@]}"; do
-        conventions_listed+="$file "
-        if [ -f "$file" ]; then
-            ok "conventions source $file exists"
-        elif [ -e "$file" ]; then
-            bad "conventions source $file is not a file — list the files it holds instead"
-        else
-            bad "conventions source $file missing"
-        fi
-    done
-fi
-# The schema-13 migration either lists ARCHITECTURE.md as a source or moves
-# its normative half out and deletes it. A survivor nothing lists is that
-# migration left half-done: no reader will ever look at it again.
-if [ -f docs/ARCHITECTURE.md ] && [[ "$conventions_listed" != *" docs/ARCHITECTURE.md "* ]]; then
-    warn "docs/ARCHITECTURE.md exists but is not listed in ADDW_CONVENTIONS — no skill reads it (see UPGRADING.md)"
-fi
+# --- declared sources (ADR 0016, ADR 0019) --------------------------------
+# ADDW_CONVENTIONS names the files normative readers read whole; ADDW_CHARTER
+# names the files intent readers read whole. Both are single-quoted,
+# space-separated, no paths with spaces, and copy the recipe grammar — absent
+# is a gap, empty is a project that deliberately declares none — and readers
+# refuse an absent key, so it fails here rather than at the first review.
+# Files only: a directory "read whole" is nothing, which is why init expands
+# one first.
+# check_sources <key> <noun> <empty meaning>
+check_sources() {
+    local key=$1 noun=$2 empty_meaning=$3 file
+    local -a files
+    if ! declare -p "$key" >/dev/null 2>&1; then
+        bad "$key absent from docs/addw.env — list the project's $noun files, or set $key= for none (see UPGRADING.md)"
+    elif [ -z "${!key}" ]; then
+        ok "$key defined (empty: $empty_meaning)"
+    else
+        read -ra files <<< "${!key}"
+        for file in "${files[@]}"; do
+            if [ -f "$file" ]; then
+                ok "$noun source $file exists"
+            elif [ -e "$file" ]; then
+                bad "$noun source $file is not a file — list the files it holds instead"
+            else
+                bad "$noun source $file missing"
+            fi
+        done
+    fi
+}
+check_sources ADDW_CONVENTIONS conventions \
+    "no project rules — review runs without a conventions check"
+check_sources ADDW_CHARTER charter \
+    "no declared intent — intent checks run without a charter"
 
 # --- docs contract ---------------------------------------------------------
-# No bare-directory existence check: git tracks files, not directories, so a
-# directory ADDW creates but never writes into (the ADR directory) exists only
-# in the working copy that ran init and reports a false FAIL on the next
-# clone. The testing directory needs no separate check either — it is proven
-# by the assertion on its TESTING.md below, which is a committed file.
-doc_files=(
-    docs/charter.md
-    docs/testing/TESTING.md
-    CHANGELOG.md
-)
-for file in "${doc_files[@]}"; do
-    if [ -f "$file" ]; then
-        ok "$file exists"
-    else
-        bad "$file missing"
-    fi
-done
+# Only files ADDW owns or a key lists are checked (ADR 0019). No bare-directory
+# existence check: git tracks files, not directories, so a directory ADDW
+# creates but never writes into (the ADR directory) exists only in the working
+# copy that ran init and reports a false FAIL on the next clone.
+if [ -f CHANGELOG.md ]; then
+    ok "CHANGELOG.md exists"
+else
+    bad "CHANGELOG.md missing"
+fi
 
 # --- retired artifacts -----------------------------------------------------
 # Only the removal the migration actually mandates is checked. The backlog
@@ -222,19 +214,6 @@ if [ -n "$adr_template" ]; then
     fi
 else
     bad "ADDW_ADR_TEMPLATE is unset, so neither the ADR template nor the project-instructions override could be checked"
-fi
-
-if [ -f docs/testing/TESTING.md ]; then
-    if grep -q "Verification Recipes" docs/testing/TESTING.md; then
-        ok "TESTING.md has a Verification Recipes section"
-    else
-        bad "TESTING.md lacks a Verification Recipes section"
-    fi
-    if grep -qi "Impact Rules" docs/testing/TESTING.md; then
-        ok "TESTING.md has Integration/E2E Impact Rules"
-    else
-        bad "TESTING.md lacks an Integration/E2E Impact Rules section"
-    fi
 fi
 
 if [ -n "$adr_template" ]; then

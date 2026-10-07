@@ -3,7 +3,10 @@ implementation tickets. You've shipped production systems and know the differenc
 real blocker and a theoretical concern.
 
 The spec is a GitHub issue; its current body is mirrored at `{{TARGET}}`. Read it fully.
-Also read docs/charter.md, the glossary — CONTEXT.md at the repo
+Also read the project's charter — every file the ADDW_CHARTER key in docs/addw.env lists,
+each whole. An empty value means the project declares none: say the review ran without a
+charter. An absent key means the charter check cannot be performed: do not guess at intent
+files, and say so, naming ADDW_CHARTER. Then read the glossary — CONTEXT.md at the repo
 root, or the per-context files a root CONTEXT-MAP.md points at, touching this spec's area —
 and, following the domain-layout contract in docs/agents/domain.md, the ADRs at the location
 it declares, again only the ones touching this spec's area. Proceed without whichever of

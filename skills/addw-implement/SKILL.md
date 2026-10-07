@@ -220,7 +220,7 @@ If the ticket touches the critical-path floor — auth, deletion, persistence, c
 external request shape — write those tests **now**, before any implementation:
 
 1. Author behavioral tests from the ticket's acceptance criteria, following the project's
-   testing guide.
+   testing rules in its conventions sources.
 2. Confirm they fail for the right reason.
 3. Commit them with explicit paths: `test: add contract tests for <ticket>`.
 
@@ -307,8 +307,8 @@ human review). A skip is not free: it is **disclosed in the PR body**, with the 
 ### Step 8: Doc Impact
 
 If this ticket changed documented design, update the affected living-doc passages **now** —
-a conventions file, the charter, an ADR — so the reviewed diff carries them and the docs are
-reviewed alongside the code that changed them. A new decision gets an ADR from the project's
+a conventions file, a charter source `ADDW_CHARTER` lists, an ADR — so the reviewed diff
+carries them and the docs are reviewed alongside the code that changed them. A new decision gets an ADR from the project's
 template, with the ticket or PR as its Origin; use `.claude/skills/lib/docs/next-adr-number.sh`
 to get its number.
 
