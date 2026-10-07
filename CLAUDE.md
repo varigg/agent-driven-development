@@ -50,11 +50,11 @@ merge of a PR whose body names the filing; ADR 0007). They carry no `## Parent`.
 ## Prose conventions
 
 ADDW's shipped audit does not police prose (ADR 0018), so these hold here, at the
-PR that would introduce the drift. Dated records — ADRs, `CHANGELOG.md`, `UPGRADING.md`
-history — are exempt from the first three.
+PR that would introduce the drift.
 
 - **A living doc describes only current design.** No narration of how it got here;
-  git history and dated records are the archive.
+  git history and dated records are the archive. Dated records themselves (ADRs,
+  `CHANGELOG.md`, `UPGRADING.md` history) are exempt from this rule alone.
 - **No document summarizes its own body.** A header count or "current state" preamble
   restating the sections below gets updated in one place and not the other.
 - **No document restates a fact it delegates.** Where a doc names another as

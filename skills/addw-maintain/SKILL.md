@@ -1,6 +1,6 @@
 ---
 name: addw-maintain
-description: Periodic maintenance audit - sweep living docs for retirement and dead links, coverage debt, and dependency health; record findings, triage fixes
+description: Periodic maintenance audit - sweep living docs for retirement and dead or line-scoped pointers, coverage debt, and dependency health; record findings, triage fixes
 disable-model-invocation: true
 argument-hint: "optional: which sweeps to run (default: all three)"
 ---
@@ -11,7 +11,7 @@ You are now in **maintenance mode**.
 
 **Audit and triage — not repair.** This skill sweeps the project, records what it finds, applies only trivial mechanical fixes, and routes everything substantive to the tracker as issues. It never implements big refactors itself — that would bypass exactly the ticket-scoped review gates (codex loop, human PR review) that make the workflow trustworthy.
 
-This audit covers what the rest of the toolchain doesn't: documents the tree has moved past, dead pointers, the coverage-debt ledger, and dependencies. Code health belongs to `improve-codebase-architecture` and tracker hygiene to `triage` (Matt Pocock's skills) — don't duplicate them here.
+This audit covers what the rest of the toolchain doesn't: documents the tree has moved past, dead or line-scoped pointers, the coverage-debt ledger, and dependencies. Code health belongs to `improve-codebase-architecture` and tracker hygiene to `triage` (Matt Pocock's skills) — don't duplicate them here.
 
 Maintenance: $ARGUMENTS
 
