@@ -11,16 +11,12 @@ The PR merge — ADDW's single irreversibility line and its only approval gate. 
 _Avoid_: merge gate, review checkpoint
 
 **Intent Fork**:
-The only legitimate shape for an in-conversation question upstream of the Boundary: a genuine choice between options the agent cannot rank from the repo, the spec, or ADR 0005.
+The only legitimate shape for an in-conversation question upstream of the Boundary: a genuine choice between options the agent cannot rank from the repo, the spec, or ADR 0017.
 _Avoid_: approval ask, confirmation, checkpoint
 
 **Carve-out**:
-The closed, ADR-governed list of non-fork questions an agent may still ask: scrutiny reduction, and destructive or real-money actions outside the repo.
+The closed, ADR-governed list of non-fork questions an agent may still ask: destructive or real-money actions outside the repo. Nothing that drops the flow's own checks is on it (ADR 0017).
 _Avoid_: exception (unqualified), special case
-
-**Scrutiny Reduction**:
-An action that drops the flow's own checks — skipping reviews, tests, or steps the workflow normally requires. One of the two Carve-out entries.
-_Avoid_: fast path, shortcut
 
 **Backlog**:
 A ticket not yet human-graduated: an archive of proposed work awaiting the team's curation — whether it lacks design, authorization, or both. Echoes the agile product backlog.

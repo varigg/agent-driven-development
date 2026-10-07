@@ -128,7 +128,7 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    the full diff afterwards: findings against the ticket's own Deliverable are fixed
    in-branch — never ping-ponged back to the adapter — while discovered work outside the
    acceptance criteria files as a `backlog` ticket rather than riding the PR, with
-   graduation an explicit human label flip (§ *Step 6: Implementation*, ADR 0005 gate 3,
+   graduation an explicit human label flip (§ *Step 6: Implementation*, ADR 0017 gate 3,
    ADR 0006).
 
 5. **Cold pre-filter review** — a two-axis `code-review` over the branch diff, run before
@@ -233,7 +233,7 @@ Not part of the cycle, but reachable from it:
   (§ *Step 3: Triage & Apply*, ADR 0007).
 - **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
   immediately (§ *Step 7: Open the Expedited PR*). Even an emergency rides a PR a human
-  merges — there is no direct-push path to `main` (ADR 0005). The expedited path reorders
+  merges — there is no direct-push path to `main` (ADR 0017). The expedited path reorders
   scrutiny rather than reducing it: every hotfix files one `backlog` follow-up naming the
   checks it deferred — regression test, codex review, doc impact — and the PR body names
   the filing, so the human's merge graduates it to the frontier (§ *Step 6: File the
