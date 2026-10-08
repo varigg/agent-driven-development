@@ -30,7 +30,7 @@ End to end: **spec → tickets → per-ticket PR → release** — with a second
 4. **Implement, one ticket per session** — `addw-implement` wraps the loop: frozen contract tests → implementation (delegated to `codex-implement`, or driven inline with `tdd`) → deterministic gate → `codex-code-review` convergence → open the PR and stop. You review and merge on GitHub.
 5. **Release** — on demand, `addw-release` opens a release PR carrying the derived version bump and the mechanical changelog, refusing when a spec is Partial. Your merge is the confirmation; the tag and GitHub Release follow automatically.
 
-Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencies), and `codex-ask` (second opinions) — see the reference below.
+Around the cycle sit `addw-maintain` (periodic audit) and `codex-ask` (second opinions) — see the reference below.
 
 ## The living docs
 
@@ -58,7 +58,6 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 | `/addw-implement` | The per-ticket wrapper: contract tests → implement → gate → review loop → PR. Bare invocation lists the frontier. |
 | `/addw-release` | Mechanical release: derived version, generated changelog, release PR, tag + GitHub Release. Refuses when a spec is Partial; closes nothing. |
 | `/addw-maintain` | Periodic audit with three skippable sweeps: docs drift (retirement, dead or line-scoped pointers), coverage-debt triage, dependencies. Substantive findings become tracker issues; the audit itself ships as a PR. |
-| `/addw-hotfix` | Emergencies only: a gate-verified fix as an expedited PR merged immediately. Even an emergency rides a PR a human merges — no direct-push path to main. |
 | `/codex-implement` | Implementation delegated to Codex CLI in a workspace-write sandbox, with a persistent thread per target for resumable context. |
 | `/codex-code-review` | The code-review loop adapter: reviews a ticket's whole branch diff against the ticket and its spec — read-only sandbox, checklist-driven, multi-round with verdict tags. |
 | `/codex-ask` | A grounded second opinion on anything — architecture calls, debugging hypotheses. Advisory only: no verdicts, nothing gated. |

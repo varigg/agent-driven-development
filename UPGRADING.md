@@ -702,13 +702,24 @@ test-writing conventions, when the integration/E2E suite must run — are
 ordinary rules that belong with the project's other conventions sources. The
 charter becomes whatever files a new `ADDW_CHARTER` key lists, read whole by
 spec review, release's charter-fit check, and the maintenance link sweep.
-Nothing here is automated; there is no upgrade script.
+The `addw-hotfix` skill is removed (ADR 0017): an urgent fix now rides a normal
+ticket through `addw-implement`, and urgency only changes which ticket you pick
+first. Nothing here is automated; there is no upgrade script.
 
 ### 1. Replace the skills
 
 Replace `.claude/skills/` wholesale.
 
-### 2. Write `ADDW_CHARTER`
+### 2. Delete the `addw-hotfix` skill
+
+A wholesale copy adds and overwrites but does not remove, so the old skill
+survives it. Delete it by hand:
+
+```bash
+rm -r .claude/skills/addw-hotfix
+```
+
+### 3. Write `ADDW_CHARTER`
 
 The default keeps the charter init wrote:
 
@@ -725,7 +736,7 @@ project declares no charter, write the key empty — `ADDW_CHARTER=` — and the
 intent checks will say they ran without one. Do not delete the key instead: an
 absent key is a doctor FAIL.
 
-### 3. Migrate `TESTING.md`'s rules
+### 4. Migrate `TESTING.md`'s rules
 
 Have an agent read `docs/testing/TESTING.md` and pick out the entries that pass
 the admission test from schema 12 → 13: could a reviewer cite a diff as
@@ -742,7 +753,7 @@ surviving rule, you choose where it goes:
 Afterwards `TESTING.md` is the project's to keep or delete. No skill reads it,
 and doctor no longer checks it.
 
-### 4. Bump and verify
+### 5. Bump and verify
 
 ```bash
 # in docs/addw.env
