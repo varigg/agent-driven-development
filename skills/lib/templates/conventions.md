@@ -56,4 +56,4 @@ commit. Adapted from Tomas Vykruta's AGENTS.md rules.
 - **The heavier suite runs when its contract moves.** A diff that changes an
   API contract, a schema, a selector the end-to-end suite drives, or a
   cross-process boundary runs the integration/E2E suite before merge, and the
-  PR says it did. A docs-only diff skips it.
+  PR says it did.

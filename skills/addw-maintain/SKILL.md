@@ -52,12 +52,13 @@ tools (ADR 0018). Prose in a project's own docs is the project's to police, and 
   outlive their targets; a dead origin link is correct history, not drift. A pointer that
   resolves but names line numbers (`file.md:94-95`) is flagged too: it drifts the moment
   the target is edited and reads as precise while pointing at nothing. Replace it with a
-  named section or entry.
+  named section or entry. With `ADDW_CHARTER` empty there are no charter sources to
+  follow; with it absent, report the charter pointers as not checked, naming the key.
 
 ### Sweep B: Coverage Debt
 
-Triage the coverage-debt ledger (`docs/testing/COVERAGE-DEBT.md`): is each
-line still valid? Is its escape plan still right?
+Triage the coverage-debt ledger (`docs/testing/COVERAGE-DEBT.md`, absent until
+its first entry): is each line still valid? Is its escape plan still right?
 
 ### Sweep C: Dependencies
 

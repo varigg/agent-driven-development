@@ -101,7 +101,7 @@ Create the directories the skills expect to find, so the contract holds
 before anything writes into it:
 
 ```
-docs/testing/          # the coverage-debt ledger
+docs/testing/          # the coverage-debt ledger, written on its first entry
 <ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.5
 ```
 
@@ -299,8 +299,8 @@ ADDW_ADR_TEMPLATE=".claude/skills/lib/templates/adr.md"
 # single-quoted, space-separated, files only. Empty means the project declares
 # no rules, and review says it ran without a conventions check:
 ADDW_CONVENTIONS='<confirmed rule files, or empty>'
-# The project's intent files (Step 2.5), read whole by spec review, release, and
-# maintenance: same form. Empty means the project declares no charter, and the
+# The project's intent files (Step 2.5), read whole by every intent reader:
+# same form. Empty means the project declares no charter, and the
 # intent checks say they ran without one:
 ADDW_CHARTER='<confirmed intent files, or empty>'
 # Testing-gate recipes, from the commands exploration found. All three keys
