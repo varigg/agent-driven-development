@@ -44,19 +44,21 @@ tools (ADR 0018). Prose in a project's own docs is the project's to police, and 
   whose reader must diff it against something else to learn which half still holds is one
   of these. Do not delete, edit or archive it here; file it under **Retirement filing** in
   Step 3.
-- **Link liveness.** Follow the pointers in the charter, the ADRs, any proposals, the
-  glossary and the conventions sources (the files `ADDW_CONVENTIONS` lists), and flag any
+- **Link liveness.** Follow the pointers in the charter sources (the files `ADDW_CHARTER`
+  lists), the ADRs, any proposals, the glossary and the conventions sources (the files
+  `ADDW_CONVENTIONS` lists), and flag any
   whose target no longer resolves — with one standing exemption: **ADR Origin lines are
   never flagged.** Origin citations are historical provenance, dated records expected to
   outlive their targets; a dead origin link is correct history, not drift. A pointer that
   resolves but names line numbers (`file.md:94-95`) is flagged too: it drifts the moment
   the target is edited and reads as precise while pointing at nothing. Replace it with a
-  named section or entry.
+  named section or entry. With `ADDW_CHARTER` empty there are no charter sources to
+  follow; with it absent, report the charter pointers as not checked, naming the key.
 
 ### Sweep B: Coverage Debt
 
-Triage the coverage-debt ledger (`COVERAGE-DEBT.md`, kept alongside the
-testing doc): is each line still valid? Is its escape plan still right?
+Triage the coverage-debt ledger (`docs/testing/COVERAGE-DEBT.md`, absent until
+its first entry): is each line still valid? Is its escape plan still right?
 
 ### Sweep C: Dependencies
 

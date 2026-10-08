@@ -220,7 +220,7 @@ If the ticket touches the critical-path floor — auth, deletion, persistence, c
 external request shape — write those tests **now**, before any implementation:
 
 1. Author behavioral tests from the ticket's acceptance criteria, following the project's
-   testing guide.
+   testing rules in its conventions sources.
 2. Confirm they fail for the right reason.
 3. Commit them with explicit paths: `test: add contract tests for <ticket>`.
 
@@ -307,8 +307,17 @@ human review). A skip is not free: it is **disclosed in the PR body**, with the 
 ### Step 8: Doc Impact
 
 If this ticket changed documented design, update the affected living-doc passages **now** —
-a conventions file, the charter, an ADR — so the reviewed diff carries them and the docs are
-reviewed alongside the code that changed them. A new decision gets an ADR from the project's
+a conventions file, a charter source, an ADR — so the reviewed diff carries them and the docs
+are reviewed alongside the code that changed them. The charter sources are every file
+`ADDW_CHARTER` lists, each read whole before judging whether the ticket made one untrue:
+
+```bash
+eval "$(bash .claude/skills/lib/config/vars.sh ADDW_CHARTER || echo "(exit $?)")"
+```
+
+Empty means the project declares no charter: say in the PR body that the doc-impact check ran
+without one. Unset means the key is absent: say the charter check was not performed, naming
+`ADDW_CHARTER` — doctor fails the install until it is set. A new decision gets an ADR from the project's
 template, with the ticket or PR as its Origin; use `.claude/skills/lib/docs/next-adr-number.sh`
 to get its number.
 

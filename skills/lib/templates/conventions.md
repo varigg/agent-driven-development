@@ -42,3 +42,18 @@ commit. Adapted from Tomas Vykruta's AGENTS.md rules.
    a scan or a hook, not by a sentence in this file. A check whose tool is
    missing reports SKIPPED, and SKIPPED is never a pass. Never claim a check
    passed that was not run.
+
+## Testing
+
+- **New logic ships with its test.** A diff that adds a branch, a parser, or a
+  state change adds a test that fails if that logic breaks. Untested code is
+  never hidden behind an ignore comment or a lowered coverage threshold; a gap
+  that is genuinely hard to cover goes in the coverage-debt ledger instead.
+- **Test behaviour, not wiring.** A test asserts what a caller can observe —
+  return values, persisted state, emitted requests — never which internal
+  function was called. A test that breaks on a pure refactor is wrong.
+- **A bug fix starts with a failing test** that reproduces the bug.
+- **The heavier suite runs when its contract moves.** A diff that changes an
+  API contract, a schema, a selector the end-to-end suite drives, or a
+  cross-process boundary runs the integration/E2E suite before merge, and the
+  PR says it did.

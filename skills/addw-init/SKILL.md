@@ -101,7 +101,7 @@ Create the directories the skills expect to find, so the contract holds
 before anything writes into it:
 
 ```
-docs/testing/          # the testing guide and the coverage-debt ledger
+docs/testing/          # the coverage-debt ledger, written on its first entry
 <ADDW_ADR_DIR>/        # the ADR directory resolved in Step 1.5
 ```
 
@@ -124,15 +124,18 @@ bash .claude/skills/lib/tracker/tracker.sh create-label <label>
 
 ### 2.3 Explore the codebase
 
-What init writes — the testing guide, the config, and the candidate answers
-for the conventions interview — comes from evidence, not from the project's
+What init writes — the config, its recipes, and the candidate answers for the
+conventions and charter steps — comes from evidence, not from the project's
 name. Read the root and the source tree: the build/package manifest
 identifies language and toolchain, framework config files (`next.config.*`,
 `tauri.conf.*`, `platformio.ini`, `serverless.yml`, a linker script) identify
 the runtime shape, and the source layout shows how the code divides —
 `src/components/`, `src/hal/`, and `cmd/` are three different kinds of
-project. Also gather entry points, the configuration approach, and the test
-framework and conventions.
+project. Also gather entry points, the configuration approach, the test
+framework and its conventions, and the commands that lint, type-check, and
+run the tests — the recipes in 2.6 come from these directly. Prefer
+task-runner targets (`make lint`, `npm run lint`) over raw commands, so there
+is one place to change them.
 
 Use the domain's own vocabulary — firmware has *peripherals*, a CLI has
 *commands*, neither has "components". A **layer** is a component type, not a
@@ -170,7 +173,7 @@ need not be *only* rules to qualify.
 Present the survivors with `AskUserQuestion` as a **multi-select** and let
 the human confirm the list. A confirmed directory expands to the files it
 holds — `ADDW_CONVENTIONS` lists files only — and the expanded list is what
-goes into the key (2.7), single-quoted and space-separated. A path containing
+goes into the key (2.6), single-quoted and space-separated. A path containing
 a space cannot be listed; say so if one is confirmed.
 
 **When the confirmed list is empty**, offer to write `docs/CONVENTIONS.md`:
@@ -190,58 +193,69 @@ under the project on every upgrade. When the confirmed sources look thin for
 what exploration found, note it in the report — do not interview a project
 that already has rule files.
 
-### 2.5 `docs/charter.md`
+### 2.5 Charter-source discovery
 
-The charter holds intent that outlasts any single feature. Interview the user
-with `AskUserQuestion`, **one topic at a time** — purpose, product
-principles, scope, non-goals, success criteria — offering options drawn from
-the exploration. Draft from their answers:
+The charter is the project's stable intent: purpose, principles, scope,
+non-goals, success criteria. Spec review and release judge work against it.
+Most projects already state it somewhere, so find those files rather than
+writing a copy. Probe:
 
-```markdown
-# <Project Name> Charter
+- `README.md`
+- a PRD, `VISION.md`, or similar product documents
+- anything else exploration turned up that plainly states intent
 
-Stable intent only — this document changes rarely, via dedicated design
-commits. If a release appears to invalidate it, addw-release flags it; the
-charter is never silently edited.
+Filter every candidate through the **intent admission test**: could a spec or
+a release be judged as contradicting something the file says? A file of setup
+instructions fails; a README stating what the project deliberately does not
+do passes. A file need not be *only* intent to qualify: readers read each
+listed file whole, and the noise of a mixed file is accepted.
 
-## Purpose
+Present the survivors with `AskUserQuestion` as a **multi-select** and let the
+human confirm the list. It goes into `ADDW_CHARTER` (2.6) with
+`ADDW_CONVENTIONS`' form: files only, single-quoted, space-separated, and no
+paths with spaces. When the confirmed sources look thin against the five
+topics, note it in the report and do not interview.
 
-<Why this project exists — one paragraph.>
+**When the confirmed list is empty**, offer to write `docs/charter.md`:
 
-## Product Principles
+- **Accepted** — interview the human with `AskUserQuestion`, **one topic at a
+  time** — purpose, product principles, scope, non-goals, success criteria —
+  offering options drawn from the exploration. Draft from their answers:
 
-<Three to six principles that outlast any single feature.>
+  ```markdown
+  # <Project Name> Charter
 
-## Scope
+  Stable intent only — this document changes rarely, via dedicated design
+  commits. If a release appears to invalidate it, addw-release flags it; the
+  charter is never silently edited.
 
-<What this project does.>
+  ## Purpose
 
-## Non-Goals
+  <Why this project exists — one paragraph.>
 
-<What it deliberately does not do — pair lasting ones with guardrail ADRs.>
+  ## Product Principles
 
-## Success Criteria
+  <Three to six principles that outlast any single feature.>
 
-<How we know it is working.>
-```
+  ## Scope
 
-**Get explicit approval before writing the file.**
+  <What this project does.>
 
-### 2.6 `docs/testing/TESTING.md`
+  ## Non-Goals
 
-Adapted from what exploration found, never generic: the real framework and
-version, how tests are run and organized, the project's own writing
-conventions, coverage expectations, and **Integration / E2E Impact Rules**
-(when the heavier suite must run — a changed selector, a changed API
-contract; docs-only changes skip it).
+  <What it deliberately does not do — pair lasting ones with guardrail ADRs.>
 
-Its **Verification Recipes** section is the single source of truth for
-verification commands — the skills point here and carry none themselves:
-lint, type-check/build, all tests, affected tests, single test, coverage.
-Prefer task-runner targets (`make lint`, `npm run lint`) over raw commands,
-so there is one place to change them.
+  ## Success Criteria
 
-### 2.7 `docs/addw.env`
+  <How we know it is working.>
+  ```
+
+  **Get explicit approval before writing the file.** The result is
+  `ADDW_CHARTER='docs/charter.md'`.
+- **Declined** — write `ADDW_CHARTER=`, the explicit no-charter value. The
+  report says intent checks run without a charter.
+
+### 2.6 `docs/addw.env`
 
 The project config, and the reason skills stay byte-identical across
 installs. It is **data, not shell**: a restricted `KEY=value` grammar parsed
@@ -263,7 +277,7 @@ edits the file next, and the parser rejects a violating line by number.
 # deliberately empty, which is distinct from deleting the key.
 #
 # Install generation — bumped only by structural upgrades (see UPGRADING.md):
-ADDW_SCHEMA=13
+ADDW_SCHEMA=14
 ADDW_PROJECT_NAME="<project name>"
 # The file a release writes the version into. Empty is valid and means the
 # project has no version manifest to write — the release then carries the
@@ -285,7 +299,11 @@ ADDW_ADR_TEMPLATE=".claude/skills/lib/templates/adr.md"
 # single-quoted, space-separated, files only. Empty means the project declares
 # no rules, and review says it ran without a conventions check:
 ADDW_CONVENTIONS='<confirmed rule files, or empty>'
-# Testing-gate recipes, from TESTING.md's Verification Recipes. All three keys
+# The project's intent files (Step 2.5), read whole by every intent reader:
+# same form. Empty means the project declares no charter, and the
+# intent checks say they ran without one:
+ADDW_CHARTER='<confirmed intent files, or empty>'
+# Testing-gate recipes, from the commands exploration found. All three keys
 # must be present: an empty value is a step this project does not have, and
 # the gate reports it as a visible skip — deleting a key instead makes the
 # gate refuse to run.
@@ -319,7 +337,7 @@ Fill every value (audit nudge 5 unless the user chooses otherwise). Do not
 invent a tutorial flag, and do not change `ADDW_SCHEMA` — the generation
 marker moves only at a structural boundary, which `UPGRADING.md` documents.
 
-### 2.8 The ADR contract
+### 2.7 The ADR contract
 
 The ADR format is shipped at `.claude/skills/lib/templates/adr.md` with the
 wholesale skills copy. Init does not write a template file. It writes only one
@@ -345,7 +363,7 @@ naming `.claude/skills/lib/templates/adr.md` has not declared
 `skills/lib/templates/adr.md`, and it is the near-miss, not the obvious
 mismatch, that this check exists to catch.
 
-### 2.9 `CHANGELOG.md`
+### 2.8 `CHANGELOG.md`
 
 The root `CHANGELOG.md` is write-only for the workflow: the release skills
 prepend entries and no skill reads it as context. Create it with the header
@@ -362,8 +380,8 @@ read it, agents don't.
 
 chore: initialize the ADDW workflow
 
-- Initialized ADDW — charter, testing guide, ADR declaration, conventions
-  sources, and project config.
+- Initialized ADDW — conventions and charter sources, ADR declaration, and
+  project config.
 ```
 
 Author no release history beyond that entry.
@@ -390,8 +408,9 @@ stage the paths this run actually wrote and no others: the
 project-instructions file is whichever of `CLAUDE.md` or `AGENTS.md` Matt's
 setup chose, and the ADR directory now holds nothing init produced — the
 template ships with the skills. `docs/CONVENTIONS.md` is staged only when the
-2.4 interview wrote it. Naming a path this run did not write aborts the whole
-`git add` on a pathspec error, taking the commit with it.
+2.4 interview wrote it, and `docs/charter.md` only when the 2.5 interview
+did. Naming a path this run did not write aborts the whole `git add` on a
+pathspec error, taking the commit with it.
 
 ```bash
 git commit -m "chore: initialize the ADDW workflow"
@@ -403,7 +422,8 @@ a tag baseline exists.
 
 Close with a report: the skill inventory from Step 1.4, the conventions
 sources `ADDW_CONVENTIONS` now lists — or that review runs without a
-conventions check, when the human declined — and any thin-coverage note from
-2.4. When the project already had rule sources, name
+conventions check, when the human declined — the charter sources
+`ADDW_CHARTER` lists — or that intent checks run without a charter — and any
+thin-coverage note from 2.4 or 2.5. When the project already had rule sources, name
 `.claude/skills/lib/templates/conventions.md` as optional reading: a base set
 of language-agnostic rules worth comparing against.

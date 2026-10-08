@@ -692,3 +692,68 @@ its last caller; the docs sweep no longer checks vocabulary, narration or self-s
 Nothing migrates for an install that only ran the probe through `addw-maintain`. If
 your own scripts or docs call it, the replacing skills copy no longer carries it: keep
 your own copy from the previous release, or drop the call.
+
+## Schema 13 → 14
+
+ADDW stops generating `docs/testing/TESTING.md` and stops fixing the charter's
+path (ADR 0019). No skill read `TESTING.md` at runtime: the gate reads only the
+`ADDW_RECIPE_*` keys, and the file's normative rules — coverage expectations,
+test-writing conventions, when the integration/E2E suite must run — are
+ordinary rules that belong with the project's other conventions sources. The
+charter becomes whatever files a new `ADDW_CHARTER` key lists, read whole by
+spec review, release's charter-fit check, and the maintenance link sweep.
+Nothing here is automated; there is no upgrade script.
+
+### 1. Replace the skills
+
+Replace `.claude/skills/` wholesale.
+
+### 2. Write `ADDW_CHARTER`
+
+The default keeps the charter init wrote:
+
+```bash
+# in docs/addw.env
+ADDW_CHARTER='docs/charter.md'
+```
+
+List other files instead, or as well, if they state the project's intent — a
+README or a vision document — using `ADDW_CONVENTIONS`' form: single-quoted,
+space-separated, files only, no paths with spaces. A file qualifies when a spec
+or a release could be judged as contradicting something it says. If the
+project declares no charter, write the key empty — `ADDW_CHARTER=` — and the
+intent checks will say they ran without one. Do not delete the key instead: an
+absent key is a doctor FAIL.
+
+### 3. Migrate `TESTING.md`'s rules
+
+Have an agent read `docs/testing/TESTING.md` and pick out the entries that pass
+the admission test from schema 12 → 13: could a reviewer cite a diff as
+violating this passage? Descriptions of the test layout and the Verification
+Recipes fail it; the recipes already live in the `ADDW_RECIPE_*` keys. For each
+surviving rule, you choose where it goes:
+
+- **Appended to a file `ADDW_CONVENTIONS` already lists.** The agent shows you
+  the diff and you approve it.
+- **Written to `docs/CONVENTIONS.md`**, which is created and added to
+  `ADDW_CONVENTIONS` if it does not exist yet.
+- **Dropped.**
+
+Afterwards `TESTING.md` is the project's to keep or delete. No skill reads it,
+and doctor no longer checks it.
+
+### 4. Bump and verify
+
+```bash
+# in docs/addw.env
+ADDW_SCHEMA=14
+```
+
+```bash
+bash .claude/skills/addw-init/scripts/doctor.sh
+```
+
+`HEALTHY` means the migration landed. Doctor no longer checks `TESTING.md` or
+`docs/charter.md` by name, and no longer WARNs on an unlisted
+`docs/ARCHITECTURE.md`: it checks only files ADDW owns or a key lists, and it
+has no WARN level left.

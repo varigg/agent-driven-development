@@ -12,10 +12,10 @@ live under `.claude/skills/...`.
 
 **Before any cycle**: `addw-init` has run once, on top of Matt Pocock's
 `setup-matt-pocock-skills`. His setup configures the tracker (GitHub — the overlay is
-GitHub-only) and the domain layout; ADDW's init adds the living docs (charter.md,
-TESTING.md), the conventions sources `ADDW_CONVENTIONS` names, the project config `docs/addw.env`, the `spec` and `backlog` labels,
-and the line declaring the ADR template authoritative — the template itself ships with the
-skills — then gates on doctor (`addw-init` § *Step 2: Generate — ADDW's artifacts only*).
+GitHub-only) and the domain layout; ADDW's init adds the conventions sources
+`ADDW_CONVENTIONS` names, the charter sources `ADDW_CHARTER` names, the project config
+`docs/addw.env`, the `spec` and `backlog` labels, and the line declaring the ADR template
+authoritative — the template itself ships with the skills — then gates on doctor (`addw-init` § *Step 2: Generate — ADDW's artifacts only*).
 Skills are never edited per project; everything project-specific lives in those files.
 
 **Where the work lives**: on the tracker, as GitHub issues — not in this tree. There are no

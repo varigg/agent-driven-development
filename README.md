@@ -34,7 +34,7 @@ Around the cycle sit `addw-maintain` (periodic audit), `addw-hotfix` (emergencie
 
 ## The living docs
 
-ADDW keeps no structural description of your code; if agents repeatedly get lost, add a short, failure-derived where-to-look note to your own `CLAUDE.md` / `AGENTS.md`. The rules review enforces live wherever your project already keeps them, listed in `ADDW_CONVENTIONS`. Beside them sit `docs/charter.md`, which holds the stable intent (purpose, scope, non-goals) that outlasts any feature, and a set of dated ADRs that are write-once from the moment they merge — `active` until superseded, including guardrail ADRs that record what you deliberately do *not* build so no future change reintroduces it.
+ADDW keeps no structural description of your code; if agents repeatedly get lost, add a short, failure-derived where-to-look note to your own `CLAUDE.md` / `AGENTS.md`. The rules review enforces live wherever your project already keeps them, listed in `ADDW_CONVENTIONS`. Beside them sit the project's charter — the files `ADDW_CHARTER` lists, typically an existing README or vision document, holding the stable intent (purpose, scope, non-goals) that outlasts any feature — and a set of dated ADRs that are write-once from the moment they merge — `active` until superseded, including guardrail ADRs that record what you deliberately do *not* build so no future change reintroduces it.
 
 ## One config file, zero skill edits
 
@@ -46,7 +46,7 @@ You'll need Claude Code, Codex CLI (for the default review/implement roles), an 
 
 1. Install [Matt Pocock's skills](https://github.com/mattpocock/skills) and run his setup skill (it configures the tracker, labels, and domain layout).
 2. Copy this repo's `skills/` contents into your project's `.claude/skills/`.
-3. Run `/addw-init` — it verifies the setup (GitHub tracker, authenticated `gh`, the `ready-for-agent` label), interviews you for the charter, confirms which of your files hold the project's rules, generates `TESTING.md` and `docs/addw.env`, declares the shipped ADR template authoritative, and finishes with a doctor check of the whole install.
+3. Run `/addw-init` — it verifies the setup (GitHub tracker, authenticated `gh`, the `ready-for-agent` label), confirms which of your files hold the project's rules and its intent (interviewing you only where none exist), generates `docs/addw.env`, declares the shipped ADR template authoritative, and finishes with a doctor check of the whole install.
 4. Bring a feature: `grill-with-docs` → `to-spec` → `/codex-spec-review` → `to-tickets` → `/addw-implement` per ticket → merge PRs → `/addw-release`.
 
 ## Skills reference
