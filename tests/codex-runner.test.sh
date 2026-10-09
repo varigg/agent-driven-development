@@ -150,6 +150,17 @@ assert_eq 64 "$status" "runner: --notes without a value exits 64"
 assert_contains "$out" "--notes requires a value" \
   "runner: --notes without a value names the flag"
 
+# The review adapters parse --notes before the runner sees it, so they carry
+# the same guard.
+for skill in codex-code-review codex-spec-review; do
+  status=0
+  out="$(env STATE_DIR="$work/s1" PATH="$INSTALL/bin:$PATH" \
+    bash "$INSTALL/skills/$skill/scripts/resume.sh" --notes 2>&1)" || status=$?
+  assert_eq 64 "$status" "$skill: resume.sh --notes without a value exits 64"
+  assert_contains "$out" "--notes requires a value" \
+    "$skill: resume.sh --notes without a value names the flag"
+done
+
 # --- 4. every adapter reaches the relocated runner -------------------------
 
 # Each adapter pins STATE_DIR to its own state/ and its own prompt, then
