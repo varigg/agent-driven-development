@@ -140,6 +140,27 @@ assert_exit 64 "runner: resume without --prompt-file is a usage error" \
   env STATE_DIR="$work/s1" PATH="$INSTALL/bin:$PATH" \
   bash "$INSTALL/skills/lib/codex/resume.sh" a-topic
 
+# A flag missing its value is a usage error that says so, not an unbound
+# variable under set -u (#237).
+status=0
+out="$(env STATE_DIR="$work/s1" PATH="$INSTALL/bin:$PATH" \
+  bash "$INSTALL/skills/lib/codex/resume.sh" \
+    --prompt-file "$INSTALL/skills/codex-ask/prompts/ask.tpl" --notes 2>&1)" || status=$?
+assert_eq 64 "$status" "runner: --notes without a value exits 64"
+assert_contains "$out" "--notes requires a value" \
+  "runner: --notes without a value names the flag"
+
+# The review adapters parse --notes before the runner sees it, so they carry
+# the same guard.
+for skill in codex-code-review codex-spec-review; do
+  status=0
+  out="$(env STATE_DIR="$work/s1" PATH="$INSTALL/bin:$PATH" \
+    bash "$INSTALL/skills/$skill/scripts/resume.sh" --notes 2>&1)" || status=$?
+  assert_eq 64 "$status" "$skill: resume.sh --notes without a value exits 64"
+  assert_contains "$out" "--notes requires a value" \
+    "$skill: resume.sh --notes without a value names the flag"
+done
+
 # --- 4. every adapter reaches the relocated runner -------------------------
 
 # Each adapter pins STATE_DIR to its own state/ and its own prompt, then
@@ -214,6 +235,41 @@ for case in "codex-ask a-topic review" "codex-implement 42 impl" \
   assert_contains "$out" "effort-from-config" \
     "$skill: the effort key is read from the config"
 done
+
+# The flow is the adapter's declared role, never a guess from its state path
+# (#236): a review adapter whose state directory happens to say codex-implement
+# still runs the review model, and the implement adapter still runs the impl
+# model from a directory that never mentions it.
+out="$(start_in "$configured" "$work/codex-implement-lookalike" codex-ask a-topic 2>&1)" \
+  || fail "codex-ask: a lookalike state path stopped the adapter: $out"
+assert_contains "$out" "review-from-config" \
+  "role: a state path containing codex-implement does not select the impl model"
+out="$(start_in "$configured" "$work/unrelated-state" codex-implement 42 2>&1)" \
+  || fail "codex-implement: an unrelated state path stopped the adapter: $out"
+assert_contains "$out" "impl-from-config" \
+  "role: the implement adapter selects the impl model from any state path"
+
+# Every adapter declares its own role, so one inherited from the environment
+# never moves a review adapter onto the impl model.
+for skill_target in "codex-ask a-topic" "codex-code-review 42" "codex-spec-review 42"; do
+  # shellcheck disable=SC2086
+  set -- $skill_target
+  out="$( cd "$configured" && env CODEX_ROLE=impl STATE_DIR="$work/inherited-role-$1" \
+      PATH="$INSTALL/bin:$PATH" bash "$INSTALL/skills/$1/scripts/start.sh" "$2" 2>&1 )" \
+    || fail "$1: an inherited CODEX_ROLE stopped the adapter: $out"
+  assert_contains "$out" "review-from-config" \
+    "role: $1 ignores an inherited CODEX_ROLE=impl"
+done
+
+# A role the runner does not know is a caller defect, loudly — a typo must not
+# fall back to the other flow's model.
+status=0
+out="$( cd "$configured" && env CODEX_ROLE=implement STATE_DIR="$work/bad-role" \
+    PATH="$INSTALL/bin:$PATH" \
+    bash "$INSTALL/skills/lib/codex/start.sh" \
+      --prompt-file "$INSTALL/skills/codex-ask/prompts/ask.tpl" a-topic 2>&1 )" \
+  || status=$?
+[ "$status" -eq 64 ] || fail "role: an unknown CODEX_ROLE expected exit 64, got $status: $out"
 
 # A config that cannot be parsed is the defect the config contract deliberately keeps
 # fatal. Whatever makes the case above survivable must not swallow it: it

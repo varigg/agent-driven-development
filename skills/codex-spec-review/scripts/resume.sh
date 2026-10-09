@@ -9,6 +9,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE_DIR="${STATE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)/state}"
 export STATE_DIR
+export CODEX_ROLE=review
 # shellcheck source=_fetch.sh
 source "$SCRIPT_DIR/_fetch.sh"
 
@@ -17,7 +18,9 @@ NOTES_ARGS=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --refresh) REFRESH="--refresh"; shift ;;
-        --notes)   NOTES_ARGS=(--notes "$2"); shift 2 ;;
+        --notes)
+            [ $# -ge 2 ] || { echo "error: --notes requires a value" >&2; exit 64; }
+            NOTES_ARGS=(--notes "$2"); shift 2 ;;
         --notes=*) NOTES_ARGS=("$1"); shift ;;
         --) shift; break ;;
         -*) echo "error: unknown flag: $1" >&2; exit 64 ;;

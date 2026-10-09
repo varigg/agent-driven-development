@@ -28,9 +28,15 @@ config_source ADDW_CODEX_MODEL_IMPL ADDW_CODEX_MODEL_REVIEW ADDW_CODEX_EFFORT ||
     config_status=$?
     [ "$config_status" -eq 66 ] || exit "$config_status"
 }
-case "$STATE_DIR" in
-    *codex-implement*) CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_IMPL:-gpt-5.6-luna}}" ;;
-    *)                 CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_REVIEW:-gpt-5.6-sol}}" ;;
+# The flow is the adapter's declared CODEX_ROLE (impl|review), default review:
+# only codex-implement sets impl. It is never guessed from STATE_DIR's text.
+case "${CODEX_ROLE:-review}" in
+    impl)   CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_IMPL:-gpt-5.6-luna}}" ;;
+    review) CODEX_MODEL="${CODEX_MODEL:-${ADDW_CODEX_MODEL_REVIEW:-gpt-5.6-sol}}" ;;
+    *)
+        echo "error: CODEX_ROLE must be impl or review, got: $CODEX_ROLE" >&2
+        exit 64
+        ;;
 esac
 CODEX_EFFORT="${CODEX_EFFORT:-${ADDW_CODEX_EFFORT:-xhigh}}"
 export CODEX_MODEL CODEX_EFFORT
