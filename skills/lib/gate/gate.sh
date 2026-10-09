@@ -84,7 +84,9 @@ run_rung "${ADDW_RECIPE_TYPECHECK:-}"
 typecheck_status="$RUNG_STATUS"
 
 tests_recipe="${ADDW_RECIPE_TESTS_AFFECTED:-}"
-tests_recipe="${tests_recipe//\{paths\}/$quoted_paths}"
+# Quoted replacement: bash 5.2 patsub_replacement would otherwise read the
+# `&` in an escaped path as "the matched text".
+tests_recipe="${tests_recipe//\{paths\}/"$quoted_paths"}"
 run_rung "$tests_recipe"
 tests_status="$RUNG_STATUS"
 
