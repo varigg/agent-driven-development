@@ -27,6 +27,10 @@ while [ $# -gt 0 ]; do
         --prompt-file=*)
             PROMPT_FILE="${1#*=}"; shift ;;
         --notes)
+            if [ $# -lt 2 ]; then
+                echo "error: --notes requires a value" >&2
+                exit 64
+            fi
             IMPLEMENTER_NOTES="$2"; shift 2 ;;
         --notes=*)
             IMPLEMENTER_NOTES="${1#*=}"; shift ;;

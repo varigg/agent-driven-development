@@ -140,6 +140,16 @@ assert_exit 64 "runner: resume without --prompt-file is a usage error" \
   env STATE_DIR="$work/s1" PATH="$INSTALL/bin:$PATH" \
   bash "$INSTALL/skills/lib/codex/resume.sh" a-topic
 
+# A flag missing its value is a usage error that says so, not an unbound
+# variable under set -u (#237).
+status=0
+out="$(env STATE_DIR="$work/s1" PATH="$INSTALL/bin:$PATH" \
+  bash "$INSTALL/skills/lib/codex/resume.sh" \
+    --prompt-file "$INSTALL/skills/codex-ask/prompts/ask.tpl" --notes 2>&1)" || status=$?
+assert_eq 64 "$status" "runner: --notes without a value exits 64"
+assert_contains "$out" "--notes requires a value" \
+  "runner: --notes without a value names the flag"
+
 # --- 4. every adapter reaches the relocated runner -------------------------
 
 # Each adapter pins STATE_DIR to its own state/ and its own prompt, then
