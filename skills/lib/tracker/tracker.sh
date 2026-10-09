@@ -194,6 +194,8 @@ issue_body_hash() { # issue-number
 approval_drift() { # issue-number
   local issue=$1 current recorded
   current="$(issue_body_hash "$issue")"
+  # Approvals are human acts: a marker from a bot or stranger is deliberately
+  # not counted, so it reads as unrecorded rather than as an approval.
   recorded="$(gh api "repos/{owner}/{repo}/issues/$issue/comments" --paginate \
     --jq '.[] | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR")) | .body' \
     | bash "$PARSE" approval-hash)"
