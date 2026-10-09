@@ -195,7 +195,8 @@ approval_drift() { # issue-number
   local issue=$1 current recorded
   current="$(issue_body_hash "$issue")"
   recorded="$(gh api "repos/{owner}/{repo}/issues/$issue/comments" --paginate \
-    --jq '.[].body' | bash "$PARSE" approval-hash)"
+    --jq '.[] | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR")) | .body' \
+    | bash "$PARSE" approval-hash)"
 
   if [ -z "$recorded" ]; then
     printf 'approval-drift: no approval hash recorded on issue #%s\n' "$issue"
