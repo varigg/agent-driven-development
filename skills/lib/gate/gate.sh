@@ -84,9 +84,11 @@ run_rung "${ADDW_RECIPE_TYPECHECK:-}"
 typecheck_status="$RUNG_STATUS"
 
 tests_recipe="${ADDW_RECIPE_TESTS_AFFECTED:-}"
-# Quoted replacement: bash 5.2 patsub_replacement would otherwise read the
-# `&` in an escaped path as "the matched text".
-tests_recipe="${tests_recipe//\{paths\}/"$quoted_paths"}"
+# bash 5.2 patsub_replacement would read the `&` in an escaped path as "the
+# matched text"; older bash has no such option, and quoting the replacement
+# instead would leave literal quotes behind before bash 4.3.
+shopt -u patsub_replacement 2>/dev/null || true
+tests_recipe="${tests_recipe//\{paths\}/$quoted_paths}"
 run_rung "$tests_recipe"
 tests_status="$RUNG_STATUS"
 
