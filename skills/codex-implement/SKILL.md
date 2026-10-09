@@ -47,4 +47,4 @@ export STATE_DIR=".claude/skills/codex-implement/state"
 - Separate `STATE_DIR` from the review skills — the same target can hold an implementation thread and a review thread without collision.
 - Codex is instructed not to write tests (testing gate owns that) and not to touch release ceremony.
 - **Never point Codex at a file it must edit while that file is executing.** Rewriting a running script mid-flight corrupts it — bash reads scripts incrementally — and the failure looks like a syntax error at an unrelated line.
-- Model/effort defaults live in `.claude/skills/lib/codex/_common.sh`, keyed off `STATE_DIR` (this skill's key selects the implementation-class model). Override per run with `CODEX_MODEL` / `CODEX_EFFORT`.
+- Model/effort defaults live in `.claude/skills/lib/codex/_common.sh`, keyed off `CODEX_ROLE` (this skill's scripts set `impl`, which selects the implementation-class model). Override per run with `CODEX_MODEL` / `CODEX_EFFORT`.

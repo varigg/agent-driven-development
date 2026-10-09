@@ -396,11 +396,11 @@ lives inside `skills/` rather than at the repo root.
   every other config read: a missing config just means the defaults, and a
   config that fails to parse exits 78 with the reader's line-numbered
   diagnostic.
-  The exception: model *class* is chosen by matching the caller's `STATE_DIR`
-  against `*codex-implement*`, so implementation gets the implementation-class
-  model and everything else the review-class one. That is the layer knowing one
-  thing about its callers, and it is a wart — the honest shape is a variable the
-  adapter sets.
+  The exception: model *class* is chosen by the `CODEX_ROLE` the adapter sets
+  (`impl` or `review`, default `review`), so `codex-implement` gets the
+  implementation-class model and everything else the review-class one. An
+  unknown value exits 64 rather than falling back, since a typo would
+  otherwise silently pick the other flow's model.
   Two inputs are **required**, not defaulted: the caller pins `STATE_DIR` to
   its own skill's `state/`, and passes `--prompt-file`. A shared layer must
   default neither, because a default here would merge every adapter's threads

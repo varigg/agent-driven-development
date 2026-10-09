@@ -18,6 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Pin state to THIS skill's directory, as required by the shared runner.
 STATE_DIR="${STATE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)/state}"
 export STATE_DIR
+export CODEX_ROLE=impl
 # shellcheck source=../../lib/codex/_common.sh
 source "$SCRIPT_DIR/../../lib/codex/_common.sh"
 

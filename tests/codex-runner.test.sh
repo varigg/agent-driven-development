@@ -215,6 +215,27 @@ for case in "codex-ask a-topic review" "codex-implement 42 impl" \
     "$skill: the effort key is read from the config"
 done
 
+# The flow is the adapter's declared role, never a guess from its state path
+# (#236): a review adapter whose state directory happens to say codex-implement
+# still runs the review model, and the implement adapter still runs the impl
+# model from a directory that never mentions it.
+out="$(start_in "$configured" "$work/codex-implement-lookalike" codex-ask a-topic 2>&1)" \
+  || fail "codex-ask: a lookalike state path stopped the adapter: $out"
+assert_contains "$out" "review-from-config" \
+  "role: a state path containing codex-implement does not select the impl model"
+out="$(start_in "$configured" "$work/unrelated-state" codex-implement 42 2>&1)" \
+  || fail "codex-implement: an unrelated state path stopped the adapter: $out"
+assert_contains "$out" "impl-from-config" \
+  "role: the implement adapter selects the impl model from any state path"
+
+# A role the runner does not know is a caller defect, loudly — a typo must not
+# fall back to the other flow's model.
+status=0
+out="$( cd "$configured" && env CODEX_ROLE=implement STATE_DIR="$work/bad-role" \
+    PATH="$INSTALL/bin:$PATH" bash "$INSTALL/skills/codex-ask/scripts/start.sh" a-topic 2>&1 )" \
+  || status=$?
+[ "$status" -eq 64 ] || fail "role: an unknown CODEX_ROLE expected exit 64, got $status: $out"
+
 # A config that cannot be parsed is the defect the config contract deliberately keeps
 # fatal. Whatever makes the case above survivable must not swallow it: it
 # fails, it names the config, and it exits 78 (EX_CONFIG) so a caller can tell

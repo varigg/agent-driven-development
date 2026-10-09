@@ -10,5 +10,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE_DIR="${STATE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)/state}"
 export STATE_DIR
+export CODEX_ROLE=impl
 exec bash "$SCRIPT_DIR/../../lib/codex/resume.sh" \
     --prompt-file "$SCRIPT_DIR/../prompts/continue.tpl" "$@"
