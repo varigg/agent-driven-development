@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.4.0 — 2026-10-09
+
+### Breaking
+- feat!: remove the addw-hotfix skill (#233)
+- feat!: retire TESTING.md generation and declare the charter in ADDW_CHARTER (#232)
+- feat!: slim addw-maintain's docs sweep to retirement and link liveness (#224) (#230)
+- feat!: ADDW keeps no as-built description; rules come from project-declared sources (#215) (#222)
+
+### Features
+- feat(implement): decide worktree isolation from the clone's state; drop the worktree keys (#176)
+
+### Fixes
+- fix: literal prompt substitution; 0.x breaking bumps minor (#241)
+- fix(gate): refuse absent recipe keys; only an explicit KEY= skips a rung (#202)
+- fix(doctor): validate the effective role adapters, defaults included (#201)
+- fix(gate): run recipes with pipefail so piped failures fail the rung (#200)
+- fix(config): read docs/addw.env from any shell through an executed vars.sh (#183)
+- fix(tracker): key ADR obligation on a literal ADR: label, and span Implementation Decisions subsections (#180)
+- fix(implement): state the worktree-entry outcome instead of a cd the harness undoes (#170)
+
+### Other
+- docs(adr): 0019 ADDW generates no testing doc; intent from declared charter sources (#214) (#231)
+- docs(adr): 0018 shipped detectors don't police prose ADDW doesn't own (#213) (#229)
+- docs(adr): 0017 supersedes 0005 without the scrutiny-reduction carve-out (#208) (#228)
+- docs(adr): 0016 ADDW keeps no as-built description; rules are read from project-declared sources (#212) (#216)
+- docs(domain): fix the glossary to CONTEXT.md; only the ADR directory is domain.md-declared (#179)
+- docs(adr): permit repointing a merged ADR's citation when the document moves (#177)
+- docs: fold Codex-sandbox quirks into the delegation docs (#174)
+
 ## v0.3.0 — 2026-09-05
 
 ### Features
