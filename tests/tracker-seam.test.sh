@@ -8,7 +8,7 @@
 # Tracker operations are issue operations: body get/edit, labels, comments,
 # close-with-reason, assignment, and the frontier/completion queries. Pull
 # requests are not tracker work and never were behind this seam — `gh pr` is
-# used freely by addw-implement and addw-hotfix — so the scan does not flag it.
+# used freely by addw-implement — so the scan does not flag it.
 #
 # The one carve-out is `gh api` against a `/pulls/` endpoint, which reads PR
 # review comments that no `gh pr` subcommand exposes (cli/cli#5788). It cannot

@@ -284,8 +284,7 @@ conventions check. What happens to a problem depends on whether the ticket cover
   `backlog` because frontier entry is a spending decision that stays human (ADR 0017
   gate 3) and the PR ships one Deliverable (ADR 0006). Deliberately no merge-graduation
   via the PR body naming the filing: a mid-implementation discovery has no prior
-  authorizing act, unlike the hotfix follow-up — graduation is an explicit human label
-  flip.
+  authorizing act — graduation is an explicit human label flip.
 - **Mechanical drive-bys** — formatting on a line the diff already touches — are not
   "work"; just do them.
 

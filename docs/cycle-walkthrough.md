@@ -231,13 +231,6 @@ Not part of the cycle, but reachable from it:
   only, dead or line-scoped pointers and documents untrue in whole (ADR 0018);
   retirement filings land as `backlog` tickets carrying their recipe, and the merge of
   the audit PR whose record lists them graduates them (§ *Step 3: Triage & Apply*, ADR 0007).
-- **`addw-hotfix`** — genuine emergencies only: a gate-verified fix as an expedited PR merged
-  immediately (§ *Step 7: Open the Expedited PR*). Even an emergency rides a PR a human
-  merges — there is no direct-push path to `main` (ADR 0017). The expedited path reorders
-  scrutiny rather than reducing it: every hotfix files one `backlog` follow-up naming the
-  checks it deferred — regression test, codex review, doc impact — and the PR body names
-  the filing, so the human's merge graduates it to the frontier (§ *Step 6: File the
-  Deferred-Scrutiny Ticket*, ADR 0007).
 - **`codex-ask`** — a grounded second opinion on anything. Advisory only: no verdicts,
   nothing gated.
 
@@ -247,7 +240,7 @@ Not part of the cycle, but reachable from it:
 |---|---|---|
 | Spec | A `spec`-labeled GitHub issue | `to-spec`, reviewed by `codex-spec-review` |
 | Tickets | GitHub issues with `## Parent` / `## Blocked by` | `to-tickets` |
-| Backlog proposals | `backlog`-labeled issues, no parent | you, or a detached detection (`addw-maintain`, `codex-spec-review`, `addw-hotfix`, `addw-release`) |
+| Backlog proposals | `backlog`-labeled issues, no parent | you, or a detached detection (`addw-maintain`, `codex-spec-review`, `addw-release`) |
 | Implementation | One squash-merged PR per ticket | `addw-implement` |
 | Decisions | Write-once dated ADRs in `$ADDW_ADR_DIR`, `active` for as long as they are there — a superseded one departs to a closed `archived` issue | the ticket's own PR, or alignment (origin `design session`); retired by the superseding PR |
 | Glossary | `CONTEXT.md` at the repo root, or the per-context files a root `CONTEXT-MAP.md` points at — fixed to Matt's own convention, never project-declared | `domain-modeling`, during alignment |

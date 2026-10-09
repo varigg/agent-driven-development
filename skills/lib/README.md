@@ -257,7 +257,7 @@ lives inside `skills/` rather than at the repo root.
   this small.
   `ADDW_CONVENTIONS` is the second key standing on the `KEY=`-versus-absent
   distinction, after the recipes, and copies their grammar: absent is a gap —
-  doctor FAILs, implement and hotfix refuse to start, and code review runs
+  doctor FAILs, implement refuses to start, and code review runs
   but reports its convention items as not performed, the same policy it
   applies to a missing `ADDW_ADR_DIR` — and an explicit empty value is a
   project with no rules, where review skips the conventions check and says
