@@ -238,11 +238,25 @@ out="$(start_in "$configured" "$work/unrelated-state" codex-implement 42 2>&1)" 
 assert_contains "$out" "impl-from-config" \
   "role: the implement adapter selects the impl model from any state path"
 
+# Every adapter declares its own role, so one inherited from the environment
+# never moves a review adapter onto the impl model.
+for skill_target in "codex-ask a-topic" "codex-code-review 42" "codex-spec-review 42"; do
+  # shellcheck disable=SC2086
+  set -- $skill_target
+  out="$( cd "$configured" && env CODEX_ROLE=impl STATE_DIR="$work/inherited-role-$1" \
+      PATH="$INSTALL/bin:$PATH" bash "$INSTALL/skills/$1/scripts/start.sh" "$2" 2>&1 )" \
+    || fail "$1: an inherited CODEX_ROLE stopped the adapter: $out"
+  assert_contains "$out" "review-from-config" \
+    "role: $1 ignores an inherited CODEX_ROLE=impl"
+done
+
 # A role the runner does not know is a caller defect, loudly — a typo must not
 # fall back to the other flow's model.
 status=0
 out="$( cd "$configured" && env CODEX_ROLE=implement STATE_DIR="$work/bad-role" \
-    PATH="$INSTALL/bin:$PATH" bash "$INSTALL/skills/codex-ask/scripts/start.sh" a-topic 2>&1 )" \
+    PATH="$INSTALL/bin:$PATH" \
+    bash "$INSTALL/skills/lib/codex/start.sh" \
+      --prompt-file "$INSTALL/skills/codex-ask/prompts/ask.tpl" a-topic 2>&1 )" \
   || status=$?
 [ "$status" -eq 64 ] || fail "role: an unknown CODEX_ROLE expected exit 64, got $status: $out"
 

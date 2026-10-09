@@ -10,6 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE_DIR="${STATE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)/state}"
 export STATE_DIR
+export CODEX_ROLE=review
 # shellcheck source=_fetch.sh
 source "$SCRIPT_DIR/_fetch.sh"
 
