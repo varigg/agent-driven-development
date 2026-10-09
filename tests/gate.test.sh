@@ -153,6 +153,19 @@ run_gate paths tests/a.test.sh "tests/b c.test.sh" >/dev/null 2>&1
 assert_eq "tests/a.test.sh tests/b c.test.sh" "$(cat "$GATE_OUT")" \
   "paths: {paths} receives every selected path, space-safe"
 
+# On bash 5.2 an unquoted replacement turns the escape in `a\&b` into a bare
+# `&`, backgrounding part of the recipe (#235).
+rm -f "$GATE_OUT"
+run_gate paths 'tests/a&b.test.sh' >/dev/null 2>&1
+assert_eq 'tests/a&b.test.sh' "$(cat "$GATE_OUT")" \
+  "paths: an ampersand in a path reaches the recipe escaped"
+
+# Pre-4.3 replacement semantics must still split and space-protect the paths.
+rm -f "$GATE_OUT"
+BASH_COMPAT=42 run_gate paths tests/a.test.sh "tests/b c&d.test.sh" >/dev/null 2>&1
+assert_eq "tests/a.test.sh tests/b c&d.test.sh" "$(cat "$GATE_OUT")" \
+  "paths: substitution holds under BASH_COMPAT=42"
+
 # a recipe without the placeholder runs as-is even when paths are given
 out="$(run_gate all-pass tests/a.test.sh 2>/dev/null)"
 assert_eq "gate: lint ok | typecheck ok | tests ok" "$out" \
