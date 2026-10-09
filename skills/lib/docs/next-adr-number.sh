@@ -8,7 +8,11 @@
 # shared config reader — the reader answers from the file alone, so an
 # exported value never makes a missing key look valid, which could silently
 # produce 0001 in the wrong project.
-# Prints one four-digit, zero-padded number on stdout and nothing else.
+# Prints one zero-padded number on stdout and nothing else. A numbered
+# prefix is three or four leading digits followed by a non-digit, and the
+# output takes the width of the prefix on the file that holds the maximum
+# (three-digit 043 -> 044, four-digit 0043 -> 0044); an empty or unnumbered
+# directory prints four-digit 0001.
 # Exit 0 on success; 2 for usage errors; 78 (EX_CONFIG) for a config that is
 # invalid or leaves ADDW_ADR_DIR unset or empty; 66/77 for a missing or
 # unreadable config (from the reader) and 66 for a configured directory that
@@ -37,14 +41,16 @@ if [ ! -d "$adr_dir" ] || [ ! -r "$adr_dir" ]; then
 fi
 
 max=0
+width=4
 while IFS= read -r -d '' file; do
     basename="${file##*/}"
-    if [[ "$basename" =~ ^([0-9]{4})[^0-9] ]]; then
+    if [[ "$basename" =~ ^([0-9]{3,4})[^0-9] ]]; then
         number=$((10#${BASH_REMATCH[1]}))
         if (( number > max )); then
             max=$number
+            width=${#BASH_REMATCH[1]}
         fi
     fi
 done < <(find "$adr_dir" -mindepth 1 -maxdepth 1 -type f -print0)
 
-printf '%04d\n' "$((max + 1))"
+printf "%0${width}d\n" "$((max + 1))"

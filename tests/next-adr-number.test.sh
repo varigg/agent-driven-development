@@ -5,8 +5,10 @@
 #
 # Reads ADDW_ADR_DIR from docs/addw.env through the shared config reader —
 # there is no path flag, so every case runs from a fixture directory, exactly
-# as production runs from a project root — and prints the next number as four
-# zero-padded digits — max(directory) + 1, never the first gap.
+# as production runs from a project root — and prints the next number,
+# max(directory) + 1, never the first gap, zero-padded to the width of the
+# prefix on the file holding the maximum: a project numbering 043 gets 044, one
+# numbering 0043 gets 0044, and an empty directory gets four-digit 0001.
 #
 # The distinction is the whole point. Before ADR archival the directory had
 # no holes, so max and first-gap coincided; archival makes them diverge and
@@ -16,7 +18,7 @@
 # directory alone is authoritative: no tracker call, asserted below rather
 # than promised.
 #
-# Files carrying no four-digit prefix are not ADRs and are ignored, the
+# Files carrying no three- or four-digit prefix are not ADRs and are ignored, the
 # template among them. An unset ADDW_ADR_DIR is refused rather than resolved
 # to an empty glob, because a silent 0001 in a populated project is exactly
 # the silent pass this script exists to prevent — it exits 78 (EX_CONFIG),
@@ -87,7 +89,25 @@ proj="$(make_case octal 0007-g.md 0008-h.md)"
 out="$(run_in "$proj")"
 assert_eq "0009" "$out" "octal: leading zeros are read as decimal"
 
-# --- files carrying no four-digit prefix are ignored ------------------------
+# --- a three-digit project keeps its width -----------------------------------
+#
+# An install that adopted ADDW with three-digit ADRs already in place must get
+# the next three-digit number, not a four-digit 0001 that restarts the series.
+
+proj="$(make_case three-digit 030-a.md 043-b.md template.md)"
+out="$(run_in "$proj")"
+assert_eq "044" "$out" "three-digit: max plus one at the directory's width"
+
+proj="$(make_case three-digit-octal 008-h.md)"
+out="$(run_in "$proj")"
+assert_eq "009" "$out" "three-digit-octal: leading zeros are read as decimal"
+
+# A mixed directory takes the width of the file holding the maximum.
+proj="$(make_case mixed-width 042-a.md 0043-b.md)"
+out="$(run_in "$proj")"
+assert_eq "0044" "$out" "mixed-width: the maximum's width wins"
+
+# --- files carrying no numbered prefix are ignored --------------------------
 
 proj="$(make_case mixed 0001-a.md 0002-b.md template.md README.md notes.txt .gitkeep)"
 out="$(run_in "$proj")"
@@ -101,9 +121,9 @@ assert_eq "0001" "$out" "only-template: a directory of non-ADRs starts the seque
 # A four-digit run inside a name is not a prefix, and neither is a longer run
 # of digits at the front — both would inflate the answer if the match were
 # loose.
-proj="$(make_case not-a-prefix 0001-a.md adr-0042-b.md 00123-c.md)"
+proj="$(make_case not-a-prefix 0001-a.md adr-0042-b.md 00123-c.md 12-d.md)"
 out="$(run_in "$proj")"
-assert_eq "0002" "$out" "not-a-prefix: only a leading four-digit prefix counts"
+assert_eq "0002" "$out" "not-a-prefix: only a leading three- or four-digit prefix counts"
 
 # --- the directory comes from configuration, never a hardcoded path ---------
 #
@@ -125,7 +145,7 @@ assert_not_contains "$(cat "$SCRIPT")" "docs/adr" \
 out="$(cd "$REPO" && bash "$SCRIPT")"
 case "$out" in
   [0-9][0-9][0-9][0-9]) ;;
-  *) fail "dogfood: repo config yields four zero-padded digits, got $(printf '%q' "$out")" ;;
+  *) fail "dogfood: repo config yields four zero-padded digits (its ADRs are four-digit), got $(printf '%q' "$out")" ;;
 esac
 
 # --- an exported value never stands in for an absent key --------------------
