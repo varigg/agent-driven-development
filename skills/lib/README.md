@@ -78,7 +78,9 @@ lives inside `skills/` rather than at the repo root.
     `body-hash` and `approval-drift` are the approval-integrity reads
     (ADR 0009): the first prints the truncated sha256 of an issue's live body —
     the value an approval records — and the second compares that against the
-    last `Approved-body:` marker in the issue's comments, exiting 1 on drift.
+    last `Approved-body:` marker among comments by the repo's OWNER, MEMBER or
+    COLLABORATOR authors, exiting 1 on drift. The author filter is what stops
+    a stranger's later marker on a public repo from shadowing the real one.
     The hash computation and the marker scan live in `parse.sh` (`body-hash`,
     `approval-hash`) because both are text-in/conclusion-out; `tracker.sh` only
     wires them to the live body and the comment stream. The comments read pages
