@@ -37,6 +37,15 @@ RUNNER="$REPO/skills/lib/codex"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
+# --- load_prompt substitutes free text literally ----------------------------
+
+tpl="$work/p.tpl"
+printf 'T={{TARGET}} X={{EXTRA_PROMPT}} N={{IMPLEMENTER_NOTES}}\n' >"$tpl"
+out="$(STATE_DIR="$work/state" TARGET=feat/x EXTRA_PROMPT='a & b C:\new' IMPLEMENTER_NOTES='\1 & {{TARGET}}' \
+  bash -c ". '$RUNNER/_common.sh'; load_prompt '$tpl'")"
+assert_eq 'T=feat/x X=a & b C:\new N=\1 & {{TARGET}}' "$out" \
+  "load_prompt: & and backslashes in free text pass through verbatim"
+
 # --- 1. the runner lives in the shared layer -------------------------------
 
 for f in _common.sh start.sh resume.sh reset.sh show.sh; do

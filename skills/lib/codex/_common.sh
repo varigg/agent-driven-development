@@ -77,11 +77,22 @@ load_prompt() {
         echo "error: prompt template not found: $tpl" >&2
         return 1
     fi
-    awk -v target="${TARGET-}" -v extra="${EXTRA_PROMPT-}" -v notes="${IMPLEMENTER_NOTES-}" '
+    # ENVIRON, not awk -v / gsub: -v reprocesses backslash escapes and gsub
+    # treats & in the replacement as the matched text, both of which mangle
+    # free-text notes. Literal index/substr replacement does neither.
+    T="${TARGET-}" X="${EXTRA_PROMPT-}" N="${IMPLEMENTER_NOTES-}" awk '
+        function sub_all(line, key, val,    out, i) {
+            out = ""
+            while ((i = index(line, key)) > 0) {
+                out = out substr(line, 1, i - 1) val
+                line = substr(line, i + length(key))
+            }
+            return out line
+        }
         {
-            gsub(/\{\{TARGET\}\}/, target)
-            gsub(/\{\{EXTRA_PROMPT\}\}/, extra)
-            gsub(/\{\{IMPLEMENTER_NOTES\}\}/, notes)
+            $0 = sub_all($0, "{{TARGET}}", ENVIRON["T"])
+            $0 = sub_all($0, "{{EXTRA_PROMPT}}", ENVIRON["X"])
+            $0 = sub_all($0, "{{IMPLEMENTER_NOTES}}", ENVIRON["N"])
             print
         }
     ' "$tpl"
