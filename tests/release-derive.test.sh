@@ -19,7 +19,8 @@
 #   version    stdout is exactly two lines:
 #                bump: <major|minor|patch>
 #                version: <next-version>
-#              A `!` subject → major, else any `feat` → minor, else patch.
+#              A `!` subject → major (minor while the last tag is 0.x), else
+#              any `feat` → minor, else patch.
 #              The next version applies the bump to the last tag, preserving
 #              its `v`-or-bare prefix; with no tag the base is 0.0.0 with a
 #              `v` prefix. A last tag that is not X.Y.Z/vX.Y.Z exits 2.
@@ -125,6 +126,17 @@ c "$breaking" "feat(api)!: drop legacy flags"
 out="$(cd "$breaking" && bash "$DERIVE" version 2>/dev/null)"
 assert_eq "bump: major
 version: v2.0.0" "$out" "breaking: bang subject → major bump"
+
+# --- version: breaking marker on a 0.x tag → minor, never an accidental 1.0 ---
+
+zerox="$work/zerox"
+new_repo "$zerox"
+c "$zerox" "chore: bootstrap"
+git -C "$zerox" tag v0.3.0
+c "$zerox" "feat!: drop legacy flags"
+out="$(cd "$zerox" && bash "$DERIVE" version 2>/dev/null)"
+assert_eq "bump: minor
+version: v0.4.0" "$out" "0.x: bang subject → minor bump, not 1.0.0"
 
 # --- no prior tag: whole history projected, version from 0.0.0 -------------
 

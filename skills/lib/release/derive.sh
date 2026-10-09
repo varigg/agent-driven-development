@@ -14,6 +14,8 @@
 #
 #   version    stdout: `bump: <major|minor|patch>` then `version: <next>`.
 #              Any `!` subject → major, else any `feat` → minor, else patch;
+#              while the last tag's major is 0 a `!` subject bumps minor, since
+#              0.x is pre-stable and 1.0.0 is a deliberate release decision;
 #              the bump applies to the last tag, preserving its `v`-or-bare
 #              prefix (base v0.0.0 when no tag exists).
 #   changelog  stdout: `## <version> — <YYYY-MM-DD>` (the same derived
@@ -125,7 +127,9 @@ if [ "$qualifying" -eq 0 ]; then
   exit 1
 fi
 
-if [ "$have_breaking" -eq 1 ]; then
+if [ "$have_breaking" -eq 1 ] && [ "$major" -eq 0 ]; then
+  bump="minor"
+elif [ "$have_breaking" -eq 1 ]; then
   bump="major"
 elif [ "$have_feat" -eq 1 ]; then
   bump="minor"
