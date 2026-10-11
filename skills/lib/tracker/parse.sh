@@ -26,9 +26,12 @@
 #   parse.sh classify-reason <reason> -> "completed" | "not-planned" (else exit 2)
 #   parse.sh body-hash [file]         -> truncated body sha256 (exit 0)
 #   parse.sh approval-hash [file]     -> last recorded body hash, or empty (exit 0)
+#   parse.sh amendment-summary [file] -> summary of the last anchored
+#                                         "Amends-contract: <summary>" line in
+#                                         a comment, or empty (exit 0)
 #
 # parent/blockers/adr-obligation/strip-section read the issue body from
-# <file> or stdin.
+# <file> or stdin; approval-hash and amendment-summary read a comment.
 set -euo pipefail
 
 usage() {
@@ -132,6 +135,16 @@ approval_hash() { # [file]
     | tail -n 1 | sed $'s/^Approved-body: //; s/\r$//'
 }
 
+amendment_summary() { # [file]
+  # Same raw-line grammar as the approval marker (ADR 0009): anchored, a
+  # trailing CR tolerated and stripped, the last marker wins. The summary must
+  # start with a non-space character, so a bare "Amends-contract:" never
+  # records an empty amendment. A raw line inside a code fence counts: the
+  # scan reads lines, not markdown, exactly as `approval_hash` does.
+  body "$@" | { grep -E $'^Amends-contract: [^[:space:]].*$' || true; } \
+    | tail -n 1 | sed $'s/^Amends-contract: //; s/\r$//'
+}
+
 body() { # [file]
   if [ "$#" -eq 0 ]; then
     cat
@@ -180,6 +193,9 @@ case "$cmd" in
     ;;
   approval-hash)
     approval_hash "$@"
+    ;;
+  amendment-summary)
+    amendment_summary "$@"
     ;;
   *)
     usage

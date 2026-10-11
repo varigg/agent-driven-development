@@ -125,6 +125,24 @@ assert_eq "" "$(bash "$PARSE" approval-hash "$FIX/approval-comments-none.md")" \
 assert_exit 0 "approval-hash: no marker still exits zero" \
   bash "$PARSE" approval-hash "$FIX/approval-comments-none.md"
 
+# --- amendment-summary ---
+assert_eq "raise the retry cap to 5" \
+  "$(bash "$PARSE" amendment-summary "$FIX/amendment-comments.md")" \
+  "amendment-summary: last anchored marker wins; prose, quoted, indented, lookalike, malformed ignored"
+assert_eq "raise the retry cap to 5" \
+  "$(bash "$PARSE" amendment-summary < "$FIX/amendment-comments.md")" \
+  "amendment-summary: comment on stdin"
+assert_eq "a raw fenced line" \
+  "$(printf '```\nAmends-contract: a raw fenced line\n```\n' | bash "$PARSE" amendment-summary)" \
+  "amendment-summary: a marker line inside a code fence counts (raw-line grammar, as Approved-body)"
+assert_eq "web edit" \
+  "$(printf 'Amends-contract: web edit\r\n' | bash "$PARSE" amendment-summary)" \
+  "amendment-summary: a CRLF marker (web-edited comment) still records, CR stripped"
+assert_eq "" "$(bash "$PARSE" amendment-summary "$FIX/amendment-comments-none.md")" \
+  "amendment-summary: no anchored marker yields empty"
+assert_exit 0 "amendment-summary: no marker still exits zero" \
+  bash "$PARSE" amendment-summary "$FIX/amendment-comments-none.md"
+
 # --- CLI seam hygiene ---
 assert_exit 2 "unknown subcommand refuses loudly" \
   bash "$PARSE" frobnicate

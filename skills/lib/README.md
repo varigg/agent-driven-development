@@ -91,6 +91,16 @@ lives inside `skills/` rather than at the repo root.
     unrecorded rather than as drift. Unit-tested (`tests/tracker-drift.test.sh`,
     the parsers in `tests/tracker-parse.test.sh`) because normalization and the
     three-way verdict are logic rather than passthrough.
+    `parse.sh amendment-summary` recognizes the other cross-skill comment
+    marker (ADR 0020): one anchored `Amends-contract: <summary>` line by which
+    a trusted author amends a ticket's contract without editing its body, the
+    last such line in a comment winning. It follows the `Approved-body:` grammar
+    for the same reasons — anchored so prose and quoted replies never record,
+    a trailing CR tolerated because web-edited comments come back CRLF — and
+    reads raw lines, so a marker inside a code fence counts. The marker sits
+    outside the approval hash by design: the hash keeps covering exactly the
+    reviewed body, and amendments are disclosed in the PR body instead.
+    Unit-tested in `tests/tracker-parse.test.sh`.
     `parent-check` is the same shape as `approval-drift` — a live read that
     hands text to `parse.sh` and reports a verdict — but round-trips a ticket's
     body through `parse.sh parent` and compares it against the parent the
