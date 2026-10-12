@@ -214,6 +214,20 @@ Unset means the key is **absent**: stop and tell the human to list the project's
 in `ADDW_CONVENTIONS`, or set `ADDW_CONVENTIONS=` for none — doctor fails the install until
 they do. An empty value is the project's declared choice of no rules (ADR 0016).
 
+**Post the plan before any code.** A short ticket comment — the approach, the files it
+touches, and the spec decisions or ADRs that constrain it — so the human reviewing the PR
+can judge the diff against the intent that produced it:
+
+```bash
+bash .claude/skills/lib/tracker/tracker.sh comment <issue-number> <plan-file>
+```
+
+It is a record, not a gate: post it and carry on (ADR 0017). It is **posted once and never
+edited** — when the build departs from it, name each departure and why under the PR body's
+Disclosures, so the original intent stays honest and the reasons for change survive.
+**Skippable by judgment** when the plan would only restate the ticket; the skip is disclosed
+in the PR body.
+
 ### Step 5: Frozen Contract Tests
 
 If the ticket touches the critical-path floor — auth, deletion, persistence, cost, or
@@ -445,8 +459,9 @@ human has to do by archaeology:
 2. **Gate summary** — the gate's line, verbatim.
 3. **Codex verdict** — the tag, the round count, the commit SHA it covers, and the ticket-body
    hash the verdict covers.
-4. **Disclosures** — a skipped pre-filter, a skipped review round, an edited contract test,
-   an accepted open finding. If there are none, say none.
+4. **Disclosures** — a skipped plan comment or a departure from it, a skipped pre-filter, a
+   skipped review round, an edited contract test, an accepted open finding. If there are none,
+   say none.
 5. **Doc-impact note** — which living docs this changed, or that none needed changing. A
    document archived here is named with its archive issue number; a supersession also lists the
    vocabulary it swept, since that list exists nowhere else.

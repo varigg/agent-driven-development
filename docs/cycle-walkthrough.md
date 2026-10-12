@@ -117,6 +117,11 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    marker the frontier listing shows, so a second session can see the work exists
    (§ *Step 3: Branch and Self-Assign*).
 
+   **A plan comment on the ticket** follows the read of ticket, spec, glossary and ADRs —
+   the approach and its constraints, a record for the PR reviewer rather than a gate. Posted
+   once and never edited; departures and a skip are disclosed in the PR body (§ *Step 4:
+   Read the Ticket and Its Spec*).
+
 3. **Frozen contract tests**, if the ticket touches the critical-path floor (auth, deletion,
    persistence, cost, external request shape). Written now, confirmed failing for the right
    reason, committed, and **off-limits to the implementer** (§ *Step 5: Frozen Contract
