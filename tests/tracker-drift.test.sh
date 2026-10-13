@@ -112,6 +112,23 @@ for assoc in MEMBER COLLABORATOR; do
   assert_contains "$out" "match" "approval-drift: $assoc marker counts"
 done
 
+# --- approval-drift: the shared trusted-author filter excludes bots (#251) ---
+jq -n --arg b "$(printf 'Approved-body: %s' "$hash")" \
+  '[{author_association:"MEMBER", user:{login:"ci-bot", type:"Bot"}, body:$b}]' \
+  > "$work/comments.json"
+out="$(bash "$TRACKER" approval-drift 5 2>&1)"
+assert_contains "$out" "no approval hash recorded" \
+  "approval-drift: a bot's marker records no approval, whatever its association"
+
+# --- an amendment changes no hash and no drift verdict (ADR 0020) ---
+comments_json "$work/comments.json" \
+  OWNER "$(printf 'Approved-body: %s' "$hash")" \
+  OWNER "$(printf 'Amends-contract: use the v2 endpoint')"
+assert_eq "$hash" "$(bash "$TRACKER" body-hash 5)" \
+  "body-hash: an amendment comment leaves the body hash unchanged"
+out="$(bash "$TRACKER" approval-drift 5 2>&1)"
+assert_contains "$out" "match" "approval-drift: an amendment is not drift"
+
 # --- CLI seam hygiene ---
 assert_exit 2 "approval-drift: missing issue number refuses loudly" \
   bash "$TRACKER" approval-drift

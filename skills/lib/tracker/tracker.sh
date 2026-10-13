@@ -30,6 +30,7 @@
 #   tracker.sh specs                             live specs-by-verdict listing
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
 #   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
+#   tracker.sh contract <n>                      body + amendments of <n> and its parent
 #   tracker.sh parent-check <n> <expected>       fail loudly unless <n>'s parsed parent is <expected>
 #   tracker.sh child-delivery <n>                live per-spec closed-child delivery lookup
 #   tracker.sh close-spec <n>                    close a Complete spec, recording each
@@ -79,6 +80,17 @@
 # lookup runs unconditionally for every completed child. Exits 2 when <n> is
 # not a spec-labeled issue in the snapshot.
 #
+# contract <n> prints a ticket's effective contract (spec #243, ADR 0020): a
+# block headed `== TICKET #<n> ==` holding the body, then the sections
+# `== AMENDMENTS #<n> ==`, `== PRESUMED FOLDED #<n> ==` and `== UNMARKED #<n> ==`.
+# When the body names a parent, the same block follows for it, headed
+# `== PARENT #<p> ==`. Each section lists comments oldest first (creation
+# time, comment ID tie-break), each as `-- <id> <created-at> <author> --` and
+# the body verbatim; an empty section prints `(none)`. Only trusted authors'
+# comments are read, every page of them. An amendment created before the
+# body's last edit is presumed folded; an unmarked comment carries neither
+# marker nor a shipped review grammar.
+#
 # detach <n> is deferral: it rewrites <n>'s body with its "## Parent" section
 # removed (parse.sh strip-section), swaps `ready-for-agent` for `backlog`,
 # and comments naming the former parent so the edge survives in the ticket's
@@ -119,6 +131,17 @@ query($owner: String!, $name: String!, $number: Int!) {
     }
   }
 }'
+
+CONTRACT_EDITED_QUERY='
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    issue(number: $number) {
+      lastEditedAt
+    }
+  }
+}'
+
+TRUSTED_AUTHOR_JQ='(.author_association | IN("OWNER","MEMBER","COLLABORATOR")) and (.user.type != "Bot")'
 
 usage() {
   sed -n 's/^# \{0,1\}//p' "${BASH_SOURCE[0]}" | sed -n '/^Usage:/,/^$/p' >&2
@@ -197,7 +220,7 @@ approval_drift() { # issue-number
   # Approvals are human acts: a marker from a bot or stranger is deliberately
   # not counted, so it reads as unrecorded rather than as an approval.
   recorded="$(gh api "repos/{owner}/{repo}/issues/$issue/comments" --paginate \
-    --jq '.[] | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR")) | .body' \
+    --jq ".[] | select($TRUSTED_AUTHOR_JQ) | .body" \
     | bash "$PARSE" approval-hash)"
 
   if [ -z "$recorded" ]; then
@@ -208,6 +231,74 @@ approval_drift() { # issue-number
     printf 'approval-drift: issue #%s body has drifted from its approved content: approved %s, current %s\n' \
       "$issue" "$recorded" "$current"
     return 1
+  fi
+}
+
+last_edited_at() { # issue-number
+  gh api graphql -f query="$CONTRACT_EDITED_QUERY" \
+    -F owner='{owner}' -F name='{repo}' -F number="$1" \
+    --jq '.data.repository.issue.lastEditedAt // ""'
+}
+
+contract_block() { # issue-number header body block-directory
+  local issue=$1 header=$2 body=$3 dir=$4
+  local last_edited comment id created_at login section
+
+  mkdir -p "$dir"
+  : > "$dir/amendments"; : > "$dir/folded"; : > "$dir/unmarked"
+  last_edited="$(last_edited_at "$issue")"
+  # Read into a file first: a failed read must stop the script, never render
+  # as a contract with no amendments. One compact JSON object per trusted
+  # comment, oldest first; creation time never changes on edit, so an edited
+  # comment keeps its place.
+  gh api "repos/{owner}/{repo}/issues/$issue/comments" --paginate \
+      --jq ".[] | select($TRUSTED_AUTHOR_JQ) | {id, created_at, user: {login: .user.login}, body}" \
+    | jq -s -c 'sort_by([.created_at, .id])[]' > "$dir/comments.jsonl"
+
+  while IFS= read -r comment; do
+    IFS=$'\t' read -r id created_at login < <(jq -r '[.id, .created_at, .user.login] | @tsv' <<< "$comment")
+    jq -j '.body' <<< "$comment" > "$dir/body"
+
+    if [ -n "$(bash "$PARSE" amendment-summary "$dir/body")" ]; then
+      if [ -n "$last_edited" ] && [[ "$created_at" < "$last_edited" ]]; then
+        section=folded
+      else
+        section=amendments
+      fi
+    else
+      [ -z "$(bash "$PARSE" approval-hash "$dir/body")" ] || continue
+      case "$(head -n 1 "$dir/body")" in
+        "Codex code review:"*|"Codex spec review:"*) continue ;;
+      esac
+      section=unmarked
+    fi
+
+    {
+      printf -- '-- %s %s %s --\n' "$id" "$created_at" "$login"
+      cat "$dir/body"
+      [ -z "$(tail -c 1 "$dir/body")" ] || printf '\n'
+    } >> "$dir/$section"
+  done < "$dir/comments.jsonl"
+
+  printf '%s\n%s\n' "$header" "$body"
+  for section in AMENDMENTS:amendments 'PRESUMED FOLDED:folded' UNMARKED:unmarked; do
+    printf '== %s #%s ==\n' "${section%%:*}" "$issue"
+    if [ -s "$dir/${section#*:}" ]; then cat "$dir/${section#*:}"; else printf '(none)\n'; fi
+  done
+}
+
+# tmpdir is deliberately not `local`, matching detach's own reasoning.
+contract() { # issue-number
+  local issue=$1 ticket_body parent parent_body
+
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+  ticket_body="$(issue_body "$issue")"
+  parent="$(printf '%s' "$ticket_body" | bash "$PARSE" parent)"
+  contract_block "$issue" "== TICKET #$issue ==" "$ticket_body" "$tmpdir/ticket"
+  if [ -n "$parent" ]; then
+    parent_body="$(issue_body "$parent")"
+    contract_block "$parent" "== PARENT #$parent ==" "$parent_body" "$tmpdir/parent"
   fi
 }
 
@@ -447,6 +538,11 @@ case "$cmd" in
   approval-drift)
     [ "$#" -eq 1 ] || usage
     approval_drift "$1"
+    ;;
+  contract)
+    [ "$#" -eq 1 ] || usage
+    case "$1" in *[!0-9]*|'') usage ;; esac
+    contract "$1"
     ;;
   parent-check)
     [ "$#" -eq 2 ] || usage

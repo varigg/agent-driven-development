@@ -79,8 +79,9 @@ lives inside `skills/` rather than at the repo root.
     (ADR 0009): the first prints the truncated sha256 of an issue's live body —
     the value an approval records — and the second compares that against the
     last `Approved-body:` marker among comments by the repo's OWNER, MEMBER or
-    COLLABORATOR authors, exiting 1 on drift. The author filter is what stops
-    a stranger's later marker on a public repo from shadowing the real one.
+    COLLABORATOR authors, excluding bots too, exiting 1 on drift. The author
+    filter is what stops a stranger's later marker on a public repo from
+    shadowing the real one.
     The hash computation and the marker scan live in `parse.sh` (`body-hash`,
     `approval-hash`) because both are text-in/conclusion-out; `tracker.sh` only
     wires them to the live body and the comment stream. The comments read pages
@@ -101,6 +102,19 @@ lives inside `skills/` rather than at the repo root.
     outside the approval hash by design: the hash keeps covering exactly the
     reviewed body, and amendments are disclosed in the PR body instead.
     Unit-tested in `tests/tracker-parse.test.sh`.
+    `contract` is the effective-contract read the implementing and reviewing
+    skills consume, so producer and reviewer judge the same contract. It
+    recognizes markers with `parse.sh`'s own marker grammars rather than
+    restating them, so a grammar change cannot leave the two disagreeing.
+    Amendments older than the body's last
+    edit are listed as presumed folded rather than dropped, keeping a silent
+    retirement visible. It shares one trusted-author predicate with
+    `approval-drift`, because an amendment, like an approval, is a human act
+    that a stranger or a bot must not be able to forge. The comments read pages
+    through the whole thread for the same reason the drift check does: a
+    truncated read would silently drop the latest amendments. Unit-tested
+    (`tests/tracker-contract.test.sh`) because trust, ordering and retirement
+    are logic rather than passthrough.
     `parent-check` is the same shape as `approval-drift` — a live read that
     hands text to `parse.sh` and reports a verdict — but round-trips a ticket's
     body through `parse.sh parent` and compares it against the parent the
