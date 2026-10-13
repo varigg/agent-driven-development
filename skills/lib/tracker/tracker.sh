@@ -30,7 +30,7 @@
 #   tracker.sh specs                             live specs-by-verdict listing
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
 #   tracker.sh approval-drift <n>                match/unrecorded exit 0, drift exits 1
-#   tracker.sh contract <n>                      effective ticket contract
+#   tracker.sh contract <n>                      body + amendments of <n> and its parent
 #   tracker.sh parent-check <n> <expected>       fail loudly unless <n>'s parsed parent is <expected>
 #   tracker.sh child-delivery <n>                live per-spec closed-child delivery lookup
 #   tracker.sh close-spec <n>                    close a Complete spec, recording each
@@ -291,6 +291,7 @@ contract_block() { # issue-number header body block-directory
   done
 }
 
+# tmpdir is deliberately not `local`, matching detach's own reasoning.
 contract() { # issue-number
   local issue=$1 ticket_body parent parent_body
 

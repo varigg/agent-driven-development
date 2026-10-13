@@ -103,11 +103,10 @@ lives inside `skills/` rather than at the repo root.
     reviewed body, and amendments are disclosed in the PR body instead.
     Unit-tested in `tests/tracker-parse.test.sh`.
     `contract` is the effective-contract read the implementing and reviewing
-    skills consume, so producer and reviewer judge the same contract. It is the
-    body plus its trusted comments, sorted into live amendments, presumed-folded
-    amendments and unmarked comments, and it classifies them with
-    `parse.sh`'s own grammars rather than restating them, so a grammar change
-    cannot leave the two disagreeing. Amendments older than the body's last
+    skills consume, so producer and reviewer judge the same contract. It
+    recognizes markers with `parse.sh`'s own marker grammars rather than
+    restating them, so a grammar change cannot leave the two disagreeing.
+    Amendments older than the body's last
     edit are listed as presumed folded rather than dropped, keeping a silent
     retirement visible. It shares one trusted-author predicate with
     `approval-drift`, because an amendment, like an approval, is a human act
