@@ -281,13 +281,9 @@ contract_block() { # issue-number header body block-directory
   done < "$dir/comments.jsonl"
 
   printf '%s\n%s\n' "$header" "$body"
-  for section in amendments folded unmarked; do
-    case "$section" in
-      amendments) printf '== AMENDMENTS #%s ==\n' "$issue" ;;
-      folded) printf '== PRESUMED FOLDED #%s ==\n' "$issue" ;;
-      unmarked) printf '== UNMARKED #%s ==\n' "$issue" ;;
-    esac
-    if [ -s "$dir/$section" ]; then cat "$dir/$section"; else printf '(none)\n'; fi
+  for section in AMENDMENTS:amendments 'PRESUMED FOLDED:folded' UNMARKED:unmarked; do
+    printf '== %s #%s ==\n' "${section%%:*}" "$issue"
+    if [ -s "$dir/${section#*:}" ]; then cat "$dir/${section#*:}"; else printf '(none)\n'; fi
   done
 }
 

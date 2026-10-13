@@ -44,6 +44,7 @@ case "$args" in
     printf '{"data":{"repository":{"issue":{"lastEditedAt":%s}}}}' "$edited" \
       | if [ -n "$filter" ]; then jq -r "$filter"; else cat; fi ;;
   "api repos/"*)
+    [ -z "${STUB_FAIL_COMMENTS:-}" ] || { echo "gh stub: comments read failed" >&2; exit 1; }
     n=${path%/comments}; n=${n##*/}
     for page in "$STUB/comments-$n-p"*.json; do
       [ -e "$page" ] || continue
@@ -190,6 +191,12 @@ page 13 2 "$(comment 61 2026-01-01T00:00:02Z a OWNER User 'Amends-contract: on p
 out="$(bash "$TRACKER" contract 13)"
 assert_contains "$out" "on page one" "contract: the first comment page is read"
 assert_contains "$out" "on page two" "contract: later comment pages are read"
+
+# --- a failed comments read fails loudly, never renders an empty contract ---
+reset
+printf 'Body.\n' > "$STUB/body-14.md"
+assert_exit 1 "contract: a failed comments read exits non-zero" \
+  env STUB_FAIL_COMMENTS=1 bash "$TRACKER" contract 14
 
 # --- CLI seam hygiene ---
 assert_exit 2 "contract: missing issue number refuses loudly" bash "$TRACKER" contract
