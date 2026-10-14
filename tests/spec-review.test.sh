@@ -138,6 +138,7 @@ assert_eq "label 8 spec" "$(head -1 "$TRACKER_LOG")" \
   "start.sh: labels the issue as a spec first"
 assert_contains "$log" "title 8" "start.sh: reads the title through the layer"
 assert_contains "$log" "body 8" "start.sh: reads the body through the layer"
+assert_not_contains "$log" "contract" "start.sh: never reads the effective contract"
 assert_eq "$(cat "$BODY")" "$(cat "$INSTALL/state/issue-8.md")" \
   "start.sh: the buffer holds the issue body"
 

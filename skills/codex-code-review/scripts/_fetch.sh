@@ -3,13 +3,13 @@
 # layer, validate the issue number, and build the per-issue context
 # buffer. Source-only.
 #
-# The buffer ($STATE_DIR/issue-<N>.context.md) is the review target handed
-# to the shared runner, so the thread keys on the issue. It exists because
-# the reviewer runs in a read-only sandbox with no network: it cannot fetch
-# the ticket itself, and the diff alone does not say what the change was
-# supposed to do. Unlike codex-spec-review's buffer this one is read-only
-# context — never an edit vehicle — so it is rebuilt from the tracker on
-# every start rather than guarded against divergence.
+# The buffer ($STATE_DIR/issue-<N>.context.md) carries the effective contract
+# and is the review target handed to the shared runner, so the thread keys on
+# the issue. It exists because the reviewer runs in a read-only sandbox with
+# no network: it cannot fetch the ticket itself, and the diff alone does not
+# say what the change was supposed to do. Unlike codex-spec-review's buffer
+# this one is read-only context — never an edit vehicle — so it is rebuilt
+# from the tracker on every start rather than guarded against divergence.
 #
 # The parent spec is included when the ticket declares one. Spec membership
 # is optional by contract: a standalone ticket reviews fine against its own
@@ -33,8 +33,7 @@ set -euo pipefail
 # The tracker seam: every tracker operation in this skill goes through it.
 LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib"
 TRACKER="$LIB/tracker/tracker.sh"
-PARSE="$LIB/tracker/parse.sh"
-if [ ! -f "$TRACKER" ] || [ ! -f "$PARSE" ]; then
+if [ ! -f "$TRACKER" ]; then
     echo "error: tracker layer not found at $LIB/tracker" >&2
     echo "       skills/lib must be installed alongside the skills." >&2
     exit 1
@@ -51,11 +50,11 @@ require_issue_number() {
 }
 
 # build_context <issue-number> <buffer-file>
-# Writes the ticket and, when declared, its parent spec into the buffer.
+# Writes the ticket's effective contract into the buffer.
 build_context() {
-    local issue="$1" file="$2" body parent adr_dir conventions_state source sources
+    local issue="$1" file="$2" contract adr_dir conventions_state source sources
     mkdir -p "$(dirname "$file")"
-    body="$(bash "$TRACKER" body "$issue")"
+    contract="$(bash "$TRACKER" contract "$issue")"
 
     # The shared reader answers from the file alone (unset-first inside), so
     # an exported ADDW_ADR_DIR never makes an unconfigured project look
@@ -79,21 +78,11 @@ build_context() {
 
     {
         printf '# Ticket #%s — %s\n\n' "$issue" "$(bash "$TRACKER" title "$issue")"
-        printf '%s\n' "$body"
+        printf '%s\n' "$contract"
+        if ! grep -q '^== PARENT #' <<< "$contract"; then
+            printf '\n---\n\nNo parent spec: this ticket stands alone. Review it against its own acceptance criteria.\n'
+        fi
     } > "$file"
-
-    parent="$(printf '%s\n' "$body" | bash "$PARSE" parent)"
-    if [ -n "$parent" ]; then
-        {
-            printf '\n---\n\n# Parent spec #%s — %s\n\n' \
-                "$parent" "$(bash "$TRACKER" title "$parent")"
-            bash "$TRACKER" body "$parent"
-            printf '\n'
-        } >> "$file"
-    else
-        printf '\n---\n\nNo parent spec: this ticket stands alone. Review it against its own acceptance criteria.\n' \
-            >> "$file"
-    fi
 
     if [ -n "$adr_dir" ]; then
         printf '\n---\n\nADR directory for guardrail review: `%s`\n' "$adr_dir" >> "$file"
