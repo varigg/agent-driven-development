@@ -89,8 +89,10 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
 2. **Address the feedback.** Push back in a PR reply where a comment is mistaken — agreement
    is not the goal, resolution is. Commit with explicit paths and a conventional subject.
 
-3. **Re-run the gate** (Step 9) and **refresh the PR body's gate summary** — a stale summary
-   is worse than none, because it reads as current evidence.
+3. **Re-run the gate** (Step 9) and **refresh the PR body's gate summary and contract
+   disclosure** — a stale summary is worse than none, because it reads as current evidence.
+   Re-read the effective contract (Step 4) before addressing feedback, too: an amendment
+   posted since the PR opened steers the fix like any other.
 
 4. **Re-enter the codex loop by judgment.** Substantive changes — new logic, changed control
    flow, a different approach — earn another round. Comment-only or rename-only changes do
@@ -478,8 +480,7 @@ human has to do by archaeology:
 5. **Contract disclosure** — the output of
    `bash .claude/skills/addw-implement/scripts/disclosure.sh <issue-number>`, run at PR time.
    It lists every amendment that steered the build, plus presumed-folded and unmarked
-   comments, or its `Contract amendments: none — no amendments, presumed-folded or unmarked
-   comments.` line. Unmarked comments are disclosed and never a reason to stop.
+   comments, or states that there are none.
 6. **Doc-impact note** — which living docs this changed, or that none needed changing. A
    document archived here is named with its archive issue number; a supersession also lists the
    vocabulary it swept, since that list exists nowhere else.

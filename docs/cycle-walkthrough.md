@@ -173,7 +173,7 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    start another ticket. The title must parse as a conventional-commit subject, because it
    becomes the squash subject on `main` and the changelog projects exactly those subjects.
 
-**You review and merge on GitHub.** The PR body carries eight things so you can judge without
+**You review and merge on GitHub.** The PR body carries what you need to judge without
 archaeology: the `Closes #n` link, the gate summary verbatim, the codex verdict with round
 count, covered SHA, and ticket-body hash, any skip disclosures, every contract amendment,
 presumed-folded and unmarked comment the build saw, the doc-impact note, a prose
