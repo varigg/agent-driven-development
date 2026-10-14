@@ -86,13 +86,14 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    verdict judged is one command. Surface drift before addressing anything: the feedback
    may be responding to a ticket the verdict never saw.
 
+   Then re-read the effective contract (Step 4), before addressing anything: an amendment
+   posted since the PR opened steers the fix like any other.
+
 2. **Address the feedback.** Push back in a PR reply where a comment is mistaken — agreement
    is not the goal, resolution is. Commit with explicit paths and a conventional subject.
 
 3. **Re-run the gate** (Step 9) and **refresh the PR body's gate summary and contract
    disclosure** — a stale summary is worse than none, because it reads as current evidence.
-   Re-read the effective contract (Step 4) before addressing feedback, too: an amendment
-   posted since the PR opened steers the fix like any other.
 
 4. **Re-enter the codex loop by judgment.** Substantive changes — new logic, changed control
    flow, a different approach — earn another round. Comment-only or rename-only changes do
