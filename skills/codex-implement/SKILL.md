@@ -17,7 +17,7 @@ export STATE_DIR=".claude/skills/codex-implement/state"
 ## Arguments
 
 - `<target>` — auto: start if no thread, resume if one exists. Usually the ticket's issue number, so the thread keys per ticket; any free-form label works for unticketed work.
-- Optional trailing instructions — **this is where the scope lives.** Codex cannot read the tracker, so the caller states what to build in its own words, e.g. `"Implement only the parser; leave the CLI wiring to a later ticket"`.
+- Optional trailing instructions — **this is where the scope lives.** Codex cannot read the tracker, so the caller states what to build in its own words, e.g. `"Implement only the parser; leave the CLI wiring to a later ticket"`. Called through `addw-implement`'s `delegate.sh`, the instructions also end with the ticket's effective contract, verbatim from the tracker.
 - `reset <target>` — drop state, next call starts fresh.
 - `show <target>` — display the latest report without calling Codex.
 

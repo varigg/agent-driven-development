@@ -129,7 +129,9 @@ The fresh-build path (§ *Mode B: Fresh Build*):
 
 4. **Implementation via a role key.** `ADDW_IMPLEMENT_SKILL` in `docs/addw.env` names the
    adapter — `codex-implement` by default — or the reserved value `inline`, meaning the main
-   agent drives `tdd` itself (§ *Step 6: Implementation*). Either way the main agent reads
+   agent drives `tdd` itself (§ *Step 6: Implementation*). The build works from the
+   ticket's effective contract — its body plus live amendments — and an adapter is handed
+   that contract verbatim, re-read on every start and resume. Either way the main agent reads
    the full diff afterwards: findings against the ticket's own Deliverable are fixed
    in-branch — never ping-ponged back to the adapter — while discovered work outside the
    acceptance criteria files as a `backlog` ticket rather than riding the PR, with
@@ -171,9 +173,10 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    start another ticket. The title must parse as a conventional-commit subject, because it
    becomes the squash subject on `main` and the changelog projects exactly those subjects.
 
-**You review and merge on GitHub.** The PR body carries seven things so you can judge without
+**You review and merge on GitHub.** The PR body carries what you need to judge without
 archaeology: the `Closes #n` link, the gate summary verbatim, the codex verdict with round
-count, covered SHA, and ticket-body hash, any skip disclosures, the doc-impact note, a prose
+count, covered SHA, and ticket-body hash, any skip disclosures, every contract amendment,
+presumed-folded and unmarked comment the build saw, the doc-impact note, a prose
 summary, and a merge recommendation (§ *PR Body Contract*). If time has passed since the
 verdict, `tracker.sh approval-drift <n>` re-checks the ticket against its marker before you
 merge. Squash is the default; rebase-merge is recommended only

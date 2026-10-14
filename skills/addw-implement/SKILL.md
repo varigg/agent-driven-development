@@ -86,11 +86,14 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    verdict judged is one command. Surface drift before addressing anything: the feedback
    may be responding to a ticket the verdict never saw.
 
+   Then re-read the effective contract (Step 4), before addressing anything: an amendment
+   posted since the PR opened steers the fix like any other.
+
 2. **Address the feedback.** Push back in a PR reply where a comment is mistaken — agreement
    is not the goal, resolution is. Commit with explicit paths and a conventional subject.
 
-3. **Re-run the gate** (Step 9) and **refresh the PR body's gate summary** — a stale summary
-   is worse than none, because it reads as current evidence.
+3. **Re-run the gate** (Step 9) and **refresh the PR body's gate summary and contract
+   disclosure** — a stale summary is worse than none, because it reads as current evidence.
 
 4. **Re-enter the codex loop by judgment.** Substantive changes — new logic, changed control
    flow, a different approach — earn another round. Comment-only or rename-only changes do
@@ -193,9 +196,18 @@ If the branch already exists on the remote, **surface that to the human before p
 
 ### Step 4: Read the Ticket and Its Spec
 
-Read the ticket body in full, then the parent spec when the ticket names one
-(`tracker.sh body <parent>`) — the spec carries the decisions the ticket assumes. After
-reading the parent spec, run
+Read the ticket and its parent spec through the effective-contract subcommand:
+
+```bash
+bash .claude/skills/lib/tracker/tracker.sh contract <issue-number>
+```
+
+One call covers both when the ticket names a parent, and includes the body, amendments,
+presumed-folded amendments, and unmarked comments. An amendment overrides the body where
+they conflict, and a later amendment overrides an earlier one. Presumed-folded amendments
+are already reflected in the body. If you cannot tell what an amendment overrides, stop and
+ask the human rather than guess. Unmarked comments are surfaced in the step output and are
+never a reason to stop. After reading the parent spec, run
 `bash .claude/skills/lib/tracker/tracker.sh approval-drift <parent>`. If it reports drift,
 surface it to the human before building — the tickets may descend from content the spec
 reviewer never saw. `no approval hash recorded` needs no action; it identifies a pre-feature
@@ -253,25 +265,29 @@ The implementing agent is the **role key** `ADDW_IMPLEMENT_SKILL` in `docs/addw.
   this session. Never invoke Matt's `implement` skill; `tdd` is the programmatic primitive.
   If no `tdd` is installed, drive the discipline directly — failing test first, then the code
   that passes it. The skill encodes the loop; it does not own it.
-- **Any other value** names an adapter skill, invoked through the adapter contract. The issue
-  number is the target, so the thread keys per ticket; the **instruction block carries the
-  scope**, because the adapter cannot read the tracker:
+- **Any other value** names an adapter skill, invoked through the adapter contract by
+  `delegate.sh`, which resolves the role key itself. The issue number is the target, so the
+  thread keys per ticket; the **instruction block carries the scope**, because the adapter
+  cannot read the tracker:
 
   ```bash
-  eval "$(bash .claude/skills/lib/config/vars.sh ADDW_IMPLEMENT_SKILL || echo "(exit $?)")"
-  bash ".claude/skills/${ADDW_IMPLEMENT_SKILL:-codex-implement}/scripts/start.sh" \
+  bash .claude/skills/addw-implement/scripts/delegate.sh start \
       <issue-number> "<what to build, from the ticket and the spec's decisions>. \
   Make the tests in <paths> pass. Do NOT modify any test file."
   ```
 
-  You have read the ticket and its spec; the adapter has not. State the scope in your own
-  words — what to build, what to leave to a later ticket, which conventions bind — rather than
-  pasting the ticket wholesale. The instruction block must also name any ADR `Gate` bearing on
-  the ticket's work: the adapter cannot read the tracker and is never told to read the ADR
-  directory, so a constraint reaches it only if you carry it. Parse the
+  The delegate re-reads the effective contract on every call and appends it verbatim to the
+  instruction block, so the adapter never builds from a paraphrase or a stale copy. The
+  contract is the raw material; the scope is your reading of it. State the scope in your own
+  words — what to build, what to leave to a later ticket, which conventions bind — and do not
+  paste the ticket. The instruction block must also name any ADR `Gate`
+  bearing on the ticket's work: the adapter cannot read the tracker and is never told to read
+  the ADR directory, so a constraint reaches it only if you carry it. Parse the
   trailing tag: `IMPLEMENTATION_COMPLETE` → proceed.
-  `IMPLEMENTATION_PARTIAL` → read the report, then `resume.sh` for the remainder or finish
-  small leftovers yourself.
+  `IMPLEMENTATION_PARTIAL` → read the report, then invoke
+  `bash .claude/skills/addw-implement/scripts/delegate.sh resume <issue-number> "<remainder>"`
+  for the remainder or finish small leftovers yourself. A resume re-reads and appends the
+  current contract too.
 
   The adapter runs in a sandbox — `codex-implement`'s is workspace-write with no network —
   and three of its refusals shape how you read the report. It **cannot write `.git`**: you
@@ -452,7 +468,7 @@ session. Report the PR URL and what the human is being asked to judge.
 
 ## PR Body Contract
 
-Every ticket PR body carries all seven, in this order. A missing element is a review the
+Every ticket PR body carries all eight, in this order. A missing element is a review the
 human has to do by archaeology:
 
 1. **Closure link** — `Closes #<issue-number>`, so the merge closes the ticket as completed.
@@ -462,12 +478,16 @@ human has to do by archaeology:
 4. **Disclosures** — a skipped plan comment or a departure from it, a skipped pre-filter, a
    skipped review round, an edited contract test, an accepted open finding. If there are none,
    say none.
-5. **Doc-impact note** — which living docs this changed, or that none needed changing. A
+5. **Contract disclosure** — the output of
+   `bash .claude/skills/addw-implement/scripts/disclosure.sh <issue-number>`, run at PR time.
+   It lists every amendment that steered the build, plus presumed-folded and unmarked
+   comments, or states that there are none.
+6. **Doc-impact note** — which living docs this changed, or that none needed changing. A
    document archived here is named with its archive issue number; a supersession also lists the
    vocabulary it swept, since that list exists nowhere else.
-6. **What changed** — a short prose summary of the change and anything the reviewer should
+7. **What changed** — a short prose summary of the change and anything the reviewer should
    look at first.
-7. **Merge recommendation** — **squash by default**. Recommend **rebase-merge** only when the
+8. **Merge recommendation** — **squash by default**. Recommend **rebase-merge** only when the
    branch's commits are each individually substantive *and* each conventionally titled, since
    the changelog projects every subject that lands on main.
 
