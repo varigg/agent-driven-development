@@ -11,6 +11,8 @@ commit — and produce an incremental review:
 Re-read `{{TARGET}}` if the ticket matters to a finding — it is rebuilt from the tracker on every
 resume, so an edited ticket reads as it now stands.
 
+Remember: an amendment overrides the body where they conflict, and a later amendment overrides an earlier one.
+
   1. Confirm whether each of your prior findings is now addressed. Quote the prior finding
      briefly, then state addressed / not addressed / partially addressed with the `file:line`
      references that resolved (or didn't).

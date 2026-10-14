@@ -17,8 +17,9 @@ State (thread ID, review text, event log) persists under
 `.claude/skills/codex-code-review/state/`, keyed on the issue number. The scripts wrap the
 shared runner in `.claude/skills/lib/codex/` with this skill's prompts and state — the same
 pattern as `codex-spec-review`. The per-issue file `state/issue-<N>.context.md` holds the
-ticket body, the parent spec's, and the project's configured ADR directory, and is the
-target handed to the runner.
+ticket's effective contract in the tracker's fixed format — its body, amendments, presumed-folded
+and unmarked comments, and the parent spec's when declared — plus the project's configured ADR
+directory, and is the target handed to the runner.
 
 That buffer exists because the reviewer runs in a read-only sandbox with **no network**: it
 cannot fetch the ticket itself, and a diff without the intent behind it is unreviewable for

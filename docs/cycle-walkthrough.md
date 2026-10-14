@@ -161,7 +161,7 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    the critical-path floor that debt may never defer — lives in the same section.
 
 8. **The codex code-review loop**, over the full merge-base-to-working-tree diff with the
-   ticket and its parent spec as context, capped at five rounds (§ *Step 10: Codex Code
+   same effective contract the build saw as context, capped at five rounds (§ *Step 10: Codex Code
    Review Loop*; adapter mechanics in `skills/codex-code-review/SKILL.md` § *Loop Shape*,
    findings judged against `skills/codex-code-review/checklist.md`). **The final round runs
    against a fully committed HEAD**, and that SHA is what the verdict covers — recorded

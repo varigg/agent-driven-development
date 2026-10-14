@@ -42,16 +42,15 @@ mkdir -p "$INSTALL/skills/codex-code-review" \
          "$INSTALL/bin"
 cp -R "$SKILL/scripts" "$SKILL/prompts" "$INSTALL/skills/codex-code-review/"
 cp -R "$REPO/skills/lib/codex" "$REPO/skills/lib/config" "$INSTALL/skills/lib/"
-cp "$REPO/skills/lib/tracker/parse.sh" "$INSTALL/skills/lib/tracker/parse.sh"
 
 # Recording stand-in for the tracker layer: appends every call to $TRACKER_LOG
-# and serves the canned body/title the test wrote.
+# and serves the canned contract/title the test wrote.
 cat > "$INSTALL/skills/lib/tracker/tracker.sh" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "$TRACKER_LOG"
 case "${1:-}" in
-  body)  cat "$TRACKER_BODY" ;;
+  contract) cat "$TRACKER_CONTRACT" ;;
   title) printf '%s\n' "${TRACKER_TITLE:-a ticket}" ;;
 esac
 SH
@@ -67,11 +66,34 @@ printf '{"type":"thread.started","thread_id":"t-stub"}\n'
 SH
 chmod +x "$INSTALL/skills/lib/tracker/tracker.sh" "$INSTALL/bin/codex"
 
-BODY="$work/body.md"
-printf '## Parent\n\n- #2\n\n## What to build\n\nA ticket body.\n' > "$BODY"
+CONTRACT="$work/contract.md"
+cat > "$CONTRACT" <<'EOF'
+== TICKET #12 ==
+## Parent
+
+- #2
+
+## What to build
+
+A ticket body.
+== AMENDMENTS #12 ==
+(none)
+== PRESUMED FOLDED #12 ==
+(none)
+== UNMARKED #12 ==
+(none)
+== PARENT #2 ==
+A parent spec.
+== AMENDMENTS #2 ==
+(none)
+== PRESUMED FOLDED #2 ==
+(none)
+== UNMARKED #2 ==
+(none)
+EOF
 
 export TRACKER_LOG="$work/tracker.log"
-export TRACKER_BODY="$BODY"
+export TRACKER_CONTRACT="$CONTRACT"
 export TRACKER_TITLE="fix: a ticket under review"
 
 # A project root is where the wrapper reads configuration from, so each case
@@ -119,8 +141,8 @@ assert_not_contains "$buf" "docs/adr" \
   "start: the buffer names no hardcoded ADR directory"
 assert_contains "$buf" "A ticket body." \
   "start: the buffer still carries the ticket body"
-assert_contains "$(cat "$TRACKER_LOG")" "body 12" \
-  "start: the ticket is read through the tracker layer"
+assert_contains "$(cat "$TRACKER_LOG")" "contract 12" \
+  "start: the effective contract is read through the tracker layer"
 # The conventions sources travel the same way (ADR 0016): each listed file by
 # name, for the reviewer to read whole.
 assert_contains "$buf" '- `CLAUDE.md`' \
@@ -141,6 +163,87 @@ assert_not_contains "$buf" "docs/adr" \
   "resume: the buffer names no hardcoded ADR directory"
 assert_contains "$buf" '- `docs/CONVENTIONS.md`' \
   "resume: the buffer lists the conventions sources"
+
+# --- the effective contract is carried verbatim ---------------------------
+
+AMENDMENT_CONTRACT="$work/contract-amendment.md"
+cat > "$AMENDMENT_CONTRACT" <<'EOF'
+== TICKET #17 ==
+## What to build
+
+The body says the old behavior.
+== AMENDMENTS #17 ==
+-- 901 2026-10-14T22:38:17Z varigg --
+Amends-contract: use the new behavior
+
+Literal values: $HOME, backslash \, and & stay unchanged.
+== PRESUMED FOLDED #17 ==
+(none)
+== UNMARKED #17 ==
+(none)
+== PARENT #243 ==
+Parent spec text.
+== AMENDMENTS #243 ==
+(none)
+== PRESUMED FOLDED #243 ==
+(none)
+== UNMARKED #243 ==
+(none)
+EOF
+export TRACKER_CONTRACT="$AMENDMENT_CONTRACT"
+AMENDMENT_CONFIG='ADDW_ADR_DIR="docs/decisions"
+ADDW_CONVENTIONS=
+'
+project="$(new_project amendment "$AMENDMENT_CONFIG")"
+state="$work/state-amendment"
+out="$(run_start "$project" "$state" 17 2>&1)" \
+  || fail "start.sh (amendment contract): exited non-zero: $out"
+expected="$work/expected-amendment.context.md"
+{
+  printf '# Ticket #17 — %s\n\n' "$TRACKER_TITLE"
+  cat "$AMENDMENT_CONTRACT"
+  printf '\n---\n\nADR directory for guardrail review: `docs/decisions`\n'
+  printf '\n---\n\nConventions sources: none — the project declares no rules (`ADDW_CONVENTIONS=`). Skip the convention checklist items and say in the review that it ran without a conventions check.\n'
+} > "$expected"
+cmp -s "$expected" "$state/issue-17.context.md" \
+  || fail "amendment contract: the tracker output was not carried byte-for-byte"
+
+# A standalone contract has all fixed-format sections but no parent block, so
+# the adapter supplies the existing standalone-review note.
+STANDALONE_CONTRACT="$work/contract-standalone.md"
+cat > "$STANDALONE_CONTRACT" <<'EOF'
+== TICKET #18 ==
+## What to build
+
+A standalone ticket.
+== AMENDMENTS #18 ==
+(none)
+== PRESUMED FOLDED #18 ==
+(none)
+== UNMARKED #18 ==
+(none)
+EOF
+export TRACKER_CONTRACT="$STANDALONE_CONTRACT"
+project="$(new_project standalone "$AMENDMENT_CONFIG")"
+state="$work/state-standalone"
+out="$(run_start "$project" "$state" 18 2>&1)" \
+  || fail "start.sh (standalone contract): exited non-zero: $out"
+buf="$(cat "$state/issue-18.context.md")"
+assert_contains "$buf" "== AMENDMENTS #18 ==" \
+  "standalone contract: amendment section reaches the buffer"
+assert_contains "$buf" "== PRESUMED FOLDED #18 ==" \
+  "standalone contract: presumed-folded section reaches the buffer"
+assert_contains "$buf" "== UNMARKED #18 ==" \
+  "standalone contract: unmarked section reaches the buffer"
+assert_contains "$buf" "No parent spec: this ticket stands alone. Review it against its own acceptance criteria." \
+  "standalone contract: no-parent note is appended"
+assert_not_contains "$buf" "== PARENT #" \
+  "standalone contract: no parent block is invented"
+
+start_tpl="$(cat "$SKILL/prompts/start.tpl")"
+assert_contains "$start_tpl" \
+  "An amendment overrides the body where they conflict and a later amendment overrides an earlier one." \
+  "start prompt: states amendment precedence"
 
 # --- no directory configured: say so, never guess --------------------------
 
