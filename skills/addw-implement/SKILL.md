@@ -92,7 +92,7 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
 2. **Address the feedback.** Push back in a PR reply where a comment is mistaken — agreement
    is not the goal, resolution is. Commit with explicit paths and a conventional subject.
 
-3. **Re-run the gate** (Step 9) and **refresh the PR body's gate summary and contract
+3. **Re-run the gate** (Step 8) and **refresh the PR body's gate summary and contract
    disclosure** — a stale summary is worse than none, because it reads as current evidence.
 
 4. **Re-enter the codex loop by judgment.** Substantive changes — new logic, changed control
@@ -252,7 +252,7 @@ external request shape — write those tests **now**, before any implementation:
 
 They are **off-limits to the implementer** — say so in its instructions. If an interface
 mismatch surfaces later, you fix the test yourself and say why in the PR body. Work outside
-the critical-path floor skips this step; its tests are authored in Step 9. Freezing is an
+the critical-path floor skips this step; its tests are authored in Step 8. Freezing is an
 agent discipline against implementer drift, not a human gate: test code receives **no
 pre-Boundary approval** — PR review is where tests are judged, like every other part of the
 diff (ADR 0017).
@@ -320,20 +320,7 @@ conventions check. What happens to a problem depends on whether the ticket cover
 
 Commit with explicit paths (never `git add -A`, never "wip") and a conventional subject.
 
-### Step 7: Cold Pre-Filter Review
-
-Run a cold `code-review` over the branch diff before spending codex rounds. It breaks
-ownership bias: you are reviewing your own work, and a cold read catches what a warm one
-cannot. Matt's is the one this step was written around, but nothing turns on whose prompt
-runs — any competent two-axis review earns the same thing, and a plain instruction to review
-the diff against the ticket is a fair substitute where no skill is installed. Name in the PR
-body which one ran, since more than one plugin publishes a `code-review` and "the pre-filter
-ran" should not imply a skill that did not.
-
-**Skippable by judgment** for a genuinely trivial diff — two nets remain (the codex loop and
-human review). A skip is not free: it is **disclosed in the PR body**, with the reason.
-
-### Step 8: Doc Impact
+### Step 7: Doc Impact
 
 If this ticket changed documented design, update the affected living-doc passages **now** —
 a conventions file, a charter source, an ADR — so the reviewed diff carries them and the docs
@@ -380,7 +367,7 @@ retired terms would serve a transient purpose forever.
 
 If nothing documented changed, say so; the PR body carries the note either way.
 
-### Step 9: Testing Gate
+### Step 8: Testing Gate
 
 Author any missing tests for new logic first, then run the gate with the affected test paths —
 selecting them is your judgment, running and reporting them is mechanical:
@@ -389,14 +376,31 @@ selecting them is your judgment, running and reporting them is mechanical:
 bash .claude/skills/lib/gate/gate.sh <affected test paths>
 ```
 
-Keep its single summary line **verbatim**; the PR body carries it and the review loop is
-handed it as context. The gate must be green before cross-model review starts — a red gate
-wastes codex rounds on findings the ladder already found.
+Keep its single summary line **verbatim**; the PR body carries the line from the most recent
+gate run over the committed diff, and the review loop is handed that line as context. The
+gate must be green before the pre-filter and before cross-model review starts, and green
+again after any fixes the pre-filter causes — a red gate wastes codex rounds on findings the
+ladder already found.
 
 Coverage discipline: test observable behavior, never internal wiring. If mock setup outgrows
 the test's assertions, record the gap in the coverage-debt ledger rather than fighting it —
 but the critical-path floor keeps at least one behavioral test regardless. Never hide
 untested code behind ignore comments or lowered gates.
+
+### Step 9: Cold Pre-Filter Review
+
+By default, run a cold `code-review` over the doc-impacted diff after the gate is green and
+before spending codex rounds. It breaks ownership bias: you are reviewing your own work, and
+a cold read catches what a warm one cannot. Matt's is the one this step was written around,
+but nothing turns on whose prompt runs — any competent two-axis review earns the same thing,
+and a plain instruction to review the diff against the ticket is a fair substitute where no
+skill is installed. Name in the PR body which one ran, since more than one plugin publishes a
+`code-review` and "the pre-filter ran" should not imply a skill that did not.
+
+**Skippable by judgment** for a genuinely trivial diff — two nets remain (the codex loop and
+human review). A skip is not free: it is **disclosed in the PR body**, with the reason. If the
+pre-filter causes code changes, commit them and re-run the gate before Step 10; the gate
+summary carried into the PR body and the review loop is from that last run.
 
 ### Step 10: Codex Code Review Loop
 
@@ -472,7 +476,8 @@ Every ticket PR body carries all eight, in this order. A missing element is a re
 human has to do by archaeology:
 
 1. **Closure link** — `Closes #<issue-number>`, so the merge closes the ticket as completed.
-2. **Gate summary** — the gate's line, verbatim.
+2. **Gate summary** — the gate's line, verbatim, from the most recent gate run over the
+   committed diff.
 3. **Codex verdict** — the tag, the round count, the commit SHA it covers, and the ticket-body
    hash the verdict covers.
 4. **Disclosures** — a skipped plan comment or a departure from it, a skipped pre-filter, a
@@ -498,6 +503,10 @@ human has to do by archaeology:
 - **One ticket per session.** Context from a finished ticket contaminates the next one's
   judgment, and the frontier may have moved.
 - **The gate before the loop, always.** Cross-model review is expensive; the ladder is not.
+- **The pre-filter is default-on rather than risk-triggered:** #160 was found by a pre-filter on a
+  routine refactor no risk rule would have selected; the risk call would be made by the author
+  whose ownership bias this step exists to break; and it is the cheap review whose findings
+  save codex rounds.
 - **Surface reviews verbatim.** Do not paraphrase a finding you are about to argue with.
 - If the reviewer repeats a finding you addressed, re-read it carefully — you likely fixed an
   adjacent concern rather than the one raised.
