@@ -379,7 +379,7 @@ bash .claude/skills/lib/gate/gate.sh <affected test paths>
 Keep its single summary line **verbatim**; the PR body carries the line from the most recent
 gate run over the committed diff, and the review loop is handed that line as context. The
 gate must be green before the pre-filter and before cross-model review starts, and green
-again after any fixes the pre-filter causes — a red gate wastes codex rounds on findings the
+again after any fixes the pre-filter causes — a red gate wastes review rounds on findings the
 ladder already found.
 
 Coverage discipline: test observable behavior, never internal wiring. If mock setup outgrows
