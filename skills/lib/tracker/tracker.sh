@@ -61,9 +61,7 @@
 # <tag> is the first tag containing the merge commit (`git describe --tags
 # --contains`, bare tag name); <adr> is `yes` iff that commit added or
 # modified a file under the project's configured ADR directory
-# (ADDW_ADR_DIR). That is evidence a record was touched, not proof that the
-# promised decision was fulfilled; semantic fulfillment stays with review. An
-# open child of the spec is silent here — `spec-complete` answers those. Exits
+# (ADDW_ADR_DIR). An open child of the spec is silent here — `spec-complete` answers those. Exits
 # 2 when <n> is not a spec-labeled issue in the snapshot; 78 (EX_CONFIG) when
 # ADDW_ADR_DIR is unset or empty; 1 when a closing PR's merge commit is not
 # resolvable in this checkout (a shallow or stale clone) — never reported as a

@@ -153,11 +153,11 @@ lives inside `skills/` rather than at the repo root.
     touched the project's configured ADR directory (`ADDW_ADR_DIR` — the
     same key `next-adr-number.sh` and the guardrail-ADR review already read;
     unset or empty refuses rather than guessing `docs/adr`), and the first
-    tag containing it (or `unreleased`). The read is split into `child_facts`,
-    which fetches each closing PR and verifies its merge commit once, and
-    one-column projections for `adr_touched` and `first_tag`. Completeness
-    consumers compose the facts with the ADR projection only, so their
-    deliveries file ends at ADR status in column 5 and performs no tag lookup.
+    tag containing it (or `unreleased`). Internally the read is split into
+    shared facts — each closed child's status, closing PR, and verified merge
+    commit, fetched once per invocation — and the ADR-touch and first-tag
+    projections, which each consumer applies only when it needs them:
+    completeness queries take the ADR touch and never look up a tag.
     It lives here, in `tracker.sh` itself, rather than beside `frontier` and
     `specs` as a `resolve.sh` query, because it is not pure: the child-to-PR
     edge is one more tracker (`gh`) read — GraphQL's
@@ -178,11 +178,7 @@ lives inside `skills/` rather than at the repo root.
     "no" / "unreleased" it never actually checked. An ADR touch means the
     delivering commit added or modified a file under the ADR directory; it is
     evidence that a record was touched, not proof that the promised decision
-    was fulfilled. Semantic fulfillment stays with review. `close-spec` uses
-    the already gathered facts for an obligated spec and adds first tags
-    without fetching a child's closing PR again. For a spec with no ADR
-    obligation it gathers facts and first tags directly, without requiring
-    `ADDW_ADR_DIR`.
+    was fulfilled. Semantic fulfillment stays with review.
     `detach <n>` is deferral, not a `not-planned` close. Once release and spec
     lifecycles split (#144), *not planned* means abandoned, permanently, and
     only a human directs it — a maintainer setting a ticket aside for later
