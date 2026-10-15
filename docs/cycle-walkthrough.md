@@ -152,8 +152,9 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    it causes (§ *Step 8: Testing Gate*). `skills/lib/gate/gate.sh` runs the lint / typecheck
    / affected-tests recipes from `docs/addw.env` and emits **one summary line**, carried
    verbatim into the PR body. Choosing which tests are affected stays judgment; running them
-   and reporting the result is mechanical. Coverage discipline — the mock-pain tripwire, the coverage-debt ledger, and
-   the critical-path floor that debt may never defer — lives in the same section.
+   and reporting the result is mechanical. Coverage discipline — the mock-pain tripwire, the
+   coverage-debt ledger, and the critical-path floor that debt may never defer — lives in the
+   same section.
 
 7. **Cold pre-filter review** — a two-axis `code-review` that runs after the green gate over
    the doc-impacted diff, before spending codex rounds, to break the ownership bias of
