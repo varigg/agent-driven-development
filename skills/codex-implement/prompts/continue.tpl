@@ -8,10 +8,12 @@ current tree as authoritative, and do not revert the requester's adjustments.
 
 {{EXTRA_PROMPT}}
 
-Same rules as before: stay within the stated scope, leave the project's lint and
-type-check/build green, no tests unless asked, no commit/version/changelog ceremony.
+Same rules as before: stay within the stated scope, resolve ADDW_RECIPE_LINT and
+ADDW_RECIPE_TYPECHECK through the first prompt's shared-reader idiom, and apply its execution,
+empty-skip and absent-key rules; no tests unless asked, no commit/version/changelog ceremony.
 
-Same report format (files changed, deviations, leftovers, lint/build status), ending with
+Same report format (files changed, deviations, leftovers, per-recipe lint/build status — command
+and result, skipped (empty), or not run (absent key)), ending with
 exactly one tag on its own line:
   IMPLEMENTATION_COMPLETE
   IMPLEMENTATION_PARTIAL

@@ -7,7 +7,7 @@ build, because you cannot read the tracker the ticket lives on.
 
 ## Read first
 
-1. The project's agent instructions (`AGENTS.md` or `CLAUDE.md`) — conventions and commands
+1. The project's agent instructions (`AGENTS.md` or `CLAUDE.md`) — conventions
 2. Every file listed in `ADDW_CONVENTIONS` in `docs/addw.env` (single-quoted, space-separated)
    — the project's rules, each read whole. An empty value means the project declares none.
 
@@ -17,8 +17,16 @@ build, because you cannot read the tracker the ticket lives on.
   or puts files out of bounds, do not exceed it.
 - Follow the patterns the conventions files document (module boundaries, error handling,
   naming), and where they are silent, the existing codebase's. Apply DRY and KISS.
-- Run the project's lint and type-check/build commands (from the agent instructions) when done;
-  fix your own failures before finishing.
+- When done, resolve the gate's lint and type-check recipes through the shared config reader
+  (never source `docs/addw.env` or take commands from the agent instructions):
+  ```bash
+  eval "$(bash .claude/skills/lib/config/vars.sh ADDW_RECIPE_LINT ADDW_RECIPE_TYPECHECK || echo "(exit $?)")"
+  ```
+  The reader leaves an absent key unset and an explicit `KEY=` set but empty. Run each
+  non-empty recipe as the gate does — `bash -o pipefail -c "<recipe>"` — and fix your own
+  failures before finishing. An empty recipe is a deliberate skip; an absent key is reported
+  as not run, naming the key. In neither case substitute another command. Single tests, watch
+  modes and other incremental checks are at your discretion.
 - Do NOT write tests unless the instruction block explicitly asks — the requester owns the
   testing gate that follows.
 - Do NOT commit, tag, bump versions, or touch changelogs/README/tutorials — the requester owns
@@ -34,7 +42,8 @@ build, because you cannot read the tracker the ticket lives on.
 - Files changed — one line each: what and why
 - Deviations from the instructions, with rationale
 - Anything left undone or uncertain
-- lint/build status
+- lint/build status — per recipe, the command that ran and its result, or that it was skipped
+  (empty) or not run (absent key)
 
 End with exactly one tag on its own line:
   IMPLEMENTATION_COMPLETE
