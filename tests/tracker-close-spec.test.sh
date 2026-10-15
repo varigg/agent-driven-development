@@ -76,6 +76,8 @@ issues="$work/issues.json"
   printf ',\n'
   issue 503 CLOSED NOT_PLANNED 500 ready-for-agent "Abandoned child"
   printf ',\n'
+  issue 504 CLOSED COMPLETED 500 ready-for-agent "Closed by hand"
+  printf ',\n'
   issue 600 OPEN "" "" spec "Spec: partial"
   printf ',\n'
   issue 601 CLOSED COMPLETED 600 ready-for-agent "Delivered child"
@@ -94,6 +96,13 @@ issues="$work/issues.json"
      body: "## Implementation Decisions\n\n- ADR: records this change.\n"}'
   printf ',\n'
   issue 901 CLOSED COMPLETED 900 ready-for-agent "Delivered child (adr-obligated spec)"
+  printf ',\n'
+  jq -nc '
+    {number: 1000, title: "Spec: obligated, commit not in checkout", state: "OPEN",
+     stateReason: null, labels: [{name: "spec"}], assignees: [],
+     body: "## Implementation Decisions\n\n- ADR: records this change.\n"}'
+  printf ',\n'
+  issue 1001 CLOSED COMPLETED 1000 ready-for-agent "Delivered, but this checkout lacks the commit"
   printf '\n]\n'
 } > "$issues"
 export STUB_ISSUES="$issues"
@@ -108,6 +117,8 @@ case "$*" in
   *"number=502"*) printf '602\t%s\n' "$SHA_502" ;;
   *"number=601"*) printf '701\t%s\n' "$SHA_601" ;;
   *"number=901"*) printf '902\t%s\n' "$SHA_901" ;;
+  *"number=1001"*) printf '1002\tdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n' ;;
+  *"number=504"*) ;;
   *"issue close "*)
     prev=""
     for a in "$@"; do
@@ -161,11 +172,14 @@ assert_contains "$out" "no-children" \
 assert_eq 0 "$(grep -c '^issue close ' "$CALLS_LOG" || true)" \
   "close-spec: a no-children spec is never closed"
 
-# --- success: a Complete spec closes, recording a tagged, an unreleased, and
-#     an abandoned child ------------------------------------------------------
+# --- success: a Complete spec with no ADR obligation closes, recording a
+#     tagged, an unreleased, an abandoned, and a closed-by-hand child — with
+#     no ADDW_ADR_DIR configured, since nothing here checks an ADR touch -----
 
+printf 'ADDW_MAIN_BRANCH="master"\n' > "$repo/docs/addw.env"
 : > "$CALLS_LOG"
 (cd "$repo" && bash "$TRACKER" close-spec 500 >/dev/null)
+printf 'ADDW_MAIN_BRANCH="master"\nADDW_ADR_DIR="docs/adr"\n' > "$repo/docs/addw.env"
 
 close_call="$(grep '^issue close ' "$CALLS_LOG")"
 assert_contains "$close_call" "500 --reason completed" \
@@ -178,6 +192,8 @@ assert_contains "$record" "$(printf '#502: #602 (unreleased)')" \
   "close-spec: unreleased child names its PR, no tag yet"
 assert_contains "$record" "$(printf '#503: abandoned')" \
   "close-spec: not-planned child lists as abandoned"
+assert_eq "$(printf 'Closing as Complete.\n\n- #501: #601 (v1.1.0)\n- #502: #602 (unreleased)\n- #503: abandoned\n- #504: closed completed, no tracked PR')" \
+  "$record" "close-spec: the whole record keeps its existing wording"
 
 # --- success: an ADR-obligated Complete spec looks up each completed
 #     child's delivery once, not twice -------------------------------------
@@ -196,6 +212,23 @@ assert_contains "$record" "$(printf '#901: #902 (unreleased)')" \
 lookup_calls="$(grep -c 'number=901' "$CALLS_LOG" || true)"
 assert_eq 1 "$lookup_calls" \
   "close-spec: an ADR-obligated spec's completed child is looked up once, not twice"
+
+# --- an obligated spec still needs ADDW_ADR_DIR, and still refuses on a
+#     merge commit this checkout cannot resolve --------------------------------
+
+printf 'ADDW_MAIN_BRANCH="master"\n' > "$repo/docs/addw.env"
+: > "$CALLS_LOG"
+assert_exit 78 "close-spec: an obligated spec without ADDW_ADR_DIR refuses" \
+  bash -c "cd '$repo' && bash '$TRACKER' close-spec 900"
+printf 'ADDW_MAIN_BRANCH="master"\nADDW_ADR_DIR="docs/adr"\n' > "$repo/docs/addw.env"
+
+status=0
+err="$(cd "$repo" && bash "$TRACKER" close-spec 1000 2>&1 >/dev/null)" || status=$?
+assert_eq 1 "$status" "close-spec: an unresolvable merge commit refuses"
+assert_contains "$err" "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef" \
+  "close-spec: unresolvable-commit refusal names the commit"
+assert_eq 0 "$(grep -c '^issue close ' "$CALLS_LOG" || true)" \
+  "close-spec: an obligated spec is never closed without its config or its commits"
 
 # --- a number that is not a spec-labeled issue refuses loudly ---------------
 
