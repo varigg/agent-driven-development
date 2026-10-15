@@ -138,14 +138,9 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    graduation an explicit human label flip (§ *Step 6: Implementation*, ADR 0017 gate 3,
    ADR 0006).
 
-5. **Cold pre-filter review** — a two-axis `code-review` over the branch diff, run before
-   spending codex rounds, to break the ownership bias of reviewing your own work
-   (§ *Step 7: Cold Pre-Filter Review*). Skippable by judgment for a trivial diff, but the
-   skip is **disclosed in the PR body**.
-
-6. **Doc impact now, not at release.** A ticket that changed documented design updates the
+5. **Doc impact now, not at release.** A ticket that changed documented design updates the
    affected living-doc passages in its own PR, so docs are reviewed alongside the code that
-   changed them (§ *Step 8: Doc Impact*). It is also the **only** step that retires one: a
+   changed them (§ *Step 7: Doc Impact*). It is also the **only** step that retires one: a
    document the change made untrue leaves the tree here, via
    `skills/lib/docs/archive-doc.sh`, landing as a closed `archived` issue whose bytes never
    passed through an agent's context. Detection is deliberately a separate step: wherever else
@@ -153,12 +148,18 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    supersedes another archives the superseded one here and sweeps its vocabulary in the same
    PR, listing the swept terms in the PR body — the only place that list exists.
 
-7. **The deterministic gate**, green before cross-model review starts (§ *Step 9: Testing
-   Gate*). `skills/lib/gate/gate.sh` runs the lint / typecheck / affected-tests recipes from
-   `docs/addw.env` and emits **one summary line**, carried verbatim into the PR body.
-   Choosing which tests are affected stays judgment; running them and reporting the result is
-   mechanical. Coverage discipline — the mock-pain tripwire, the coverage-debt ledger, and
-   the critical-path floor that debt may never defer — lives in the same section.
+6. **The deterministic gate**, green before the pre-filter, and green again after any fixes
+   it causes (§ *Step 8: Testing Gate*). `skills/lib/gate/gate.sh` runs the lint / typecheck
+   / affected-tests recipes from `docs/addw.env` and emits **one summary line**, carried
+   verbatim into the PR body. Choosing which tests are affected stays judgment; running them
+   and reporting the result is mechanical. Coverage discipline — the mock-pain tripwire, the
+   coverage-debt ledger, and the critical-path floor that debt may never defer — lives in the
+   same section.
+
+7. **Cold pre-filter review** — a two-axis `code-review` that runs after the green gate over
+   the doc-impacted diff, before spending codex rounds, to break the ownership bias of
+   reviewing your own work (§ *Step 9: Cold Pre-Filter Review*). Skippable by judgment for a
+   trivial diff, but the skip is **disclosed in the PR body**.
 
 8. **The codex code-review loop**, over the full merge-base-to-working-tree diff with the
    same effective contract the build saw as context, capped at five rounds (§ *Step 10: Codex Code
@@ -223,7 +224,7 @@ listing also surfaces complete specs so you notice at your next session
 
 5. **A verification sweep** over the living docs — retirement, charter fit — as a
    backstop, not a bulk rewrite (§ *Step 6: Verification Sweep*). Reconciliation is small
-   here precisely because Phase 4 step 6 already did it per ticket.
+   here precisely because Phase 4 step 5 already did it per ticket.
 
 ---
 
