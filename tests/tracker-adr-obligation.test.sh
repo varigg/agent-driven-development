@@ -123,13 +123,19 @@ esac
 SH
 # `frontier` also calls `branches()`, which runs `git ls-remote --heads
 # origin` — this fixture repo has no remote, and its result is irrelevant to
-# this test, so ls-remote is stubbed empty while every other git subcommand
-# (show, describe, cat-file — child_delivery's real reads) passes through to
-# the real binary, captured before PATH is shadowed below.
+# this test, so ls-remote is stubbed empty. `describe` — the first-tag
+# lookup — is logged and fails, since a completeness verdict reads only the
+# ADR touch; the log is asserted empty because the tracker tolerates a
+# failed describe as "unreleased". Every other subcommand (show, cat-file —
+# the reads the verdict needs) passes through to the real binary, captured
+# before PATH is shadowed below.
 REAL_GIT="$(command -v git)"
+TAG_LOOKUPS="$work/tag-lookups.txt"
+: > "$TAG_LOOKUPS"
 cat > "$work/bin/git" <<GITSH
 #!/usr/bin/env bash
 [ "\$1" = "ls-remote" ] && exit 0
+[ "\$1" = "describe" ] && { printf '%s\n' "\$*" >> "$TAG_LOOKUPS"; exit 97; }
 exec "$REAL_GIT" "\$@"
 GITSH
 chmod +x "$work/bin/gh" "$work/bin/git"
@@ -162,6 +168,11 @@ verdict_200="$(cd "$repo" && bash "$TRACKER" spec-complete 200 || true)"
 assert_eq "partial" "$(head -n 1 <<<"$verdict_200")" \
   "spec-complete: unmet-obligation verdict line"
 
+# --- no completeness query looks up a release tag ---------------------------
+
+assert_eq "" "$(cat "$TAG_LOOKUPS")" \
+  "specs, frontier, spec-complete: no tag lookup for a completeness verdict"
+
 # --- isolation: spec 300's unresolvable commit only breaks queries that
 #     actually need it -------------------------------------------------------
 
@@ -176,5 +187,15 @@ assert_exit 0 "spec-complete: an unrelated spec's unresolvable commit never reac
   bash -c "cd '$repo' && bash '$TRACKER' spec-complete 100"
 assert_exit 1 "spec-complete: the target spec's own unresolvable commit still refuses" \
   bash -c "cd '$repo' && bash '$TRACKER' spec-complete 300"
+
+# --- an obligated spec's verdict still needs ADDW_ADR_DIR --------------------
+
+export STUB_ISSUES="$issues_base"
+printf 'ADDW_MAIN_BRANCH="master"\n' > "$repo/docs/addw.env"
+status=0
+err="$(cd "$repo" && bash "$TRACKER" spec-complete 100 2>&1 >/dev/null)" || status=$?
+assert_eq 78 "$status" "spec-complete: an obligated spec without ADDW_ADR_DIR refuses"
+assert_contains "$err" "ADDW_ADR_DIR is unset or empty" \
+  "spec-complete: the refusal is the existing configuration diagnostic"
 
 echo "tracker-adr-obligation: all assertions passed"

@@ -153,7 +153,11 @@ lives inside `skills/` rather than at the repo root.
     touched the project's configured ADR directory (`ADDW_ADR_DIR` — the
     same key `next-adr-number.sh` and the guardrail-ADR review already read;
     unset or empty refuses rather than guessing `docs/adr`), and the first
-    tag containing it (or `unreleased`).
+    tag containing it (or `unreleased`). Internally the read is split into
+    shared facts — each closed child's status, closing PR, and verified merge
+    commit, fetched once per invocation — and the ADR-touch and first-tag
+    projections, which each consumer applies only when it needs them:
+    completeness queries take the ADR touch and never look up a tag.
     It lives here, in `tracker.sh` itself, rather than beside `frontier` and
     `specs` as a `resolve.sh` query, because it is not pure: the child-to-PR
     edge is one more tracker (`gh`) read — GraphQL's
@@ -171,15 +175,10 @@ lives inside `skills/` rather than at the repo root.
     guessed PR, for the same reason, and a closing PR whose merge commit this
     checkout cannot resolve (shallow or stale) refuses the whole command
     loudly rather than reporting that child's ADR-touch or tag as a quiet
-    "no" / "unreleased" it never actually checked. This is the seam that
-    `specs`, `spec-complete`, and `frontier` use for the ADR-obligation fold,
-    each gathering per-spec deliveries and handing them to `resolve.sh` as an
-    optional input file, and that `close-spec` calls directly for its closing
-    record, since that record needs every completed child's PR and tag
-    regardless of any declared obligation. It stays a plain live read here
-    rather than pulled into the resolver, so the resolver stays
-    fixture-testable and this stays testable against a real git fixture
-    instead.
+    "no" / "unreleased" it never actually checked. An ADR touch means the
+    delivering commit added or modified a file under the ADR directory; it is
+    evidence that a record was touched, not proof that the promised decision
+    was fulfilled. Semantic fulfillment stays with review.
     `detach <n>` is deferral, not a `not-planned` close. Once release and spec
     lifecycles split (#144), *not planned* means abandoned, permanently, and
     only a human directs it — a maintainer setting a ticket aside for later
@@ -212,10 +211,9 @@ lives inside `skills/` rather than at the repo root.
     never recorded as delivered. On a `complete` verdict it builds the record
     — a not-planned child as `abandoned`, a completed child with no tracked PR
     as `no-pr`, and otherwise the PR and first tag or `unreleased` — reusing
-    the deliveries file `gather_deliveries` already wrote when the spec
-    declared an ADR obligation (that file already holds this exact record),
-    and calling `child_delivery` itself only when the spec declared none (the
-    file stays empty, so nothing to reuse). Either way it posts the record as
+    the facts in the deliveries file `gather_deliveries` already wrote when
+    the spec declared an ADR obligation, and gathering facts directly when it
+    did not. Either way it posts the record as
     the closing comment in the same call that closes the spec as completed,
     so a future reader learns "which version delivered spec N" from one read
     of the closed issue rather than reconstructing it from the children's own
@@ -225,10 +223,9 @@ lives inside `skills/` rather than at the repo root.
     the tracker snapshot or a git fact, and a skill here would carry only
     prose telling an agent to run one command. The GitHub close button still
     works on a Complete spec; it simply forgoes the record. Needs
-    `ADDW_ADR_DIR` configured even for a spec with no declared ADR obligation,
-    since `child_delivery`'s tag lookup runs for every completed child
-    regardless — the same requirement the plain `child-delivery` subcommand
-    already carries. Unit-tested (`tests/tracker-close-spec.test.sh`) against
+    `ADDW_ADR_DIR` configured when the spec declares an ADR obligation, but
+    not for a spec whose closing record needs only PR, commit, and tag facts.
+    Unit-tested (`tests/tracker-close-spec.test.sh`) against
     the same stubbed-`gh`-plus-real-git-fixture style `child-delivery`'s own
     test uses, since the record it posts inherits that command's git-backed
     facts.
