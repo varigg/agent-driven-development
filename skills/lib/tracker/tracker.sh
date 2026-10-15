@@ -61,11 +61,13 @@
 # <tag> is the first tag containing the merge commit (`git describe --tags
 # --contains`, bare tag name); <adr> is `yes` iff that commit added or
 # modified a file under the project's configured ADR directory
-# (ADDW_ADR_DIR). An open child of the spec is silent here — `spec-complete`
-# answers those. Exits 2 when <n> is not a spec-labeled issue in the
-# snapshot; 78 (EX_CONFIG) when ADDW_ADR_DIR is unset or empty; 1 when a
-# closing PR's merge commit is not resolvable in this checkout (a shallow or
-# stale clone) — never reported as a quiet "no" / "unreleased".
+# (ADDW_ADR_DIR). That is evidence a record was touched, not proof that the
+# promised decision was fulfilled; semantic fulfillment stays with review. An
+# open child of the spec is silent here — `spec-complete` answers those. Exits
+# 2 when <n> is not a spec-labeled issue in the snapshot; 78 (EX_CONFIG) when
+# ADDW_ADR_DIR is unset or empty; 1 when a closing PR's merge commit is not
+# resolvable in this checkout (a shallow or stale clone) — never reported as a
+# quiet "no" / "unreleased".
 #
 # close-spec <n> refuses unless <n>'s verdict (spec-complete's four-way
 # read, ADR obligation folded in) is `complete` — non-zero, naming the
@@ -75,10 +77,11 @@
 # *unreleased*; a not-planned child lists as abandoned; a completed child
 # closed by hand with no tracked PR lists as such. That record is posted as
 # the closing comment in the same `gh issue close` call, and the spec closes
-# as completed. Needs ADDW_ADR_DIR configured (78, EX_CONFIG, if not) even
-# for a spec with no declared ADR obligation, since child-delivery's tag
-# lookup runs unconditionally for every completed child. Exits 2 when <n> is
-# not a spec-labeled issue in the snapshot.
+# as completed. An obligated spec needs ADDW_ADR_DIR configured (78,
+# EX_CONFIG, if not) for its ADR-touch projection. A spec with no declared ADR
+# obligation gets its PR/commit/tag record from the facts and first-tag
+# projections without resolving ADDW_ADR_DIR. Exits 2 when <n> is not a
+# spec-labeled issue in the snapshot.
 #
 # contract <n> prints a ticket's effective contract (spec #243, ADR 0020): a
 # block headed `== TICKET #<n> ==` holding the body, then the sections
@@ -116,9 +119,9 @@ FETCH_LIMIT=""
 # skills/addw-init's Step 1.5) — the same key next-adr-number.sh and
 # codex-code-review's guardrail check already read, so a project that
 # configured a non-default ADR directory gets a correct answer here too.
-# Empty until resolve_adr_dir() runs, and only the child-delivery path needs
-# it — every other tracker.sh command must stay usable without an
-# ADDW_ADR_DIR at all.
+# Empty until resolve_adr_dir() runs. Only the public child-delivery path and
+# ADR-obligation delivery gathering need it; tag-only paths stay usable without
+# an ADDW_ADR_DIR.
 ADR_DIR=""
 
 CLOSING_PR_QUERY='
@@ -390,13 +393,14 @@ detach() { # issue-number
     --add-label backlog --remove-label ready-for-agent
 }
 
-# Writes one combined deliveries file (tracker.sh child-delivery's line shape,
-# concatenated across every open spec-labeled issue that actually declares an
-# ADR obligation) to <out-file>. resolve.sh's verdict never consults a child's
-# delivery unless the spec itself declared an obligation, so scoping the
-# lookup the same way means a project with no such spec — the common case —
-# never has to configure ADDW_ADR_DIR at all, and specs with nothing promised
-# never pay for a delivery lookup they cannot affect.
+# Writes one combined deliveries file (verified child facts plus the ADR-touch
+# column, with no tag column) across every open spec-labeled issue that
+# actually declares an ADR obligation to <out-file>. resolve.sh's verdict
+# never consults a child's delivery unless the spec itself declared an
+# obligation, so scoping the lookup the same way means a project with no such
+# spec — the common case — never has to configure ADDW_ADR_DIR at all, and
+# specs with nothing promised never pay for a delivery lookup they cannot
+# affect.
 #
 # An optional third argument scopes the whole gather to one spec — spec-
 # complete's single-target query passes its own number so that some other
@@ -418,12 +422,28 @@ gather_deliveries() { # issues.json out-file [only-spec]
   [ "${#obligated[@]}" -gt 0 ] || return 0
   resolve_adr_dir
   for spec in "${obligated[@]}"; do
-    child_delivery "$spec" "$file" >> "$out"
+    child_facts "$spec" "$file" | project_delivery adr_touched >> "$out"
   done
 }
 
-child_delivery() { # spec-number issues.json
-  local spec=$1 file=$2 num state reason b64 body parent status pr_line pr sha adr tag
+# Appends <projection>'s answer for each completed line's merge commit
+# (column 4) to a child_facts stream; other lines pass through unchanged.
+project_delivery() { # projection-function
+  local line
+  local -a fields
+
+  while IFS= read -r line; do
+    IFS=$'\t' read -r -a fields <<< "$line"
+    if [ "${fields[1]:-}" = completed ]; then
+      printf '%s\t%s\n' "$line" "$("$1" "${fields[3]}")"
+    else
+      printf '%s\n' "$line"
+    fi
+  done
+}
+
+child_facts() { # spec-number issues.json
+  local spec=$1 file=$2 num state reason b64 body parent status pr_line pr sha
 
   if ! jq -e --arg n "$spec" \
       '.[] | select((.number | tostring) == $n) | any(.labels[]?; .name == "spec")' \
@@ -460,12 +480,16 @@ child_delivery() { # spec-number issues.json
         "$num" "$sha" "$pr" >&2
       return 1
     fi
-    adr="$(adr_touched "$sha")"
-    tag="$(first_tag "$sha")"
-    printf '#%s\tcompleted\t#%s\t%s\t%s\t%s\n' "$num" "$pr" "$sha" "$adr" "$tag"
+    printf '#%s\tcompleted\t#%s\t%s\n' "$num" "$pr" "$sha"
   done < <(jq -r 'sort_by(.number)[] |
       [(.number | tostring), .state, (.stateReason // ""), (.body // "" | @base64)]
       | join("")' "$file")
+}
+
+child_delivery() { # spec-number issues.json
+  child_facts "$1" "$2" |
+    project_delivery adr_touched |
+    project_delivery first_tag
 }
 
 # Closes spec <n> as completed, refusing unless its verdict is `complete`.
@@ -473,7 +497,7 @@ child_delivery() { # spec-number issues.json
 # cleanup trap fires on the whole process's EXIT, after this function's
 # locals have gone out of scope.
 close_spec() { # spec-number
-  local spec=$1 rc=0 out verdict record status num pr sha adr tag
+  local spec=$1 rc=0 out verdict record num status pr rest
 
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "$tmpdir"' EXIT
@@ -493,24 +517,21 @@ close_spec() { # spec-number
   fi
 
   if [ -s "$tmpdir/deliveries.txt" ]; then
-    record="$(<"$tmpdir/deliveries.txt")"
+    record="$(project_delivery first_tag < "$tmpdir/deliveries.txt")"
   else
-    # child-delivery's tag lookup runs for every completed child regardless of
-    # whether this spec declared an obligation, so ADR_DIR is required here
-    # even on that path — the same requirement the plain child-delivery
-    # subcommand already carries.
-    resolve_adr_dir
-    record="$(child_delivery "$spec" "$tmpdir/issues.json")"
+    record="$(child_facts "$spec" "$tmpdir/issues.json" | project_delivery first_tag)"
   fi
 
   {
     printf 'Closing as Complete.\n\n'
-    while IFS=$'\t' read -r num status pr sha adr tag; do
+    # The tag is the last field: an obligated spec's record also carries the
+    # ADR column before it.
+    while IFS=$'\t' read -r num status pr rest; do
       [ -n "$num" ] || continue
       case "$status" in
         abandoned) printf -- '- %s: abandoned\n' "$num" ;;
         no-pr) printf -- '- %s: closed completed, no tracked PR\n' "$num" ;;
-        completed) printf -- '- %s: %s (%s)\n' "$num" "$pr" "$tag" ;;
+        completed) printf -- '- %s: %s (%s)\n' "$num" "$pr" "${rest##*$'\t'}" ;;
       esac
     done <<< "$record"
   } > "$tmpdir/comment.md"
