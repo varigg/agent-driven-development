@@ -6,7 +6,7 @@ argument-hint: "<target> [instructions] | reset <target> | show <target>"
 
 # Codex Implement
 
-Non-interactive implementation via Codex CLI in a **workspace-write** sandbox: Codex works from the instruction block it is handed, edits the working tree directly, runs the project's lint/build on its own work, and reports back. One persistent thread per target, so a large ticket can be delegated in scoped parts with full context retained.
+Non-interactive implementation via Codex CLI in a **workspace-write** sandbox: Codex works from the instruction block it is handed, edits the working tree directly, runs the gate's configured lint and type-check recipes on its own work, and reports back. One persistent thread per target, so a large ticket can be delegated in scoped parts with full context retained.
 
 State persisted under `.claude/skills/codex-implement/state/<sanitized-target>.{thread,review.txt,events.ndjson}` (the `.review.txt` file holds Codex's implementation **report** — the naming comes from the shared helpers). This skill's `scripts/start.sh` and `scripts/resume.sh` are the adapter entry points; for `reset`/`show` (shared scripts in `.claude/skills/lib/codex/`, no adapter wrapper) export first:
 
