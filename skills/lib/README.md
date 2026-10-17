@@ -53,9 +53,11 @@ lives inside `skills/` rather than at the repo root.
     release's commit range.
   - `tracker.sh` — the thin `gh`-calling wrappers (issue reads, body edits,
     labels, comments, close-with-reason, self-assign) plus the live `frontier`,
-    `spec-complete`, and `specs` queries, which fetch a snapshot and delegate all
-    reasoning to `resolve.sh`. Four wrappers exist for install verification
-    rather than for issue work — `auth`, `issues-enabled`, `labels`, and
+    `frontier --core`, `spec-complete`, and `specs` queries, which fetch a
+    snapshot and delegate all reasoning to `resolve.sh`. The core frontier
+    deliberately omits spec-completion enrichment so unavailable delivery facts
+    cannot block actionable ticket discovery. Four wrappers exist for install
+    verification rather than for issue work — `auth`, `issues-enabled`, `labels`, and
     `create-label` — because "is the tracker usable, and do the labels the
     frontier keys on exist" is a tracker question, and answering it outside
     the layer would put the one thing a future adapter must reimplement in two

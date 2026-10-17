@@ -99,6 +99,11 @@ out_deliveries="$(bash "$RESOLVE" frontier "$FIX/issues.json" "$FIX/branches.txt
 assert_contains "$out_deliveries" "$(printf '#29\tSpec: ADR obligation\ttracker.sh close-spec 29')" \
   "complete-specs: satisfied ADR obligation surfaced given the deliveries file, naming the close command"
 
+core_out="$(bash "$RESOLVE" frontier --core "$FIX/issues.json" "$FIX/branches.txt")"
+combined_ticket_sections="$(sed '/^complete-specs:$/,$d' <<<"$out")"
+assert_eq "$combined_ticket_sections" "$core_out" \
+  "frontier --core: ticket sections match the combined frontier"
+
 out_nobranches="$(bash "$RESOLVE" frontier "$FIX/issues.json")"
 assert_contains "$out_nobranches" "$(printf '#10\tAdd the widget')" \
   "frontier: branches file optional"
@@ -207,5 +212,7 @@ assert_contains "$specs_met" "$(printf '#29\tcomplete\tSpec: ADR obligation\ttra
 assert_exit 2 "no arguments refuses loudly" bash "$RESOLVE"
 assert_exit 2 "unknown subcommand refuses loudly" bash "$RESOLVE" frobnicate
 assert_exit 2 "specs: wrong argument count refuses loudly" bash "$RESOLVE" specs
+assert_exit 2 "frontier --core: extra argument refuses loudly" \
+  bash "$RESOLVE" frontier --core "$FIX/issues.json" "$FIX/branches.txt" "$FIX/deliveries-met.txt"
 
 echo "tracker-resolve: all assertions passed"

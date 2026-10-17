@@ -26,6 +26,7 @@
 #   tracker.sh snapshot                          the workflow's issues, resolver JSON, stdout
 #   tracker.sh branches                          remote branch names, one per line
 #   tracker.sh frontier                          live frontier listing
+#   tracker.sh frontier --core                   live ticket frontier without spec completion
 #   tracker.sh spec-complete <n>                 live spec-completion query
 #   tracker.sh specs                             live specs-by-verdict listing
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
@@ -683,13 +684,22 @@ case "$cmd" in
     branches
     ;;
   frontier)
-    [ "$#" -eq 0 ] || usage
+    core=no
+    if [ "$#" -eq 1 ] && [ "$1" = --core ]; then
+      core=yes
+    elif [ "$#" -ne 0 ]; then
+      usage
+    fi
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
-    gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
+    [ "$core" = yes ] || gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
     branches > "$tmpdir/branches.txt"
-    bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt" "$tmpdir/deliveries.txt"
+    if [ "$core" = yes ]; then
+      bash "$RESOLVE" frontier --core "$tmpdir/issues.json" "$tmpdir/branches.txt"
+    else
+      bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt" "$tmpdir/deliveries.txt"
+    fi
     ;;
   spec-complete)
     [ "$#" -eq 1 ] || usage

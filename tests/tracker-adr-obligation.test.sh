@@ -105,6 +105,8 @@ issues_wide="$work/issues-wide.json"
   issue 300 OPEN "" "" spec "Spec: unresolvable commit" "$OBLIGATION_BODY"
   printf ',\n'
   issue 301 CLOSED COMPLETED 300 ready-for-agent "Delivered, but this checkout lacks the commit"
+  printf ',\n'
+  issue 400 OPEN "" "" ready-for-agent "Ready while delivery facts are unavailable"
   printf '\n]\n'
 } > "$issues_wide"
 
@@ -113,6 +115,9 @@ export STUB_ISSUES="$issues_base"
 mkdir -p "$work/bin"
 cat > "$work/bin/gh" <<'SH'
 #!/usr/bin/env bash
+if [ "${SNAPSHOT_FAIL:-}" = yes ] && [[ "$*" == *"issue list "*"--state all"* ]]; then
+  exit 1
+fi
 case "$*" in
   *"issue list "*"--state all"*) cat "$STUB_ISSUES" ;;
   *"number=101"*) printf '201\t%s\n' "$SHA_101" ;;
@@ -182,6 +187,20 @@ assert_exit 1 "specs: an unresolvable commit among the obligated specs refuses t
   bash -c "cd '$repo' && bash '$TRACKER' specs"
 assert_exit 1 "frontier: same refusal reaches frontier" \
   bash -c "cd '$repo' && bash '$TRACKER' frontier"
+
+core_frontier_out="$(cd "$repo" && bash "$TRACKER" frontier --core)"
+core_frontier_sec="$(sed -n '/^frontier:$/,/^needs-rescoping:$/p' <<<"$core_frontier_out")"
+assert_contains "$core_frontier_sec" "$(printf '#400\tReady while delivery facts are unavailable')" \
+  "frontier --core: ready ticket survives unrelated delivery failure"
+assert_not_contains "$core_frontier_out" "complete-specs:" \
+  "frontier --core: complete-specs is not computed"
+assert_exit 0 "frontier --core: unrelated delivery failure is not fatal" \
+  bash -c "cd '$repo' && bash '$TRACKER' frontier --core"
+
+export SNAPSHOT_FAIL=yes
+assert_exit 1 "frontier --core: snapshot failure remains fatal" \
+  bash -c "cd '$repo' && bash '$TRACKER' frontier --core"
+unset SNAPSHOT_FAIL
 
 assert_exit 0 "spec-complete: an unrelated spec's unresolvable commit never reaches this query" \
   bash -c "cd '$repo' && bash '$TRACKER' spec-complete 100"
