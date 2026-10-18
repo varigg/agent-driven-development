@@ -54,9 +54,12 @@ lives inside `skills/` rather than at the repo root.
   - `tracker.sh` — the thin `gh`-calling wrappers (issue reads, body edits,
     labels, comments, close-with-reason, self-assign) plus the live `frontier`,
     `spec-complete`, and `specs` queries, which fetch a snapshot and delegate all
-    reasoning to `resolve.sh`. Four wrappers exist for install verification
-    rather than for issue work — `auth`, `issues-enabled`, `labels`, and
-    `create-label` — because "is the tracker usable, and do the labels the
+    reasoning to `resolve.sh`. Delivery facts are enrichment for `complete-specs`
+    only, so their failure marks that section unavailable with exit 3 instead of
+    hiding workable tickets, and never lists a spec as complete on missing data.
+    Four wrappers exist for install verification rather than for issue work —
+    `auth`, `issues-enabled`, `labels`, and `create-label` — because "is the
+    tracker usable, and do the labels the
     frontier keys on exist" is a tracker question, and answering it outside
     the layer would put the one thing a future adapter must reimplement in two
     places. `addw-init` creates the `spec` and `backlog` labels through the

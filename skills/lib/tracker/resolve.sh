@@ -8,6 +8,7 @@
 #
 # Usage:
 #   resolve.sh frontier <issues.json> [branches-file] [deliveries-file]
+#   resolve.sh frontier --specs-unavailable <diag> <issues.json> [branches-file]
 #   resolve.sh spec-complete <spec-number> <issues.json> [deliveries-file]
 #   resolve.sh specs <issues.json> [deliveries-file]
 #
@@ -27,6 +28,9 @@
 # branches, the annotation outlives the work — harmless for the ticket the PR
 # closed (closed tickets never reach the listing), stale only for one left open
 # afterwards.
+# `frontier --specs-unavailable` prints only the first three sections, skips
+# open spec-labeled issues, then prints one `complete-specs: unavailable — <diag>`
+# line in place of that section and exits 3.
 # When one ticket has blockers in several states, the loudest wins the
 # listing: unknown over not-planned over open (an open blocker excludes
 # silently — waiting is the normal case).
@@ -167,11 +171,17 @@ spec_scan() { # num
   fi
 }
 
-frontier() { # issues.json [branches-file] [deliveries-file]
+frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliveries-file]
+  local specs_unavailable=no diag=""
+  if [ "${1:-}" = --specs-unavailable ]; then
+    specs_unavailable=yes
+    diag=$2
+    shift 2
+  fi
   local branches="${2:-}"
   local deliveries="${3:-}"
   load_snapshot "$1"
-  load_deliveries "$deliveries"
+  [ "$specs_unavailable" = yes ] || load_deliveries "$deliveries"
   if [ -n "$branches" ] && [ ! -r "$branches" ]; then
     printf 'resolve.sh: cannot read branches file: %s\n' "$branches" >&2
     exit 1
@@ -183,6 +193,7 @@ frontier() { # issues.json [branches-file] [deliveries-file]
     [ "${STATE[$n]}" = "OPEN" ] || continue
 
     if has_label "$n" spec; then
+      [ "$specs_unavailable" = yes ] && continue
       spec_scan "$n"
       if [ "$SPEC_VERDICT" = complete ]; then
         spec_lines+=("$(printf '#%s\t%s\ttracker.sh close-spec %s' "$n" "${TITLE[$n]}" "$n")")
@@ -229,6 +240,10 @@ frontier() { # issues.json [branches-file] [deliveries-file]
   print_section frontier: "${frontier_lines[@]:-}"
   print_section needs-rescoping: "${rescope_lines[@]:-}"
   print_section unknown-blockers: "${unknown_lines[@]:-}"
+  if [ "$specs_unavailable" = yes ]; then
+    printf 'complete-specs: unavailable — %s\n' "$diag"
+    return 3
+  fi
   print_section complete-specs: "${spec_lines[@]:-}"
 }
 
@@ -281,7 +296,13 @@ shift
 
 case "$cmd" in
   frontier)
-    [ "$#" -eq 1 ] || [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || usage
+    if [ "${1:-}" = --specs-unavailable ]; then
+      [ "$#" -eq 3 ] || [ "$#" -eq 4 ] || usage
+    elif [[ "${1:-}" == --* ]]; then
+      usage
+    else
+      [ "$#" -eq 1 ] || [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || usage
+    fi
     frontier "$@"
     ;;
   spec-complete)

@@ -31,6 +31,11 @@ human, not for you: report them and do not start those tickets. **complete-specs
 spec has no open child left — surface it so the human can close it with the command each
 line names (`tracker.sh close-spec <n>`); a release closes no spec (ADR 0011).
 
+If `frontier` prints `complete-specs: unavailable — …` and exits 3 because delivery facts
+cannot be obtained — for example, a merge commit is missing from a shallow clone — report the
+diagnostic to the human and still pick from the **frontier** section. Those specs are unknown,
+not none-complete.
+
 ---
 
 ## Step 1: Mode Detection

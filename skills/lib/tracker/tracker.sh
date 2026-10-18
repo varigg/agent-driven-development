@@ -35,6 +35,8 @@
 #   tracker.sh child-delivery <n>                live per-spec closed-child delivery lookup
 #   tracker.sh close-spec <n>                    close a Complete spec, recording each
 #                                                 child's delivery
+# Exit status 3 from `frontier`: delivery enrichment failed; output contains
+# `complete-specs: unavailable — <diag>` and the ticket sections remain usable.
 #
 # `snapshot` means "the issues the workflow reasons about", not "every issue":
 # `archived` issues are dropped immediately after the fetch, so no consumer can
@@ -687,9 +689,23 @@ case "$cmd" in
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
-    gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
+    set +e
+    (
+      set -e
+      gather_deliveries "$tmpdir/issues.json" "$tmpdir/deliveries.txt"
+    ) 2> "$tmpdir/gather.err"
+    rc=$?
+    set -e
     branches > "$tmpdir/branches.txt"
-    bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt" "$tmpdir/deliveries.txt"
+    if [ "$rc" -eq 0 ]; then
+      bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt" "$tmpdir/deliveries.txt"
+    else
+      diag="$(awk 'NR > 1 { printf "; " } { printf "%s", $0 } END { if (NR > 0) printf "\n" }' \
+        "$tmpdir/gather.err")"
+      [ -n "$diag" ] || diag="delivery gathering exited $rc"
+      bash "$RESOLVE" frontier --specs-unavailable "$diag" \
+        "$tmpdir/issues.json" "$tmpdir/branches.txt"
+    fi
     ;;
   spec-complete)
     [ "$#" -eq 1 ] || usage

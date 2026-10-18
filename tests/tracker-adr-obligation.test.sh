@@ -12,8 +12,8 @@
 # `spec-complete <n>`'s delivery gather is scoped to <n> alone, so an
 # unrelated obligated spec's unresolvable merge commit (a shallow or stale
 # clone) never fails a query about a spec that has nothing to do with it —
-# while `specs`/`frontier`, which answer for every open spec at once,
-# correctly do refuse when that unresolvable spec is among them.
+# while `specs` refuses when that unresolvable spec is among them and
+# `frontier` degrades its complete-specs enrichment.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 . ./lib.sh
@@ -77,7 +77,7 @@ OBLIGATION_BODY='
 # Two snapshots: the base one answers the ordinary satisfied/unmet cases
 # cleanly; the wider one adds spec 300, whose child's merge commit this
 # checkout cannot resolve, so that failure can be exercised in isolation
-# rather than poisoning every other assertion's `specs`/`frontier` call.
+# rather than poisoning the base fixture's complete-specs assertions.
 issues_base="$work/issues-base.json"
 {
   printf '[\n'
@@ -105,6 +105,8 @@ issues_wide="$work/issues-wide.json"
   issue 300 OPEN "" "" spec "Spec: unresolvable commit" "$OBLIGATION_BODY"
   printf ',\n'
   issue 301 CLOSED COMPLETED 300 ready-for-agent "Delivered, but this checkout lacks the commit"
+  printf ',\n'
+  issue 400 OPEN "" "" ready-for-agent "Ready while delivery facts are unavailable"
   printf '\n]\n'
 } > "$issues_wide"
 
@@ -113,6 +115,9 @@ export STUB_ISSUES="$issues_base"
 mkdir -p "$work/bin"
 cat > "$work/bin/gh" <<'SH'
 #!/usr/bin/env bash
+if [ "${SNAPSHOT_FAIL:-}" = yes ] && [[ "$*" == *"issue list "*"--state all"* ]]; then
+  exit 1
+fi
 case "$*" in
   *"issue list "*"--state all"*) cat "$STUB_ISSUES" ;;
   *"number=101"*) printf '201\t%s\n' "$SHA_101" ;;
@@ -153,6 +158,8 @@ assert_contains "$specs_out" "$(printf '#200\tpartial\tSpec: unmet obligation')"
 # --- frontier: complete-specs reflects the same verdicts --------------------
 
 frontier_out="$(cd "$repo" && bash "$TRACKER" frontier)"
+assert_exit 0 "frontier: base fixture keeps its successful exit" \
+  bash -c "cd '$repo' && bash '$TRACKER' frontier"
 assert_contains "$frontier_out" "$(printf '#100\tSpec: satisfied obligation')" \
   "frontier: satisfied-obligation spec surfaced in complete-specs"
 assert_not_contains "$frontier_out" "$(printf '#200\t')" \
@@ -180,8 +187,29 @@ export STUB_ISSUES="$issues_wide"
 
 assert_exit 1 "specs: an unresolvable commit among the obligated specs refuses the whole listing" \
   bash -c "cd '$repo' && bash '$TRACKER' specs"
-assert_exit 1 "frontier: same refusal reaches frontier" \
-  bash -c "cd '$repo' && bash '$TRACKER' frontier"
+frontier_status=0
+frontier_wide_out="$(cd "$repo" && bash "$TRACKER" frontier)" || frontier_status=$?
+assert_eq 3 "$frontier_status" "frontier: delivery enrichment failure exits 3"
+frontier_wide_sec="$(sed -n '/^frontier:$/,/^needs-rescoping:$/p' <<<"$frontier_wide_out")"
+assert_contains "$frontier_wide_sec" "$(printf '#400\tReady while delivery facts are unavailable')" \
+  "frontier: ready ticket survives unrelated delivery failure"
+assert_contains "$frontier_wide_out" "complete-specs: unavailable — " \
+  "frontier: unavailable complete-specs section is explicit"
+assert_contains "$frontier_wide_out" deadbeef \
+  "frontier: delivery diagnostic names the missing merge commit"
+assert_not_contains "$frontier_wide_out" "$(printf '#100\tSpec: satisfied obligation')" \
+  "frontier: unavailable delivery data never lists a spec as complete"
+
+close_spec_status=0
+(cd "$repo" && bash "$TRACKER" close-spec 300) >/dev/null 2>&1 || close_spec_status=$?
+assert_eq 1 "$close_spec_status" "close-spec: unavailable delivery facts still refuse"
+
+export SNAPSHOT_FAIL=yes
+snapshot_status=0
+snapshot_out="$(cd "$repo" && bash "$TRACKER" frontier 2>/dev/null)" || snapshot_status=$?
+assert_eq 1 "$snapshot_status" "frontier: snapshot failure remains fatal"
+assert_eq "" "$snapshot_out" "frontier: snapshot failure produces no partial stdout"
+unset SNAPSHOT_FAIL
 
 assert_exit 0 "spec-complete: an unrelated spec's unresolvable commit never reaches this query" \
   bash -c "cd '$repo' && bash '$TRACKER' spec-complete 100"
