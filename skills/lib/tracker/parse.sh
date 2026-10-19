@@ -19,6 +19,15 @@
 #   parse.sh blockers [file]          -> blocker numbers one per line (exit 0)
 #   parse.sh adr-obligation [file]    -> matching Implementation Decisions
 #                                         list items, one per line, or empty (exit 0)
+#   parse.sh edges                    -> framed stdin to one record per issue:
+#                                         number\x1fparent\x1fblockers\x1fADR-items
+#                                         (blockers are space-separated; ADR items
+#                                         use \x1e), followed by any header fields
+#                                         after the four edge fields. The framing
+#                                         is `H<number>` optionally followed by
+#                                         `\x1fstate\x1freason\x1flabels\x1fassignees\x1ftitle`,
+#                                         then zero or more `B` plus body-line
+#                                         records; each record ends at newline.
 #   parse.sh strip-section <name> [file] -> body with that level-2 section
 #                                            removed entirely, or the body
 #                                            unchanged if the section is
@@ -39,55 +48,136 @@ usage() {
   exit 2
 }
 
-# Print every #N reference found in list items of the named level-2 section.
-# A ref counts only when the "#" is not glued to a preceding word character,
-# so "PR#12" and prose like "#99" outside list items never become edges. Only
-# a level-2 heading (`##`, not `###`) opens or closes the section — matching
-# strip_section's own boundary — so a subsection heading never ends the scan
-# early.
-section_refs() { # section-name
-  awk -v want="$1" '
-    /^##[^#]/ {
-      heading = $0
-      sub(/^##[[:space:]]*/, "", heading)
-      gsub(/[[:space:]]+$/, "", heading)
-      insec = (tolower(heading) == tolower(want))
-      next
+# The edge rules live in this one awk program. The single-body commands feed
+# it one body; edges feeds it the framed stream and retains the header fields
+# after the four edge fields so resolve.sh can index the rest of the snapshot
+# without another jq pass.
+edge_awk() { # parent | blockers | adr-obligation | edges
+  awk -v mode="$1" '
+    BEGIN {
+      field_sep = sprintf("%c", 31)
+      item_sep = sprintf("%c", 30)
+      issue = 0
+      have_issue = 0
+      reset_issue()
     }
-    insec && /^[[:space:]]*[-*+][[:space:]]/ {
-      rest = $0
-      while (match(rest, /#[0-9]+/)) {
-        pre = (RSTART > 1) ? substr(rest, RSTART - 1, 1) : ""
-        if (pre !~ /[[:alnum:]]/) print substr(rest, RSTART + 1, RLENGTH - 1)
-        rest = substr(rest, RSTART + RLENGTH)
+
+    function reset_issue() {
+      number = ""
+      parent = ""
+      blockers = ""
+      obligation_count = 0
+      in_parent = 0
+      in_blockers = 0
+      in_adr = 0
+      header_count = 0
+    }
+
+    function start_issue(line) {
+      if (have_issue) emit_issue()
+      reset_issue()
+      header_count = split(substr(line, 2), header_fields, field_sep)
+      number = header_fields[1]
+      issue++
+      have_issue = 1
+    }
+
+    function emit_issue(    i, n, output, item) {
+      if (mode == "edges") {
+        output = number field_sep parent field_sep blockers field_sep
+        for (i = 1; i <= obligation_count; i++) {
+          if (i > 1) output = output item_sep
+          # A separator inside an item would shift every later field.
+          item = obligation_items[issue SUBSEP i]
+          gsub(field_sep "|" item_sep, " ", item)
+          output = output item
+        }
+        for (i = 2; i <= header_count; i++) {
+          output = output field_sep header_fields[i]
+        }
+        print output
+      } else if (mode == "parent") {
+        if (parent != "") print parent
+      } else if (mode == "blockers") {
+        if (blockers != "") {
+          n = split(blockers, blocker_fields, /[[:space:]]+/)
+          for (i = 1; i <= n; i++) print blocker_fields[i]
+        }
+      } else if (mode == "adr-obligation") {
+        for (i = 1; i <= obligation_count; i++) {
+          print obligation_items[issue SUBSEP i]
+        }
       }
     }
-  '
-}
 
-# Print each list item's text within "## Implementation Decisions" — a
-# section that runs to the next level-2 heading, subsections included, same
-# boundary as section_refs/strip_section — whose text begins with the "ADR:"
-# label once leading emphasis wrapping is stripped. Only the label at the
-# item's own start counts, so a citation later in the same bullet ("ADR:
-# supersedes ADR-033's vocabulary split") rides along as the label's free
-# prose rather than disqualifying it, while a bullet with no label at all —
-# citing a number, or merely mentioning ADRs in passing — never counts.
-adr_obligations() {
-  awk '
-    /^##[^#]/ {
-      heading = $0
-      sub(/^##[[:space:]]*/, "", heading)
-      gsub(/[[:space:]]+$/, "", heading)
-      insec = (tolower(heading) == "implementation decisions")
+    # Only a level-2 heading (`##`, not `###`) opens or closes a section —
+    # the same boundary strip_section uses — so a subsection heading never
+    # ends a scan early.
+    function body_line(line,    heading, rest, pre, ref, item, label) {
+      if (line ~ /^##[^#]/) {
+        heading = line
+        sub(/^##[[:space:]]*/, "", heading)
+        gsub(/[[:space:]]+$/, "", heading)
+        in_parent = (tolower(heading) == "parent")
+        in_blockers = (tolower(heading) == "blocked by")
+        in_adr = (tolower(heading) == "implementation decisions")
+        return
+      }
+
+      # A #N ref in a list item counts only when the "#" is not glued to a
+      # preceding word character, so "PR#12" and prose like "#99" outside
+      # list items never become edges.
+      if ((in_parent || in_blockers) && line ~ /^[[:space:]]*[-*+][[:space:]]/) {
+        rest = line
+        while (match(rest, /#[0-9]+/)) {
+          pre = (RSTART > 1) ? substr(rest, RSTART - 1, 1) : ""
+          if (pre !~ /[[:alnum:]]/) {
+            ref = substr(rest, RSTART + 1, RLENGTH - 1)
+            if (in_parent) {
+              if (parent == "") parent = ref
+            } else if (!((issue SUBSEP ref) in blocker_seen)) {
+              blocker_seen[issue SUBSEP ref] = 1
+              if (blockers == "") blockers = ref
+              else blockers = blockers " " ref
+            }
+          }
+          rest = substr(rest, RSTART + RLENGTH)
+        }
+      }
+
+      # Only the "ADR:" label at the start of the item, once leading emphasis
+      # wrapping is stripped, declares an obligation: a later citation in the
+      # same bullet rides along as free prose, while a bullet with no label —
+      # citing a number, or mentioning ADRs in passing — never counts.
+      if (in_adr && line ~ /^[[:space:]]*[-*+][[:space:]]/) {
+        item = line
+        sub(/^[[:space:]]*[-*+][[:space:]]+/, "", item)
+        label = item
+        gsub(/^[*_`[:space:]]+/, "", label)
+        if (tolower(label) ~ /^adr:/) {
+          obligation_count++
+          obligation_items[issue SUBSEP obligation_count] = item
+        }
+      }
+    }
+
+    mode == "edges" {
+      if (substr($0, 1, 1) == "H") start_issue($0)
+      else if (substr($0, 1, 1) == "B" && have_issue) body_line(substr($0, 2))
+      else exit 2
       next
     }
-    insec && /^[[:space:]]*[-*+][[:space:]]/ {
-      item = $0
-      sub(/^[[:space:]]*[-*+][[:space:]]+/, "", item)
-      label = item
-      gsub(/^[*_`[:space:]]+/, "", label)
-      if (tolower(label) ~ /^adr:/) print item
+
+    {
+      body_line($0)
+    }
+
+    END {
+      if (mode == "edges") {
+        if (have_issue) emit_issue()
+      } else {
+        emit_issue()
+      }
     }
   '
 }
@@ -162,13 +252,17 @@ shift
 
 case "$cmd" in
   parent)
-    body "$@" | section_refs "Parent" | head -n 1
+    body "$@" | edge_awk parent
     ;;
   blockers)
-    body "$@" | section_refs "Blocked by" | awk '!seen[$0]++'
+    body "$@" | edge_awk blockers
     ;;
   adr-obligation)
-    body "$@" | adr_obligations
+    body "$@" | edge_awk adr-obligation
+    ;;
+  edges)
+    [ "$#" -eq 0 ] || usage
+    edge_awk edges
     ;;
   strip-section)
     [ "$#" -ge 1 ] || usage
