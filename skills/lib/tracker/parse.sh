@@ -19,15 +19,14 @@
 #   parse.sh blockers [file]          -> blocker numbers one per line (exit 0)
 #   parse.sh adr-obligation [file]    -> matching Implementation Decisions
 #                                         list items, one per line, or empty (exit 0)
-#   parse.sh edges                    -> framed stdin to one record per issue:
+#   parse.sh edges                    -> stdin framed per issue as one
+#                                         `H<number>[\x1f<field>...]` line, then
+#                                         one `B<body line>` per body line;
+#                                         stdout one line per issue:
 #                                         number\x1fparent\x1fblockers\x1fADR-items
-#                                         (blockers are space-separated; ADR items
-#                                         use \x1e), followed by any header fields
-#                                         after the four edge fields. The framing
-#                                         is `H<number>` optionally followed by
-#                                         `\x1fstate\x1freason\x1flabels\x1fassignees\x1ftitle`,
-#                                         then zero or more `B` plus body-line
-#                                         records; each record ends at newline.
+#                                         then the header's extra fields, unread
+#                                         (blockers space-separated, ADR items
+#                                         \x1e-joined). A malformed line exits 2.
 #   parse.sh strip-section <name> [file] -> body with that level-2 section
 #                                            removed entirely, or the body
 #                                            unchanged if the section is
@@ -48,10 +47,8 @@ usage() {
   exit 2
 }
 
-# The edge rules live in this one awk program. The single-body commands feed
-# it one body; edges feeds it the framed stream and retains the header fields
-# after the four edge fields so resolve.sh can index the rest of the snapshot
-# without another jq pass.
+# The edge rules live in this one awk program; the single-body commands feed
+# it one body, edges the framed stream.
 edge_awk() { # parent | blockers | adr-obligation | edges
   awk -v mode="$1" '
     BEGIN {
@@ -164,7 +161,7 @@ edge_awk() { # parent | blockers | adr-obligation | edges
     mode == "edges" {
       if (substr($0, 1, 1) == "H") start_issue($0)
       else if (substr($0, 1, 1) == "B" && have_issue) body_line(substr($0, 2))
-      else exit 2
+      else { malformed = 1; exit 2 }
       next
     }
 
@@ -173,6 +170,7 @@ edge_awk() { # parent | blockers | adr-obligation | edges
     }
 
     END {
+      if (malformed) exit 2
       if (mode == "edges") {
         if (have_issue) emit_issue()
       } else {

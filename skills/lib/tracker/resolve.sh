@@ -100,7 +100,7 @@ load_snapshot() { # issues.json
         ([.labels[].name] | join(",")), ([.assignees[].login] | join(",")),
         .title
       ] | join("\u001f"))),
-      ((.body // "") | split("\n")[] | "B" + .)
+      ((.body // "") | tostring | split("\n")[] | "B" + .)
     ' "$snapshot" | bash "$PARSE" edges
   )
 }

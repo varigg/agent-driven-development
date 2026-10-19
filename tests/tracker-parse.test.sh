@@ -122,6 +122,10 @@ printf '%s' $'## Implementation Decisions\n- ADR: glued\x1fseparator' > "$work/9
 edges_9="$(frame_body 9 "$work/9" | bash "$PARSE" edges)"
 assert_eq "9${US}${US}${US}ADR: glued separator" "$edges_9" \
   "edges: a unit separator inside an ADR item cannot shift the record's fields"
+printf 'H1\nBok\nunframed\n' > "$work/malformed"
+assert_exit 2 "edges: an unframed line refuses" bash "$PARSE" edges < "$work/malformed"
+assert_eq "" "$(bash "$PARSE" edges < "$work/malformed" 2>/dev/null || true)" \
+  "edges: a refused stream prints no partial record"
 
 # --- section span agreement: parent/blockers/adr-obligation/strip-section
 #     all treat a level-2 section as running to the next ## heading, ###
