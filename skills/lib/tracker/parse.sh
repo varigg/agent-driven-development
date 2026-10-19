@@ -26,7 +26,9 @@
 #                                         number\x1fparent\x1fblockers\x1fADR-items
 #                                         then the header's extra fields, unread
 #                                         (blockers space-separated, ADR items
-#                                         \x1e-joined). A malformed line exits 2.
+#                                         \x1e-joined, either separator inside an
+#                                         item read as a space). A malformed line
+#                                         exits 2.
 #   parse.sh strip-section <name> [file] -> body with that level-2 section
 #                                            removed entirely, or the body
 #                                            unchanged if the section is
