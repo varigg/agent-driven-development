@@ -67,7 +67,7 @@ declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS OBLIGATION DELIVE
 NUMBERS=()
 
 load_snapshot() { # issues.json
-  local snapshot=$1 num state reason labels logins b64 title body
+  local snapshot=$1 num parent blockers obligation state reason labels logins title
   if [ ! -r "$snapshot" ]; then
     printf 'resolve.sh: cannot read snapshot: %s\n' "$snapshot" >&2
     exit 1
@@ -76,27 +76,33 @@ load_snapshot() { # issues.json
     printf 'resolve.sh: snapshot is not a JSON array: %s\n' "$snapshot" >&2
     exit 1
   fi
-  # One jq pass, one parse of each body: parent, blocker, and ADR-obligation
-  # facts are indexed here so the queries never rescan the snapshot. The body
-  # travels base64'd to keep the record single-line; the separator is the ASCII
-  # unit separator, not @tsv, because tab is IFS whitespace and read would
-  # collapse the empty stateReason/assignees fields, shifting every later field
-  # left.
-  while IFS=$'\x1f' read -r num state reason labels logins b64 title; do
+  # One jq pass frames each issue as an H header followed by B-prefixed body
+  # lines. parse.sh edges extracts all three edge facts in one awk pass and
+  # carries the header fields after them so the queries never rescan the
+  # snapshot. The separator is the ASCII unit separator, not @tsv, because
+  # tab is IFS whitespace and read would collapse the empty stateReason /
+  # assignees fields, shifting every later field left.
+  while IFS=$'\x1f' read -r num parent blockers obligation state reason labels logins title; do
     NUMBERS+=("$num")
+    PARENT[$num]=$parent
+    BLOCKERS[$num]=$blockers
+    OBLIGATION[$num]=$obligation
     STATE[$num]=$state
     REASON[$num]=$reason
     LABELS[$num]=",$labels,"
     ASSIGNEES[$num]=$logins
     TITLE[$num]=$title
-    body="$(printf '%s' "$b64" | base64 -d)"
-    PARENT[$num]="$(printf '%s' "$body" | bash "$PARSE" parent)"
-    BLOCKERS[$num]="$(printf '%s' "$body" | bash "$PARSE" blockers | tr '\n' ' ')"
-    OBLIGATION[$num]="$(printf '%s' "$body" | bash "$PARSE" adr-obligation)"
-  done < <(jq -r 'sort_by(.number)[] |
-      [(.number | tostring), .state, (.stateReason // ""),
-       ([.labels[].name] | join(",")), ([.assignees[].login] | join(",")),
-       (.body // "" | @base64), .title] | join("\u001f")' "$snapshot")
+  done < <(
+    jq -r '
+      sort_by(.number)[] |
+      ("H" + ([
+        (.number | tostring), .state, (.stateReason // ""),
+        ([.labels[].name] | join(",")), ([.assignees[].login] | join(",")),
+        .title
+      ] | join("\u001f"))),
+      ((.body // "") | tostring | split("\n")[] | "B" + .)
+    ' "$snapshot" | bash "$PARSE" edges
+  )
 }
 
 load_deliveries() { # [deliveries-file]

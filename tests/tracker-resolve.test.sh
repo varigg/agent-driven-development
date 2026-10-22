@@ -216,6 +216,35 @@ specs_met="$(bash "$RESOLVE" specs "$FIX/issues.json" "$FIX/deliveries-met.txt")
 assert_contains "$specs_met" "$(printf '#29\tcomplete\tSpec: ADR obligation\ttracker.sh close-spec 29')" \
   "specs: satisfied ADR obligation reads as complete given the deliveries file, naming the close command"
 
+# --- snapshot loading process count ---
+if command -v strace >/dev/null 2>&1 && strace -o /dev/null true >/dev/null 2>&1; then
+  process_work="$(mktemp -d)"
+  trap 'rm -rf "$process_work"' EXIT
+  make_snapshot() {
+    local count=$1 file=$2 i
+    {
+      printf '['
+      for ((i = 1; i <= count; i++)); do
+        [ "$i" -eq 1 ] || printf ','
+        printf '{"number":%d,"title":"Issue %d","state":"OPEN","stateReason":"","labels":[{"name":"ready-for-agent"}],"assignees":[],"body":""}' "$i" "$i"
+      done
+      printf ']\n'
+    } > "$file"
+  }
+  make_snapshot 10 "$process_work/10.json"
+  make_snapshot 200 "$process_work/200.json"
+  strace -f -e trace=execve -o "$process_work/10.trace" \
+    bash "$RESOLVE" frontier "$process_work/10.json" >/dev/null
+  strace -f -e trace=execve -o "$process_work/200.trace" \
+    bash "$RESOLVE" frontier "$process_work/200.json" >/dev/null
+  execs_10="$(grep -c 'execve(' "$process_work/10.trace" || true)"
+  execs_200="$(grep -c 'execve(' "$process_work/200.trace" || true)"
+  assert_eq "$execs_10" "$execs_200" \
+    "snapshot loading: execve count is independent of issue count"
+else
+  printf 'tracker-resolve: process count check skipped (strace unavailable)\n'
+fi
+
 # --- CLI seam hygiene ---
 assert_exit 2 "no arguments refuses loudly" bash "$RESOLVE"
 assert_exit 2 "unknown subcommand refuses loudly" bash "$RESOLVE" frobnicate

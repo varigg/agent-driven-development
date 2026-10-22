@@ -9,6 +9,9 @@ PARSE=../skills/lib/tracker/parse.sh
 FIX=fixtures/tracker
 SPEC_FIX=fixtures/spec
 
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+
 # --- parent ---
 assert_eq "2" "$(bash "$PARSE" parent "$FIX/parent-and-sentinel.md")" \
   "parent: plain ref"
@@ -67,6 +70,62 @@ assert_eq "" "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-next-heading-ignored
 assert_eq "ADR: supersedes ADR-033's vocabulary split and ADR-035's extract-only ingestion split." \
   "$(bash "$PARSE" adr-obligation "$SPEC_FIX/adr-obligation-subsection.md")" \
   "adr-obligation: a declaration under a ### subsection of Implementation Decisions is not missed, and citation-only bullets in a sibling subsection stay excluded"
+
+# --- edges ---
+# The batch framing is H<number> followed by B-prefixed body lines. These
+# bodies deliberately exercise the delimiters and line endings the framing
+# promises to preserve.
+printf '%s' 'No sections here.' > "$work/1"
+printf '%s' $'## Parent\n- None\n\n## Blocked by\n- none — no blockers' > "$work/2"
+printf '%s' $'## Parent\n- #100\n\n## Blocked by\n- #7 and #8\n- #7\n- #8' > "$work/3"
+printf '%s' $'## Implementation Decisions\n- **ADR:** one decision\n- The rest is ordinary prose.' > "$work/4"
+printf '%s' $'## Implementation Decisions\n- ADR: first decision\n- _ADR:_ second decision' > "$work/5"
+printf '%s' $'## Parent\r\n\r\n- #42\r\n\r\n## Blocked by\r\n- #9\r\n- #9\r\n\r\n## Implementation Decisions\r\n- ADR: CRLF decision\r\n' > "$work/6"
+printf '%s' $'## Parent\n- #50\n\nBody has a tab\there and a unit separator \x1f here.\n\n## Blocked by\n- #12\n- #12' > "$work/7"
+printf '%s' $'## Parent\n- #60\n\n## Blocked by\n- #13\n\n## Implementation Decisions\n- `ADR:` no trailing newline' > "$work/8"
+
+US=$'\x1f'
+frame_body() {
+  printf 'H%s\n' "$1"
+  while IFS= read -r line || [ -n "$line" ]; do
+    printf 'B%s\n' "$line"
+  done < "$2"
+}
+
+for n in 1 2 3 4 5 6 7 8; do
+  frame_body "$n" "$work/$n"
+done | bash "$PARSE" edges > "$work/edges"
+
+edge_count=0
+while IFS=$'\x1f' read -r n batch_parent batch_blockers batch_obligation; do
+  edge_count=$((edge_count + 1))
+  expected_parent="$(bash "$PARSE" parent "$work/$n")"
+  expected_blockers=""
+  while IFS= read -r blocker; do
+    [ -n "$blocker" ] || continue
+    if [ -n "$expected_blockers" ]; then expected_blockers="$expected_blockers "; fi
+    expected_blockers="$expected_blockers$blocker"
+  done < <(bash "$PARSE" blockers "$work/$n")
+  expected_obligation=""
+  while IFS= read -r item; do
+    if [ -n "$expected_obligation" ]; then expected_obligation+=$'\x1e'; fi
+    expected_obligation="$expected_obligation$item"
+  done < <(bash "$PARSE" adr-obligation "$work/$n")
+  assert_eq "$expected_parent" "$batch_parent" "edges #$n: parent matches single-body parser"
+  assert_eq "$expected_blockers" "$batch_blockers" "edges #$n: blockers match single-body parser"
+  assert_eq "$expected_obligation" "$batch_obligation" \
+    "edges #$n: ADR obligations match single-body parser"
+done < "$work/edges"
+assert_eq "8" "$edge_count" "edges: one output record per framed issue"
+
+printf '%s' $'## Implementation Decisions\n- ADR: glued\x1fseparator' > "$work/9"
+edges_9="$(frame_body 9 "$work/9" | bash "$PARSE" edges)"
+assert_eq "9${US}${US}${US}ADR: glued separator" "$edges_9" \
+  "edges: a unit separator inside an ADR item cannot shift the record's fields"
+printf 'H1\nBok\nunframed\n' > "$work/malformed"
+assert_exit 2 "edges: an unframed line refuses" bash "$PARSE" edges < "$work/malformed"
+assert_eq "" "$(bash "$PARSE" edges < "$work/malformed" 2>/dev/null || true)" \
+  "edges: a refused stream prints no partial record"
 
 # --- section span agreement: parent/blockers/adr-obligation/strip-section
 #     all treat a level-2 section as running to the next ## heading, ###

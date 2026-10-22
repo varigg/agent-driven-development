@@ -21,6 +21,14 @@ lives inside `skills/` rather than at the repo root.
     merely mentions the word, never does. `adr-obligation`, `parent`, and
     `blockers` all treat a level-2 section as spanning every `###`
     subsection beneath it, the same boundary `strip-section` already used.
+    `edges` is the batch form `resolve.sh` loads a snapshot through: every
+    body in one awk pass, so loading starts a fixed number of processes
+    however many issues the snapshot holds. It also carries the resolver's
+    other per-issue fields through untouched, so loading needs no second jq
+    pass. The single-body commands are wrappers over
+    the same awk program, so the edge rules exist once. Each body line is
+    prefixed rather than escaped, which leaves newline as the only delimiter
+    and lets any body bytes through unencoded.
   - `resolve.sh` — pure frontier and spec-completion resolution over an issue
     snapshot (the `gh --json` shape), building on `parse.sh`. Needs `jq` and
     bash ≥ 4 (associative arrays; guarded at startup). No network: fed a
