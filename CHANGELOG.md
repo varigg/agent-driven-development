@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.5.0 — 2026-10-22
+
+### Features
+- feat(tracker): keep frontier usable when spec-delivery housekeeping fails (#264)
+- feat(code-review): review against the effective contract (#260)
+- feat(implement): build from the effective contract and hand it verbatim to codex-implement (#259)
+- feat(tracker): effective-contract subcommand with shared trusted-author filter (#257)
+- feat(implement): post the build plan as a ticket comment before code (#256)
+- feat(tracker): Amends-contract marker grammar and ADR 0020 (#254)
+
+### Fixes
+- fix(codex-implement): run the configured gate recipes for lint and type-check (#262)
+- fix(docs): next-adr-number keeps a three-digit project's ADR width (#249)
+- fix(codex): explicit CODEX_ROLE for model class; guard --notes without a value (#248)
+- fix(gate): keep the escape on & in {paths} substitution (#246)
+- fix(tracker): count approval markers only from trusted comment authors (#245)
+
+### Other
+- perf(tracker): parse every snapshot body in one pass (#238) (#265)
+- refactor(tracker): separate delivery facts from ADR-touch and first-tag projections (#263)
+- docs(implement): run the cold pre-filter after doc impact and a green gate (#261)
+- docs(tracker): say approval markers from non-humans are deliberately ignored (#247)
+
 ## v0.4.0 — 2026-10-09
 
 ### Breaking
