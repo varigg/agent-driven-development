@@ -404,7 +404,7 @@ nokey="$(base_project nokey 'ADDW_ADR_DIR="docs/decisions"
 ')"
 invalid="$(base_project invalid 'ADDW_MAIN_BRANCH=has spaces
 ')"
-missing="$(base_project missing NONE)"
+base_project missing NONE >/dev/null
 unreadable="$(base_project unreadable 'ADDW_MAIN_BRANCH="trunk"
 ')"
 chmod 000 "$unreadable/docs/addw.env"
@@ -413,13 +413,12 @@ for sh in "${shells[@]}"; do
   assert_eq trunk "$(derive "$sh" "$valid")" "$sh: a configured branch becomes BASE"
   # The exported ADDW_MAIN_BRANCH must not stand in for the absent key.
   assert_eq main "$(derive "$sh" "$nokey")" "$sh: a parsed config without the key falls back to main"
-  for c in "invalid 78" "unreadable 77" "missing 66"; do
-    set -- $c
-    status=0
-    out="$(derive "$sh" "$(eval "printf %s \"\$$1\"")" 2>&1)" || status=$?
-    assert_eq "$2" "$status" "$sh: $1 config fails the snippet with the reader's status"
-    assert_not_contains "$out" "from-the-environment" "$sh: $1 config derives no inherited BASE"
-    assert_not_contains "$out" "main" "$sh: $1 config derives no default BASE"
+  for c in invalid:78 unreadable:77 missing:66; do
+    name="${c%%:*}" status=0
+    out="$(derive "$sh" "$work/base-$name" 2>&1)" || status=$?
+    assert_eq "${c#*:}" "$status" "$sh: $name config fails the snippet with the reader's status"
+    assert_not_contains "$out" "from-the-environment" "$sh: $name config derives no inherited BASE"
+    assert_not_contains "$out" "main" "$sh: $name config derives no default BASE"
   done
 done
 chmod 644 "$unreadable/docs/addw.env"
