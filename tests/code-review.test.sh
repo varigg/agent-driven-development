@@ -62,6 +62,8 @@ cat > "$INSTALL/bin/codex" <<'SH'
 out=""; prev=""
 for a in "$@"; do [ "$prev" = "-o" ] && out=$a; prev=$a; done
 [ -z "$out" ] || printf 'stub review\nAPPROVED\n' > "$out"
+# The prompt is the last argument; record it so the rendered text is testable.
+[ -z "${CODEX_PROMPT_LOG:-}" ] || printf '%s\n' "$a" > "$CODEX_PROMPT_LOG"
 printf '{"type":"thread.started","thread_id":"t-stub"}\n'
 SH
 chmod +x "$INSTALL/skills/lib/tracker/tracker.sh" "$INSTALL/bin/codex"
@@ -344,4 +346,84 @@ assert_contains "$buf" "Conventions sources: none — the project declares no ru
 assert_contains "$buf" "without a conventions check" \
   "empty conventions: the reviewer is told to say the check did not run"
 
-echo "code-review: ADR directory from configuration, on start and resume; Gate in the instruction block"
+
+# --- the base branch comes through the config reader (#187) -----------------
+# The reviewer derives BASE itself, in whatever shell Codex runs. The rendered
+# prompts must reach the config through vars.sh, never by sourcing it, so the
+# derivation snippet is lifted from the prompts Codex actually receives and
+# run against each config state the reader distinguishes.
+
+project="$(new_project base 'ADDW_MAIN_BRANCH="trunk"
+')"
+state="$work/state-base"
+CODEX_PROMPT_LOG="$work/prompt-start" run_start "$project" "$state" 19 >/dev/null 2>&1 \
+  || fail "start.sh (base branch): exited non-zero"
+CODEX_PROMPT_LOG="$work/prompt-resume" run_resume "$project" "$state" 19 >/dev/null 2>&1 \
+  || fail "resume.sh (base branch): exited non-zero"
+
+snippet() { # <rendered-prompt> -> the BASE derivation, from the eval to the assignment
+  sed -n '/vars\.sh ADDW_MAIN_BRANCH/,/BASE="/p' "$1"
+}
+start_snippet="$(snippet "$work/prompt-start")"
+[ -n "$start_snippet" ] || fail "start prompt: no vars.sh derivation of BASE"
+assert_eq "$start_snippet" "$(snippet "$work/prompt-resume")" \
+  "start and resume derive BASE with the same snippet"
+
+for p in start resume; do
+  prompt="$(cat "$work/prompt-$p")"
+  assert_not_contains "$prompt" ". docs/addw.env" "$p prompt: never sources the config"
+  assert_contains "$prompt" 'git diff "$MERGE_BASE"' \
+    "$p prompt: still reviews merge base to working tree"
+  # Same stop wording in both, compared whole rather than probed for a phrase.
+  stop_para() { sed -n '/^If the `eval` fails/,/^$/p' "$1"; }
+  assert_eq "$(stop_para "$work/prompt-start")" "$(stop_para "$work/prompt-$p")" \
+    "$p prompt: carries the shared stop-on-failure paragraph"
+done
+[ -n "$(sed -n '/^If the `eval` fails/p' "$work/prompt-start")" ] \
+  || fail "start prompt: no stop-on-failure paragraph"
+
+shells=(bash sh)
+for s in zsh dash; do command -v "$s" >/dev/null 2>&1 && shells+=("$s"); done
+
+base_project() { # <name> <config-body|NONE> -> project root wired to the install
+  local root="$work/base-$1"
+  mkdir -p "$root/docs" "$root/.claude"
+  ln -s "$INSTALL/skills" "$root/.claude/skills"
+  [ "$2" = "NONE" ] || printf '%s' "$2" > "$root/docs/addw.env"
+  printf '%s' "$root"
+}
+# Runs the snippet, then reports BASE; the snippet's failure is the exit status.
+derive() { # <shell> <root>
+  ( cd "$2" && ADDW_MAIN_BRANCH=from-the-environment "$1" -c "$start_snippet"' || exit $?
+      printf "%s\n" "${BASE-unset}"' )
+}
+
+valid="$(base_project valid 'ADDW_MAIN_BRANCH="trunk"
+')"
+nokey="$(base_project nokey 'ADDW_ADR_DIR="docs/decisions"
+')"
+invalid="$(base_project invalid 'ADDW_MAIN_BRANCH=has spaces
+')"
+missing="$(base_project missing NONE)"
+unreadable="$(base_project unreadable 'ADDW_MAIN_BRANCH="trunk"
+')"
+chmod 000 "$unreadable/docs/addw.env"
+
+for sh in "${shells[@]}"; do
+  assert_eq trunk "$(derive "$sh" "$valid")" "$sh: a configured branch becomes BASE"
+  # The exported ADDW_MAIN_BRANCH must not stand in for the absent key.
+  assert_eq main "$(derive "$sh" "$nokey")" "$sh: a parsed config without the key falls back to main"
+  for c in "invalid 78" "unreadable 77" "missing 66"; do
+    set -- $c
+    status=0
+    out="$(derive "$sh" "$(eval "printf %s \"\$$1\"")" 2>&1)" || status=$?
+    assert_eq "$2" "$status" "$sh: $1 config fails the snippet with the reader's status"
+    assert_not_contains "$out" "from-the-environment" "$sh: $1 config derives no inherited BASE"
+    assert_not_contains "$out" "main" "$sh: $1 config derives no default BASE"
+  done
+done
+chmod 644 "$unreadable/docs/addw.env"
+assert_contains "$(derive bash "$invalid" 2>&1)" "docs/addw.env:1:" \
+  "invalid config: the reader's line-numbered diagnostic reaches the reviewer"
+
+echo "code-review: ADR directory from configuration, on start and resume; Gate in the instruction block; BASE via the config reader"

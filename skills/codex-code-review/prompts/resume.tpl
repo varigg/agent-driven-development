@@ -2,11 +2,17 @@ The branch implementing the ticket in `{{TARGET}}` has been updated since your p
 Re-derive the same whole-branch view from turn 1 — merge base to working tree, not just the last
 commit — and produce an incremental review:
 
-  BASE="$(. docs/addw.env 2>/dev/null; echo "${ADDW_MAIN_BRANCH:-main}")"
+  eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH || echo "(exit $?)")" &&
+    BASE="${ADDW_MAIN_BRANCH:-main}"
   MERGE_BASE="$(git merge-base "origin/$BASE" HEAD 2>/dev/null || git merge-base "$BASE" HEAD)"
   git diff --stat "$MERGE_BASE"
   git diff "$MERGE_BASE"
   git log --oneline "$MERGE_BASE"..HEAD
+
+If the `eval` fails, the project config could not be read: stop deriving the diff, quote the
+reader's diagnostic and exit status in your review, and end with `NEEDS_REWORK`. Never fall back to
+`main` or an inherited `ADDW_MAIN_BRANCH` — `main` is the fallback only for a config that parses
+and does not set the key.
 
 Re-read `{{TARGET}}` if the ticket matters to a finding — it is rebuilt from the tracker on every
 resume, so an edited ticket reads as it now stands.
