@@ -14,11 +14,17 @@ contract. Do not flag a change as drifting from the body when an amendment steer
 To see the change set, review the **whole branch**, not the last commit. Everything between the
 merge base and the working tree is what the pull request will deliver:
 
-  BASE="$(. docs/addw.env 2>/dev/null; echo "${ADDW_MAIN_BRANCH:-main}")"
+  eval "$(bash .claude/skills/lib/config/vars.sh ADDW_MAIN_BRANCH || echo "(exit $?)")" &&
+    BASE="${ADDW_MAIN_BRANCH:-main}"
   MERGE_BASE="$(git merge-base "origin/$BASE" HEAD 2>/dev/null || git merge-base "$BASE" HEAD)"
   git diff --stat "$MERGE_BASE"
   git diff "$MERGE_BASE"        # committed + staged + unstaged, merge base to working tree
   git log --oneline "$MERGE_BASE"..HEAD
+
+If the `eval` fails, the project config could not be read: stop deriving the diff, quote the
+reader's diagnostic and exit status in your review, and end with `NEEDS_REWORK`. Never fall back to
+`main` or an inherited `ADDW_MAIN_BRANCH` — `main` is the fallback only for a config that parses
+and does not set the key.
 
 Reviewing only `git diff HEAD` would miss every commit already made on the branch — the bulk of
 the change. If the merge base cannot be resolved, say so and review what you can reach rather

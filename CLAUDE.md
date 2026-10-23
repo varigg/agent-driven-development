@@ -30,6 +30,7 @@ merge of a PR whose body names the filing; ADR 0007). They carry no `## Parent`.
 - **`docs/addw.env` is parsed data, never sourced.** One shared reader —
   `skills/lib/config/config.sh` — is the only code that opens it; the grammar
   and its rationale live in `skills/lib/README.md`'s `config/` section.
+  `tests/config-seam.test.sh` fails on any other file under `skills/` that opens it.
 - **Skill folder names are docs contract.** A rename is never a free cosmetic:
   it ships with an `UPGRADING.md` section and a schema bump in its own PR. It
   does not queue for a distant boundary — since ADR 0008 a bump is cheap
