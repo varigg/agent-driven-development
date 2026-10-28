@@ -114,13 +114,19 @@ frozen history, never as a live input. Deleting them is the human's call, and
 
 ### 2.2 The ADDW labels
 
-For each of `spec` and `backlog` that Step 1's label listing did not show:
+For each of `spec`, `backlog`, `ready-for-human`, `priority:high`,
+`priority:normal`, and `priority:low` that Step 1's label listing did not show:
 
 ```bash
 bash .claude/skills/lib/tracker/tracker.sh create-label <label>
 ```
 
 `ready-for-agent` is Matt's and is never recreated or modified.
+
+Record in the project's tracker conventions that ready ticket publishers,
+including `to-tickets`, use `tracker.sh create`, and readiness/priority changes
+use `tracker.sh label`. Point to the installed `skills/lib/README.md` tracker
+section for signal policy; use the install's `.claude/skills/` prefix in commands.
 
 ### 2.3 Explore the codebase
 
@@ -291,6 +297,11 @@ ADDW_VERSION_FILE="<package.json, Cargo.toml, pyproject.toml, version.h, or empt
 # falling back to `git branch --show-current` in a repo with no remote.
 ADDW_MAIN_BRANCH="<bare branch name>"
 ADDW_AUDIT_NUDGE_N=5
+# Optional ticket signals; empty disables spec mirroring, bug order, or focus.
+# Space-separated parent=spec:label mappings; create those labels before use.
+ADDW_SPEC_LABELS=
+ADDW_HIGH_SEVERITY_BUG_QUEUE=
+ADDW_FOCUS_SPEC=
 # The ADR directory the domain-layout contract declares (Step 1.5):
 ADDW_ADR_DIR="<resolved ADR directory>"
 # The shipped ADR template, or a project-owned replacement:

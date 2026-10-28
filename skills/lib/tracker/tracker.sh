@@ -95,7 +95,8 @@
 # marker nor a shipped review grammar.
 #
 # detach <n> is deferral: it rewrites <n>'s body with its "## Parent" section
-# removed (parse.sh strip-section), swaps `ready-for-agent` for `backlog`,
+# removed (parse.sh strip-section), swaps readiness, priority and spec labels
+# for `backlog`,
 # and comments naming the former parent so the edge survives in the ticket's
 # own history. Why deferral is a detach rather than a not-planned close:
 # ../README.md. Refuses (1) a closed issue, and an issue with no parseable
@@ -109,7 +110,7 @@ PARSE="$here/parse.sh"
 . "$here/../config/config.sh"
 
 # The resolver's snapshot shape. --limit raises gh's default of 30.
-FIELDS='number,title,state,stateReason,labels,assignees,body'
+FIELDS='number,title,state,stateReason,labels,assignees,body,url'
 
 CONFIG="docs/addw.env"
 FETCH_LIMIT_DEFAULT=1000
@@ -211,6 +212,108 @@ branches() {
 
 issue_body() { # issue-number
   gh issue view "$1" --json body --jq .body
+}
+
+spec_label_for() { # parent-number; empty for an unmapped parent
+  local entry number label mappings
+  mappings="$(config_get ADDW_SPEC_LABELS)" || return $?
+  for entry in $mappings; do
+    number=${entry%%=*}
+    label=${entry#*=}
+    if [ "$number" = "$1" ]; then printf '%s\n' "$label"; return; fi
+  done
+}
+
+creation_labels() { # body-file [label...]; prints one label per line
+  local body_file=$1 parent parent_state expected mappings label ready=0 priority=0 excluded=0
+  shift
+  for label in "$@"; do
+    case "$label" in
+      ready-for-agent|ready-for-human) ready=$((ready + 1)) ;;
+      priority:high|priority:normal|priority:low) priority=$((priority + 1)) ;;
+      backlog|spec|wayfinder:*) excluded=1 ;;
+      spec:*) printf 'tracker.sh: spec membership comes from the body Parent section, not a create argument\n' >&2; return 1 ;;
+    esac
+  done
+  if [ "$ready" -gt 1 ] || [ "$priority" -gt 1 ]; then
+    printf 'tracker.sh: create needs at most one readiness and priority label\n' >&2
+    return 1
+  fi
+  if [ "$ready" -gt 0 ] && [ "$excluded" -eq 1 ]; then
+    printf 'tracker.sh: a ready ticket cannot also be backlog, spec, or wayfinder work\n' >&2
+    return 1
+  fi
+  if [ "$ready" -eq 0 ] && [ "$priority" -gt 0 ]; then
+    printf 'tracker.sh: priority applies only to ready implementation tickets\n' >&2
+    return 1
+  fi
+  printf '%s\n' "$@"
+  [ "$ready" -eq 1 ] || return 0
+  [ "$priority" -eq 1 ] || printf 'priority:normal\n'
+  mappings="$(config_get ADDW_SPEC_LABELS)" || return $?
+  [ -n "$mappings" ] || return 0
+  parent="$(bash "$PARSE" parent "$body_file")"
+  [ -n "$parent" ] || return 0
+  parent_state="$(gh issue view "$parent" --json state,labels --jq '[.state, ([.labels[].name] | index("spec") != null)] | @tsv')"
+  # A historical parent edge can point at a completed spec. It remains in the
+  # body, but only an open spec has active membership to mirror as a label.
+  if [ "$parent_state" = $'CLOSED\ttrue' ]; then return 0; fi
+  if [ "$parent_state" != $'OPEN\ttrue' ]; then
+    printf 'tracker.sh: parent #%s is not a spec\n' "$parent" >&2
+    return 1
+  fi
+  expected="$(spec_label_for "$parent")"
+  if [ -z "$expected" ]; then
+    printf 'tracker.sh: parent #%s has no ADDW_SPEC_LABELS mapping\n' "$parent" >&2
+    return 1
+  fi
+  printf '%s\n' "$expected"
+}
+
+label_ticket() { # issue-number label
+  local issue=$1 wanted=$2 current label state resolved
+  local -a edit_args=(--add-label "$wanted") existing=()
+  case "$wanted" in
+    priority:high|priority:normal|priority:low)
+      current="$(gh issue view "$issue" --json labels --jq '.labels[].name')"
+      if ! printf '%s\n' "$current" | grep -Eq '^(ready-for-agent|ready-for-human)$'; then
+        printf 'tracker.sh: priority applies only to ready implementation tickets\n' >&2
+        return 1
+      fi
+      while IFS= read -r label; do
+        case "$label" in
+          priority:high|priority:normal|priority:low)
+            [ "$label" = "$wanted" ] || edit_args+=(--remove-label "$label") ;;
+        esac
+      done <<< "$current"
+      ;;
+    ready-for-agent|ready-for-human)
+      tmpdir="$(mktemp -d)"
+      trap 'rm -rf "$tmpdir"' EXIT
+      gh issue view "$issue" --json state,body,labels > "$tmpdir/issue.json"
+      jq -e '(.state | type == "string") and (.body | type == "string") and (.labels | type == "array")' "$tmpdir/issue.json" >/dev/null
+      state="$(jq -r .state "$tmpdir/issue.json")"
+      [ "$state" = OPEN ] || { printf 'tracker.sh: only open issues can become ready\n' >&2; return 1; }
+      jq -r .body "$tmpdir/issue.json" > "$tmpdir/body.md"
+      while IFS= read -r label; do
+        case "$label" in
+          ready-for-agent|ready-for-human)
+            [ "$label" = "$wanted" ] || { printf 'tracker.sh: remove %s before adding %s\n' "$label" "$wanted" >&2; return 1; } ;;
+          priority:high|priority:normal|priority:low) existing+=("$label") ;;
+          spec:*) edit_args+=(--remove-label "$label") ;;
+          backlog) edit_args+=(--remove-label backlog) ;;
+          spec|wayfinder:*) printf 'tracker.sh: specs and wayfinder work cannot become ready\n' >&2; return 1 ;;
+        esac
+      done < <(jq -r '.labels[].name' "$tmpdir/issue.json")
+      resolved="$(creation_labels "$tmpdir/body.md" "$wanted" "${existing[@]}")"
+      while IFS= read -r label; do
+        case "$label" in
+          priority:*|spec:*) edit_args+=(--add-label "$label") ;;
+        esac
+      done <<< "$resolved"
+      ;;
+  esac
+  gh issue edit "$issue" "${edit_args[@]}"
 }
 
 issue_body_hash() { # issue-number
@@ -379,6 +482,12 @@ detach() { # issue-number
 
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "$tmpdir"' EXIT
+  # Validate the label read before preserving the edge in a comment or
+  # removing it from the body. A process substitution would hide gh's exit
+  # status from the enclosing while loop and could leave stale labels.
+  gh issue view "$issue" --json labels > "$tmpdir/labels.json"
+  jq -e '.labels | type == "array"' "$tmpdir/labels.json" > /dev/null
+  jq -r '.labels[].name' "$tmpdir/labels.json" > "$tmpdir/labels.txt"
   # The comment is posted before the body/label edit, not after: it is the
   # only surviving record of the former-parent edge once the edit removes
   # the "## Parent" section, so a step that can fail must not run after the
@@ -389,8 +498,15 @@ detach() { # issue-number
   printf 'Detached from #%s.\n' "$parent" > "$tmpdir/comment.md"
   gh issue comment "$issue" --body-file "$tmpdir/comment.md"
   printf '%s' "$body" | bash "$PARSE" strip-section Parent > "$tmpdir/body.md"
-  gh issue edit "$issue" --body-file "$tmpdir/body.md" \
-    --add-label backlog --remove-label ready-for-agent
+  local -a edit_args=(--body-file "$tmpdir/body.md" --add-label backlog)
+  local label
+  while IFS= read -r label; do
+    case "$label" in
+      ready-for-agent|ready-for-human|priority:high|priority:normal|priority:low|spec:*)
+        edit_args+=(--remove-label "$label") ;;
+    esac
+  done < "$tmpdir/labels.txt"
+  gh issue edit "$issue" "${edit_args[@]}"
 }
 
 # Writes one combined deliveries file (verified child facts plus the ADR-touch
@@ -593,7 +709,7 @@ case "$cmd" in
     ;;
   label)
     [ "$#" -eq 2 ] || usage
-    gh issue edit "$1" --add-label "$2"
+    label_ticket "$1" "$2"
     ;;
   unlabel)
     [ "$#" -eq 2 ] || usage
@@ -651,12 +767,14 @@ case "$cmd" in
       printf 'tracker.sh: body file not found: %s\n' "$body_file" >&2
       exit 1
     fi
-    # One --label per label. A comma-joined string would be read as a single
-    # label name containing commas, which silently creates the wrong thing.
+    # One --label per label. Resolve parent membership before creating: a
+    # failed lookup must never leave a partially classified new issue.
+    resolved_labels="$(creation_labels "$body_file" "$@")"
     label_args=()
-    for label in "$@"; do
+    while IFS= read -r label; do
+      [ -n "$label" ] || continue
       label_args+=(--label "$label")
-    done
+    done <<< "$resolved_labels"
     gh issue create --title "$title" --body-file "$body_file" \
       ${label_args[@]+"${label_args[@]}"}
     ;;
@@ -689,6 +807,11 @@ case "$cmd" in
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
     snapshot > "$tmpdir/issues.json"
+    config_source ADDW_SPEC_LABELS ADDW_HIGH_SEVERITY_BUG_QUEUE ADDW_FOCUS_SPEC
+    : > "$tmpdir/bug-queue.md"
+    if [ -n "${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ]; then
+      issue_body "$ADDW_HIGH_SEVERITY_BUG_QUEUE" > "$tmpdir/bug-queue.md"
+    fi
     set +e
     (
       set -e
@@ -698,13 +821,15 @@ case "$cmd" in
     set -e
     branches > "$tmpdir/branches.txt"
     if [ "$rc" -eq 0 ]; then
-      bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt" "$tmpdir/deliveries.txt"
+      ADDW_HIGH_SEVERITY_BUG_QUEUE="${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ADDW_SPEC_LABELS="${ADDW_SPEC_LABELS:-}" ADDW_FOCUS_SPEC="${ADDW_FOCUS_SPEC:-}" \
+        bash "$RESOLVE" frontier "$tmpdir/issues.json" "$tmpdir/branches.txt" "$tmpdir/deliveries.txt" "$tmpdir/bug-queue.md"
     else
       diag="$(awk 'NR > 1 { printf "; " } { printf "%s", $0 } END { if (NR > 0) printf "\n" }' \
         "$tmpdir/gather.err")"
       [ -n "$diag" ] || diag="delivery gathering exited $rc"
-      bash "$RESOLVE" frontier --specs-unavailable "$diag" \
-        "$tmpdir/issues.json" "$tmpdir/branches.txt"
+      ADDW_HIGH_SEVERITY_BUG_QUEUE="${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ADDW_SPEC_LABELS="${ADDW_SPEC_LABELS:-}" ADDW_FOCUS_SPEC="${ADDW_FOCUS_SPEC:-}" \
+        bash "$RESOLVE" frontier --specs-unavailable "$diag" \
+          "$tmpdir/issues.json" "$tmpdir/branches.txt" '' "$tmpdir/bug-queue.md"
     fi
     ;;
   spec-complete)

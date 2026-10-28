@@ -25,6 +25,7 @@ case "$1 $2" in
   "issue view")
     case "$*" in
       *"--json state"*) printf '%s\n' "${STUB_STATE:-OPEN}" ;;
+      *"--json labels"*) [ -z "${STUB_LABEL_FAIL:-}" ] || exit 1; printf '%s\n' '{"labels":[{"name":"ready-for-agent"},{"name":"priority:high"},{"name":"spec:search"}]}' ;;
       *"--json body"*)  cat "$STUB_BODY" ;;
       *) echo "gh stub: unexpected issue view: $*" >&2; exit 97 ;;
     esac
@@ -100,6 +101,13 @@ assert_contains "$edit_call" "--remove-label ready-for-agent" \
 
 assert_contains "$(cat "$COMMENT_BODY_CAPTURE")" "144" \
   "detach: the comment names the former parent"
+
+assert_contains "$edit_call" "--remove-label priority:high" "detach removes priority"
+assert_contains "$edit_call" "--remove-label spec:search" "detach removes membership"
+: > "$CALLS_LOG"
+assert_exit 1 "failed label read refuses before writes" env STUB_LABEL_FAIL=1 bash "$TRACKER" detach 147
+assert_not_contains "$(cat "$CALLS_LOG")" 'issue comment' 'failed read never comments'
+assert_not_contains "$(cat "$CALLS_LOG")" 'issue edit' 'failed read never edits'
 
 # --- CLI seam hygiene ---
 assert_exit 2 "detach: missing issue number refuses loudly" \

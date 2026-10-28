@@ -420,7 +420,7 @@ if [ -f "$tracker" ]; then
     if [ "$labels_status" -ne 0 ]; then
         bad "tracker labels could not be read"
     else
-        for required_label in ready-for-agent spec backlog; do
+        for required_label in ready-for-agent ready-for-human spec backlog priority:high priority:normal priority:low; do
             if printf '%s\n' "$labels" | grep -Fqx -- "$required_label"; then
                 ok "tracker label $required_label exists"
             else

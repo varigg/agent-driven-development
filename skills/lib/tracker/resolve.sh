@@ -7,18 +7,21 @@
 # not-planned refuses loudly (exit 2) rather than guessing an edge.
 #
 # Usage:
-#   resolve.sh frontier <issues.json> [branches-file] [deliveries-file]
+#   resolve.sh frontier <issues.json> [branches-file] [deliveries-file] [bug-queue-body]
 #   resolve.sh frontier --specs-unavailable <diag> <issues.json> [branches-file]
 #   resolve.sh spec-complete <spec-number> <issues.json> [deliveries-file]
 #   resolve.sh specs <issues.json> [deliveries-file]
 #
-# frontier prints four fixed sections, headers always present, entries
-# tab-separated and ascending by issue number:
-#   frontier:            open ready-for-agent tickets (not spec/backlog) whose
-#                        every blocker is closed as completed, annotated
-#                        [in progress: branch <name>] or [in progress: assignee <login>]
+# frontier prints agent-ready and human-ready in priority order, then blocked
+# high-severity bugs with their open blockers, the diagnostics below, and
+# complete-specs. The tracker supplies body dependencies and the optional maintained
+# bug queue; fixture callers can supply the same inputs as files.
+#   frontier:            open, unblocked ready-for-agent tickets
+#   human-ready:         open, unblocked ready-for-human tickets
+#   high-severity-bugs-waiting: high-priority bugs with open blockers
 #   needs-rescoping:     dependents of a blocker closed as not planned
 #   unknown-blockers:    dependents of a blocker absent from the snapshot
+#   label-corrections:   missing/conflicting priority or spec labels
 #   complete-specs:      open spec-labeled issues whose verdict is `complete`
 #                        after folding in any declared ADR obligation, each
 #                        line naming the close command:
@@ -28,7 +31,7 @@
 # branches, the annotation outlives the work — harmless for the ticket the PR
 # closed (closed tickets never reach the listing), stale only for one left open
 # afterwards.
-# `frontier --specs-unavailable` prints only the first three sections, skips
+# `frontier --specs-unavailable` prints the ticket and diagnostic sections, skips
 # open spec-labeled issues, then prints one `complete-specs: unavailable — <diag>`
 # line in place of that section and exits 3.
 # When one ticket has blockers in several states, the loudest wins the
@@ -63,11 +66,11 @@ usage() {
   exit 2
 }
 
-declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS OBLIGATION DELIVERY_ADR
+declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS OBLIGATION DELIVERY_ADR URL QUEUE_POS SPEC_MAP
 NUMBERS=()
 
 load_snapshot() { # issues.json
-  local snapshot=$1 num parent blockers obligation state reason labels logins title
+  local snapshot=$1 num parent blockers obligation state reason labels logins title url
   if [ ! -r "$snapshot" ]; then
     printf 'resolve.sh: cannot read snapshot: %s\n' "$snapshot" >&2
     exit 1
@@ -82,7 +85,7 @@ load_snapshot() { # issues.json
   # snapshot. The separator is the ASCII unit separator, not @tsv, because
   # tab is IFS whitespace and read would collapse the empty stateReason /
   # assignees fields, shifting every later field left.
-  while IFS=$'\x1f' read -r num parent blockers obligation state reason labels logins title; do
+  while IFS=$'\x1f' read -r num parent blockers obligation state reason labels logins title url; do
     NUMBERS+=("$num")
     PARENT[$num]=$parent
     BLOCKERS[$num]=$blockers
@@ -92,17 +95,68 @@ load_snapshot() { # issues.json
     LABELS[$num]=",$labels,"
     ASSIGNEES[$num]=$logins
     TITLE[$num]=$title
+    URL[$num]=$url
   done < <(
     jq -r '
       sort_by(.number)[] |
       ("H" + ([
         (.number | tostring), .state, (.stateReason // ""),
         ([.labels[].name] | join(",")), ([.assignees[].login] | join(",")),
-        .title
+        .title, (.url // "")
       ] | join("\u001f"))),
       ((.body // "") | tostring | split("\n")[] | "B" + .)
     ' "$snapshot" | bash "$PARSE" edges
   )
+}
+
+load_signals() { # [queue-body]
+  local entry number label queue=${1:-} position=0 line ref section=""
+  for entry in ${ADDW_SPEC_LABELS:-}; do
+    number=${entry%%=*}; label=${entry#*=}
+    SPEC_MAP[$number]=$label
+  done
+  [ -z "$queue" ] || [ -r "$queue" ] || { printf 'resolve.sh: cannot read bug queue: %s\n' "$queue" >&2; exit 1; }
+  [ -n "$queue" ] || return 0
+  while IFS= read -r line; do
+    case "$line" in
+      '## Ordered bugs') section=ordered; continue ;;
+      '## '*) section=""; continue ;;
+    esac
+    [ "$section" = ordered ] || continue
+    [[ "$line" =~ ^[0-9]+\.\  ]] || continue
+    if [[ "$line" =~ /issues/([0-9]+) ]]; then
+      ref=${BASH_REMATCH[1]}
+      position=$((position + 1))
+      QUEUE_POS[$ref]=$position
+    fi
+  done < "$queue"
+}
+
+signal_issue() { # issue-number; sets priority, spec and diagnostic globals
+  local n=$1 label count=0 spec_count=0 actual_spec="" expected="" parent=${PARENT[$1]}
+  SIGNAL_PRIORITY="" SIGNAL_SPEC="" SIGNAL_DIAG=""
+  local -a split_labels
+  IFS=, read -r -a split_labels <<< "${LABELS[$n]#,}"
+  for label in "${split_labels[@]}"; do
+    case "$label" in
+      priority:high|priority:normal|priority:low) count=$((count + 1)); SIGNAL_PRIORITY=$label ;;
+      spec:*) spec_count=$((spec_count + 1)); actual_spec=$label ;;
+    esac
+  done
+  if [ "$count" -ne 1 ]; then
+    SIGNAL_DIAG="priority labels: $count (expected one)"
+    if [ "$count" -eq 0 ]; then SIGNAL_PRIORITY=priority:missing; else SIGNAL_PRIORITY=priority:conflict; fi
+  fi
+  if [ -n "$parent" ] && [ "${STATE[$parent]:-}" = OPEN ] && has_label "$parent" spec; then
+    expected=${SPEC_MAP[$parent]:-}
+    if [ -z "$expected" ] && [ -n "${ADDW_SPEC_LABELS:-}" ]; then
+      SIGNAL_DIAG="${SIGNAL_DIAG:+$SIGNAL_DIAG; }open parent #$parent has no spec label mapping"
+    fi
+  fi
+  if [ -n "${ADDW_SPEC_LABELS:-}" ] && { [ "$spec_count" -gt 1 ] || [ "$actual_spec" != "$expected" ]; }; then
+    SIGNAL_DIAG="${SIGNAL_DIAG:+$SIGNAL_DIAG; }spec labels: ${actual_spec:-none} (expected ${expected:-none})"
+  fi
+  SIGNAL_SPEC=$actual_spec
 }
 
 load_deliveries() { # [deliveries-file]
@@ -177,7 +231,7 @@ spec_scan() { # num
   fi
 }
 
-frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliveries-file]
+frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliveries-file] [bug-queue-body]
   local specs_unavailable=no diag=""
   if [ "${1:-}" = --specs-unavailable ]; then
     specs_unavailable=yes
@@ -187,14 +241,15 @@ frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliverie
   local branches="${2:-}"
   local deliveries="${3:-}"
   load_snapshot "$1"
+  load_signals "${4:-}"
   [ "$specs_unavailable" = yes ] || load_deliveries "$deliveries"
   if [ -n "$branches" ] && [ ! -r "$branches" ]; then
     printf 'resolve.sh: cannot read branches file: %s\n' "$branches" >&2
     exit 1
   fi
 
-  local frontier_lines=() rescope_lines=() unknown_lines=() spec_lines=()
-  local n b line ann branch
+  local agent_lines=() human_lines=() waiting_lines=() rescope_lines=() unknown_lines=() spec_lines=() signal_lines=()
+  local n b line ann branch ready priority_rank queue_rank focus_rank order_key open_blockers blocker_url marker
   for n in "${NUMBERS[@]}"; do
     [ "${STATE[$n]}" = "OPEN" ] || continue
 
@@ -207,15 +262,27 @@ frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliverie
       continue
     fi
 
-    has_label "$n" ready-for-agent || continue
+    ready=""
+    if has_label "$n" ready-for-agent; then ready=agent; fi
+    if has_label "$n" ready-for-human; then
+      if [ -n "$ready" ]; then signal_lines+=("$(printf '#%s\tconflicting readiness labels' "$n")"); continue; fi
+      ready=human
+    fi
+    [ -n "$ready" ] || continue
     if has_label "$n" backlog; then continue; fi
+    case "${LABELS[$n]}" in *,wayfinder:*) continue ;; esac
+    signal_issue "$n"
+    [ -z "$SIGNAL_DIAG" ] || signal_lines+=("$(printf '#%s\t%s' "$n" "$SIGNAL_DIAG")")
 
     local unknown_b="" notplanned_b="" open_seen="" class
+    open_blockers=""
     for b in ${BLOCKERS[$n]}; do
       if [ -z "${STATE[$b]:-}" ]; then
         [ -n "$unknown_b" ] || unknown_b=$b
       elif [ "${STATE[$b]}" = "OPEN" ]; then
         open_seen=yes
+        blocker_url=${URL[$b]:-}
+        open_blockers="${open_blockers}${open_blockers:+, }[$b: ${TITLE[$b]}]($blocker_url)"
       else
         class="$(classify "$b")" || exit $?
         if [ "$class" = "not-planned" ] && [ -z "$notplanned_b" ]; then
@@ -229,8 +296,14 @@ frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliverie
     elif [ -n "$notplanned_b" ]; then
       rescope_lines+=("$(printf '#%s\t%s\t[blocker #%s closed as not planned]' "$n" "${TITLE[$n]}" "$notplanned_b")")
     elif [ -n "$open_seen" ]; then
+      if has_label "$n" bug && has_label "$n" priority:high; then
+        waiting_lines+=("$(printf '#%s\t%s\t%s' "$n" "${TITLE[$n]}" "$open_blockers")")
+      fi
       continue
     else
+      if has_label "$n" bug && [ "$SIGNAL_PRIORITY" = priority:high ] && [ -n "${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ] && [ -z "${QUEUE_POS[$n]:-}" ]; then
+        signal_lines+=("$(printf '#%s\thigh-severity bug missing from ordered bug queue' "$n")")
+      fi
       ann=""
       if [ -n "$branches" ]; then
         branch="$(grep -m1 -E "(^|/)${n}-" "$branches" || true)"
@@ -239,13 +312,32 @@ frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliverie
       if [ -z "$ann" ] && [ -n "${ASSIGNEES[$n]}" ]; then
         ann="$(printf '\t[in progress: assignee %s]' "${ASSIGNEES[$n]}")"
       fi
-      frontier_lines+=("$(printf '#%s\t%s%s' "$n" "${TITLE[$n]}" "$ann")")
+      marker=""
+      has_label "$n" bug && marker=' BUG'
+      case "$SIGNAL_PRIORITY" in
+        priority:high) priority_rank=0 ;;
+        priority:normal) priority_rank=1 ;;
+        priority:low) priority_rank=2 ;;
+        *) priority_rank=3 ;;
+      esac
+      queue_rank=99999
+      if [ "$priority_rank" -eq 0 ] && has_label "$n" bug; then
+        queue_rank=${QUEUE_POS[$n]:-99999}
+      fi
+      focus_rank=1
+      if [ "$priority_rank" -eq 1 ] && [ -n "${ADDW_FOCUS_SPEC:-}" ] && [ "${PARENT[$n]}" = "$ADDW_FOCUS_SPEC" ]; then focus_rank=0; fi
+      order_key="$(printf '%d\t%05d\t%d\t%05d' "$priority_rank" "$queue_rank" "$focus_rank" "$n")"
+      line="$(printf '%s\t%s\t#%s\t%s%s%s%s' "$order_key" "${SIGNAL_PRIORITY:-priority:missing}" "$n" "${TITLE[$n]}" "$marker" "${SIGNAL_SPEC:+ [$SIGNAL_SPEC]}" "$ann")"
+      if [ "$ready" = agent ]; then agent_lines+=("$line"); else human_lines+=("$line"); fi
     fi
   done
 
-  print_section frontier: "${frontier_lines[@]:-}"
+  print_section frontier: "$(printf '%s\n' "${agent_lines[@]:-}" | sort -t $'\t' -k1,1n -k2,2n -k3,3n -k4,4n | cut -f5-)"
+  print_section human-ready: "$(printf '%s\n' "${human_lines[@]:-}" | sort -t $'\t' -k1,1n -k2,2n -k3,3n -k4,4n | cut -f5-)"
+  print_section high-severity-bugs-waiting: "${waiting_lines[@]:-}"
   print_section needs-rescoping: "${rescope_lines[@]:-}"
   print_section unknown-blockers: "${unknown_lines[@]:-}"
+  print_section label-corrections: "${signal_lines[@]:-}"
   if [ "$specs_unavailable" = yes ]; then
     printf 'complete-specs: unavailable — %s\n' "$diag"
     return 3
@@ -303,11 +395,11 @@ shift
 case "$cmd" in
   frontier)
     if [ "${1:-}" = --specs-unavailable ]; then
-      [ "$#" -eq 3 ] || [ "$#" -eq 4 ] || usage
+      [ "$#" -ge 3 ] && [ "$#" -le 6 ] || usage
     elif [[ "${1:-}" == --* ]]; then
       usage
     else
-      [ "$#" -eq 1 ] || [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || usage
+      [ "$#" -ge 1 ] && [ "$#" -le 4 ] || usage
     fi
     frontier "$@"
     ;;

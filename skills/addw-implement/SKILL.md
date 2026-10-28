@@ -24,10 +24,15 @@ Invoked with no issue number, list what can be started and stop:
 bash .claude/skills/lib/tracker/tracker.sh frontier
 ```
 
-The four sections are fixed. **frontier** is what is workable now — tickets annotated
+**frontier** lists agent-ready tickets in priority order; **human-ready** lists work
+for humans. Priority, bug type, and configured spec membership are shown beside each
+ticket. Tickets annotated
 `[in progress: …]` already have a branch or an assignee, so pick an unannotated one unless
 you are resuming your own work. **needs-rescoping** and **unknown-blockers** are for the
-human, not for you: report them and do not start those tickets. **complete-specs** means a
+human, not for you: report them and do not start those tickets. Report
+**label-corrections** and skip those tickets until corrected.
+**high-severity-bugs-waiting** shows urgent bugs with linked open blockers;
+those bugs remain blocked. **complete-specs** means a
 spec has no open child left — surface it so the human can close it with the command each
 line names (`tracker.sh close-spec <n>`); a release closes no spec (ADR 0011).
 
@@ -121,8 +126,11 @@ Nothing is written until the ticket is confirmed workable:
 bash .claude/skills/lib/tracker/tracker.sh view <issue-number>
 ```
 
-The ticket must be **open**, labeled **`ready-for-agent`**, and labeled neither `spec` nor
-`backlog` — a spec is decomposed by `to-tickets`, not implemented. Every issue in its
+The ticket must be **open**, labeled **`ready-for-agent`**, and carries no `ready-for-human`, `spec`,
+`backlog`, or `wayfinder:*` label. It carries exactly one of `priority:high`,
+`priority:normal`, or `priority:low`, and any configured membership matches its open
+parent spec (the tracker layer documents that configuration). A spec is decomposed
+by `to-tickets`, not implemented. Every issue in its
 `## Blocked by` section must be **closed as completed**: a blocker closed as *not planned*
 never unlocks it, and the ticket needs human re-scoping instead. Its `## Parent` section is
 read when present but never required — standalone tickets are workable.

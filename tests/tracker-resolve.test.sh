@@ -8,12 +8,9 @@
 #   resolve.sh spec-complete <spec-number> <issues.json> [deliveries-file]
 #   resolve.sh specs <issues.json> [deliveries-file]
 #
-# Frontier output: four fixed section headers, always printed, each followed by
-# zero or more tab-separated entry lines, ascending by issue number:
-#   frontier:            #N<TAB>title[<TAB>[in progress: ...]]
-#   needs-rescoping:     #N<TAB>title<TAB>[blocker #M closed as not planned]
-#   unknown-blockers:    #N<TAB>title<TAB>[blocker #M not in snapshot]
-#   complete-specs:      #N<TAB>title<TAB>tracker.sh close-spec N
+# Frontier output and optional signal inputs are documented in resolve.sh's
+# header. This legacy fixture has no priorities, so number breaks all ties;
+# tracker-signals.test.sh covers priority, focus, queue and human readiness.
 #
 # Spec-completion output: first line is the four-way verdict — complete,
 # partial, planned, or no-children (exit 0 iff complete) — then one line per
@@ -75,7 +72,7 @@ assert_not_contains "$frontier_sec" "$(printf '#12\t')" \
   "frontier: unknown blocker keeps dependent off the frontier"
 
 assert_eq "4,5,10,23,28" \
-  "$(grep -o '^#[0-9]*' <<<"$frontier_sec" | tr -d '#' | paste -sd,)" \
+  "$(cut -f2 <<<"$frontier_sec" | grep -o '^#[0-9]*' | tr -d '#' | paste -sd,)" \
   "frontier: entries ascend by issue number"
 
 assert_contains "$rescope_sec" "$(printf '#7\tRework the exporter\t[blocker #9 closed as not planned]')" \
@@ -251,6 +248,6 @@ assert_exit 2 "unknown subcommand refuses loudly" bash "$RESOLVE" frobnicate
 assert_exit 2 "specs: wrong argument count refuses loudly" bash "$RESOLVE" specs
 assert_exit 2 "frontier --specs-unavailable: extra argument refuses loudly" \
   bash "$RESOLVE" frontier --specs-unavailable test-diag \
-    "$FIX/issues.json" "$FIX/branches.txt" "$FIX/deliveries-met.txt"
+    "$FIX/issues.json" "$FIX/branches.txt" "$FIX/deliveries-met.txt" "" extra
 
 echo "tracker-resolve: all assertions passed"

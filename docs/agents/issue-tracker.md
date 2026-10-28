@@ -1,14 +1,19 @@
 # Issue tracker: GitHub
 
-Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
+Issues and specs for this repo live as GitHub issues. ADDW ticket operations
+use its tracker seam; Wayfinder operations use the CLI as described below.
 
 ## Conventions
 
-- **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
+- **Create an issue**: write the body to a file and use
+  `bash skills/lib/tracker/tracker.sh create "<title>" <body-file> <labels...>`.
+  `to-tickets` uses this path with `ready-for-agent` or `ready-for-human`.
+  Ticket signal rules live in `skills/lib/README.md`'s tracker section.
 - **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
-- **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
+- **Apply / remove labels**: `tracker.sh label <number> <label>` /
+  `tracker.sh unlabel <number> <label>` through the seam above.
 - **Close**: `gh issue close <number> --comment "..."`
 
 Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
@@ -27,7 +32,7 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue.
+Create a GitHub issue through the creation path above.
 
 ## When a skill says "fetch the relevant ticket"
 
@@ -50,16 +55,16 @@ ADDW drives these same issues through its own seam at
 `skills/lib/tracker/tracker.sh`. The two share the tracker deliberately:
 
 - **`ready-for-agent` is shared.** ADDW's frontier keys on it, and `addw-init`
-  never creates or modifies it — the label is Matt's. ADDW creates only `spec`
-  and `backlog`.
+  never creates or modifies it — the label is Matt's. Other label
+  installation is owned by `addw-init`.
 - **Unparented tickets are workable.** `addw-implement` reads `## Parent` "when
   present but never required"; ADDW's own detached filings — audit findings,
   retirement tickets — carry no parent and reach
   `ready-for-agent` through graduation (ADR 0007).
-- **`wayfinder:*` issues never enter ADDW's frontier**, which requires
-  `ready-for-agent`.
-- **The seam rule binds ADDW's own skills**, not Matt's — these call `gh`
-  directly, as documented above.
+- **`wayfinder:*` issues never enter ADDW's frontier**, even if readiness
+  was applied accidentally.
+- **Ready ticket publishers use the seam**, including `to-tickets`, so label
+  defaults and membership are applied. Wayfinder retains its CLI operations.
 - **`## Parent` must be a list item.** ADDW's parser only extracts an edge from
   a `#N` inside a list item — a deliberate rule so a prose mention never
   becomes one — so `to-tickets`' `## Parent` section must read `- #N`, the same

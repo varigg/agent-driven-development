@@ -95,7 +95,7 @@ case "$1 $2" in
     printf '%s\n' "${STUB_GH_ISSUES:-true}"
     ;;
   "label list")
-    printf '%s\n' ${STUB_GH_LABELS-ready-for-agent spec backlog needs-triage}
+    printf '%s\n' ${STUB_GH_LABELS-ready-for-agent ready-for-human spec backlog priority:high priority:normal priority:low needs-triage}
     ;;
   *)
     echo "stub gh: unexpected call: $*" >&2
