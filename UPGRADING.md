@@ -768,3 +768,20 @@ bash .claude/skills/addw-init/scripts/doctor.sh
 `docs/charter.md` by name, and no longer WARNs on an unlisted
 `docs/ARCHITECTURE.md`: it checks only files ADDW owns or a key lists, and it
 has no WARN level left.
+
+## Within schema 14 — ticket signals (2026-10-28)
+
+Create missing `ready-for-human`, `priority:high`, `priority:normal`, and
+`priority:low` labels through `tracker.sh create-label`. Doctor fails loudly
+when these labels are absent. Existing labels and issue bodies are preserved.
+
+Run `tracker.sh frontier` and address `label-corrections`: assign one priority
+to each ready ticket with `tracker.sh label <n> priority:normal` (or a deliberate
+high/low choice). Resolve conflicting readiness labels before starting work.
+Update the project's tracker conventions so `to-tickets` publishes ready
+implementation tickets via `tracker.sh create`, and readiness/priority changes
+use `tracker.sh label`.
+
+The new optional configuration keys and their semantics live in the tracker
+section of `skills/lib/README.md`; absent keys retain disabled defaults. Body
+dependencies remain authoritative; this upgrade performs no dependency migration.

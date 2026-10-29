@@ -33,6 +33,29 @@ lives inside `skills/` rather than at the repo root.
     snapshot (the `gh --json` shape), building on `parse.sh`. Needs `jq` and
     bash ≥ 4 (associative arrays; guarded at startup). No network: fed a
     checked-in fixture in tests, a live snapshot in use.
+    The frontier separates agent and human readiness. Priority sorts high, normal,
+    then low; missing or conflicting labels appear in `label-corrections`, and
+    implementation skips tickets named there. `bug` independently marks a defect.
+    Open high-priority bugs with open body blockers appear with linked blockers.
+    `ADDW_HIGH_SEVERITY_BUG_QUEUE` optionally names an issue whose `## Ordered bugs`
+    numbered list of issue URLs breaks ties among high-priority bugs. Readiness
+    and blockers still gate eligibility. A configured queue is required to be
+    readable; an unset queue requires no extra tracker read.
+    `ADDW_FOCUS_SPEC` optionally names a parent whose normal-priority children
+    lead other normal work; issue number breaks remaining ties.
+    `ADDW_SPEC_LABELS` optionally maps open parent issue numbers to readable labels
+    (`123=spec:search 456=spec:import`, space-separated). Empty disables membership
+    mirroring; configured mappings require every open parent to be mapped.
+    Create mapped labels through the seam before publishing their ready children.
+    `create` and readiness `label` default priority to normal and mirror membership;
+    priority `label` replaces the old priority. Readiness promotion removes backlog
+    and stale membership, refuses conflicting readiness and spec/wayfinder issues,
+    and preserves existing priority. `detach` removes readiness, priority and
+    membership. Changes to Parent sections or spec closure require reconciling
+    membership through readiness `label`; the frontier diagnoses drift.
+    Ticket publishers, including `to-tickets`, must use `tracker.sh create` for
+    ready tickets so these signals are applied. Dependencies remain the body
+    `## Blocked by` contract for all readers and writers.
     A spec's completion is a four-way verdict — `complete`, `partial`,
     `planned`, `no-children` — derived at query time from its children rather
     than stored anywhere, so nothing about it can go stale between sessions. A
@@ -70,22 +93,13 @@ lives inside `skills/` rather than at the repo root.
     tracker usable, and do the labels the
     frontier keys on exist" is a tracker question, and answering it outside
     the layer would put the one thing a future adapter must reimplement in two
-    places. `addw-init` creates the `spec` and `backlog` labels through the
-    last of them; doctor re-checks all of it with the first three.
-    Dogfood-verified, not unit-tested.
-    `create` is the one exception to that last sentence, and the layer's only
-    verb that brings a new issue into being. The happy path never reaches it —
-    `to-spec` publishes the spec issue and `to-tickets` publishes the tickets,
-    so the seam otherwise only reads, annotates, assigns, and closes what
-    Matt's skills authored. It is here for the two paths that do originate an
-    issue: `addw-maintain` routing a substantive audit finding to a `backlog`
-    issue, and the schema-4 backlog migration. It is unit-tested
-    (`tests/tracker-create.test.sh`) because it shapes an outbound write from
-    variadic arguments rather than passing one through — each label gets its
-    own `--label`, since a comma-joined string is read as one label name
-    containing commas, and the body file is checked before the call because a
-    body-file failure mid-create leaves a titled, bodyless issue that cannot
-    be un-created.
+    places. Init creates missing ADDW labels through the last wrapper; doctor
+    re-checks them with the first three.
+    `create` shapes issue writes from variadic arguments: each label gets its
+    own `--label`, and the body file is checked before the call. It serves
+    ready ticket publishers, audit findings filed to backlog, and migrations.
+    The creation, signal lifecycle and detachment writes are fixture-tested
+    with a recording tracker stub.
     `body-hash` and `approval-drift` are the approval-integrity reads
     (ADR 0009): the first prints the truncated sha256 of an issue's live body —
     the value an approval records — and the second compares that against the
