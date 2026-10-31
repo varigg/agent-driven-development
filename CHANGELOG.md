@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.0 — 2026-10-31
+
+### Features
+- feat(tracker): adopt portable ticket signals and priority views (#288)
+
+### Fixes
+- fix(code-review): derive the review base branch through the config reader (#274)
+
 ## v0.5.0 — 2026-10-22
 
 ### Features
