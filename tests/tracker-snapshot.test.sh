@@ -41,7 +41,11 @@ cat >"$work/bin/gh" <<'SH'
 #!/usr/bin/env bash
 : >"$ARGV_LOG"
 for a in "$@"; do printf '%s\n' "$a" >>"$ARGV_LOG"; done
-cat "$STUB_ISSUES"
+if [ "$1" = api ]; then
+  printf '[]\n'
+else
+  cat "$STUB_ISSUES"
+fi
 SH
 # `branches` runs after `snapshot` in the frontier query. Stubbing it to
 # succeed leaves the refusal as the only possible source of a non-zero exit.

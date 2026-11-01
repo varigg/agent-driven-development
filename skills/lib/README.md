@@ -36,7 +36,8 @@ lives inside `skills/` rather than at the repo root.
     The frontier separates agent and human readiness. Priority sorts high, normal,
     then low; missing or conflicting labels appear in `label-corrections`, and
     implementation skips tickets named there. `bug` independently marks a defect.
-    Open high-priority bugs with open body blockers appear with linked blockers.
+    Open high-priority bugs with open blockers appear with linked blockers in
+    `high-severity-bugs-waiting`, outside the ordered eligible-bug list.
     `ADDW_HIGH_SEVERITY_BUG_QUEUE` optionally names an issue whose `## Ordered bugs`
     numbered list of issue URLs breaks ties among high-priority bugs. Readiness
     and blockers still gate eligibility. A configured queue is required to be
@@ -54,8 +55,9 @@ lives inside `skills/` rather than at the repo root.
     membership. Changes to Parent sections or spec closure require reconciling
     membership through readiness `label`; the frontier diagnoses drift.
     Ticket publishers, including `to-tickets`, must use `tracker.sh create` for
-    ready tickets so these signals are applied. Dependencies remain the body
-    `## Blocked by` contract for all readers and writers.
+    ready tickets so these signals are applied. Body edges use `parse.sh`'s
+    `## Blocked by` list-item grammar; the dependency policy below governs
+    readers and writers.
     A spec's completion is a four-way verdict — `complete`, `partial`,
     `planned`, `no-children` — derived at query time from its children rather
     than stored anywhere, so nothing about it can go stale between sessions. A
@@ -88,6 +90,24 @@ lives inside `skills/` rather than at the repo root.
     reasoning to `resolve.sh`. Delivery facts are enrichment for `complete-specs`
     only, so their failure marks that section unavailable with exit 3 instead of
     hiding workable tickets, and never lists a spec as complete on missing data.
+    Readiness uses the deduplicated union of body and native GitHub blocked-by
+    dependencies. Writers may keep either representation; adding a native edge
+    requires no body edit, and an empty native result preserves body edges.
+    The seam supplies `nativeBlockers` records to the pure resolver. Full issue
+    URLs identify duplicates and distinguish repositories with overlapping
+    issue numbers. Native records supply state for blockers outside the issue
+    snapshot. Completed blockers unlock work; not-planned ones require rescoping;
+    unknown states withhold readiness with a diagnostic. These rules apply to
+    agent-ready and human-ready listings, Waiting and ordered-bug diagnostics,
+    and `eligible` for explicit implementation pickup. That check also enforces
+    the ticket signals above without fetching deliveries or remote branches.
+    Each open ready ticket, excluding specs, backlog and Wayfinder work, costs
+    one REST request plus additional dependency pages. Explicit pickup enriches
+    only its named ticket; ordinary snapshot and spec-completion reads incur
+    none. A failed or malformed dependency read refuses readiness because an
+    unavailable blocker set cannot establish that work may start. Tests in
+    `tests/tracker-blockers.test.sh` and
+    `tests/tracker-native-dependencies.test.sh` cover the resolver and transport.
     Four wrappers exist for install verification rather than for issue work —
     `auth`, `issues-enabled`, `labels`, and `create-label` — because "is the
     tracker usable, and do the labels the

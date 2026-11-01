@@ -783,5 +783,22 @@ implementation tickets via `tracker.sh create`, and readiness/priority changes
 use `tracker.sh label`.
 
 The new optional configuration keys and their semantics live in the tracker
-section of `skills/lib/README.md`; absent keys retain disabled defaults. Body
-dependencies remain authoritative; this upgrade performs no dependency migration.
+section of `skills/lib/README.md`; absent keys retain disabled defaults.
+Existing body dependencies are preserved; this step performs no dependency migration.
+
+
+## Within schema 14 — native blockers (2026-11-01)
+
+Replace the installed `skills/` with this release's copy. Frontier and explicit
+implementation pickup now enforce both body and native GitHub dependencies,
+with duplicate edges counted once. Keep existing `## Blocked by` lists; no body
+migration or native-link rewriting is needed. Ticket writers may use either
+representation under the dependency policy in `skills/lib/README.md`.
+
+Ensure the authenticated tracker account can read GitHub's issue-dependencies
+API. A failed or malformed dependency read stops readiness queries instead of
+presenting affected work as actionable. The tracker contract documents the
+additional request cost. Re-run `tracker.sh frontier`: native-blocked urgent
+bugs belong in Waiting with linked blockers, and ready work must have all
+blockers completed. Explicit pickup runs `tracker.sh eligible <n>` before any
+assignment or branch creation, including when a ticket is named directly.
