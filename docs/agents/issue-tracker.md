@@ -9,6 +9,11 @@ use its tracker seam; Wayfinder operations use the CLI as described below.
   `bash skills/lib/tracker/tracker.sh create "<title>" <body-file> <labels...>`.
   `to-tickets` uses this path with `ready-for-agent` or `ready-for-human`.
   Ticket signal rules live in `skills/lib/README.md`'s tracker section.
+- **Implementation readiness**: use `tracker.sh frontier` for both ready views
+  and Waiting, and `tracker.sh eligible <number>` before explicit agent pickup.
+  The effective blocker policy lives in `skills/lib/README.md`'s tracker section.
+- **Record an ADDW dependency**: use GitHub's blocked-by UI, or publish a body
+  through `tracker.sh create` / `edit-body` using the tracker policy above.
 - **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`

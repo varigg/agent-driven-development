@@ -119,6 +119,7 @@ if [ "${SNAPSHOT_FAIL:-}" = yes ] && [[ "$*" == *"issue list "*"--state all"* ]]
   exit 1
 fi
 case "$*" in
+  *"/dependencies/blocked_by"*) printf '[]\n' ;;
   *"issue list "*"--state all"*) cat "$STUB_ISSUES" ;;
   *"number=101"*) printf '201\t%s\n' "$SHA_101" ;;
   *"number=201"*) printf '301\t%s\n' "$SHA_201" ;;

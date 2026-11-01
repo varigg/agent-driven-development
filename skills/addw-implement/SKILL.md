@@ -120,20 +120,16 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
 
 ### Step 2: Eligibility — read-only
 
-Nothing is written until the ticket is confirmed workable:
+Nothing is written until the tracker confirms the ticket is workable, including when
+its number was supplied explicitly:
 
 ```bash
-bash .claude/skills/lib/tracker/tracker.sh view <issue-number>
+bash .claude/skills/lib/tracker/tracker.sh eligible <issue-number> &&
+  bash .claude/skills/lib/tracker/tracker.sh view <issue-number>
 ```
 
-The ticket must be **open**, labeled **`ready-for-agent`**, and carries no `ready-for-human`, `spec`,
-`backlog`, or `wayfinder:*` label. It carries exactly one of `priority:high`,
-`priority:normal`, or `priority:low`, and any configured membership matches its open
-parent spec (the tracker layer documents that configuration). A spec is decomposed
-by `to-tickets`, not implemented. Every issue in its
-`## Blocked by` section must be **closed as completed**: a blocker closed as *not planned*
-never unlocks it, and the ticket needs human re-scoping instead. Its `## Parent` section is
-read when present but never required — standalone tickets are workable.
+Proceed only when `eligible` exits 0; report its diagnostic and stop otherwise.
+The eligibility policy lives in `skills/lib/README.md`'s tracker section.
 
 Those checks are mechanical; one judgment call remains. **A ticket carries exactly one
 Deliverable** — an independently-checkable unit of work, one a reviewer can verify passed or

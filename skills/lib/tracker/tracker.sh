@@ -26,6 +26,7 @@
 #   tracker.sh snapshot                          the workflow's issues, resolver JSON, stdout
 #   tracker.sh branches                          remote branch names, one per line
 #   tracker.sh frontier                          live frontier listing
+#   tracker.sh eligible <n>                      explicit agent pickup check
 #   tracker.sh spec-complete <n>                 live spec-completion query
 #   tracker.sh specs                             live specs-by-verdict listing
 #   tracker.sh body-hash <n>                     truncated sha256 of the issue body
@@ -35,6 +36,15 @@
 #   tracker.sh child-delivery <n>                live per-spec closed-child delivery lookup
 #   tracker.sh close-spec <n>                    close a Complete spec, recording each
 #                                                 child's delivery
+# `frontier` reads paginated native blocked-by dependencies for each open
+# ready-for-agent or ready-for-human ticket (excluding specs, backlog and
+# wayfinder work). `eligible` enriches only its target ticket. A
+# failed or malformed dependency read exits 1 with no stdout. Body and native
+# blockers both apply.
+# `eligible` prints eligible and exits 0 only when an agent may start <n>.
+# Otherwise it prints the reason and exits 1; API failures print only stderr.
+# It checks readiness, priority, configured membership/bug order and both
+# blocker sources, without reading spec deliveries or remote branches.
 # Exit status 3 from `frontier`: delivery enrichment failed; output contains
 # `complete-specs: unavailable — <diag>` and the ticket sections remain usable.
 #
@@ -204,6 +214,55 @@ snapshot() {
     exit 1
   fi
   printf '%s' "$raw" | jq 'map(select(any(.labels[]?; .name == "archived") | not))'
+}
+
+# Enrich only frontier candidates; completion queries do not need dependencies.
+# Keep REST blocker identities and state separate from the local issue-number
+# index: a native blocker may be outside the snapshot or in another repository.
+native_dependencies() { # issues.json output.json work-directory [target-number]
+  local issues=$1 output=$2 workdir=$3 target=${4:-0} n
+  : > "$workdir/native.jsonl"
+  jq -r --argjson target "$target" '.[] | select(.state == "OPEN") |
+    select($target == 0 or .number == $target) |
+    select(any(.labels[]; .name == "ready-for-agent" or .name == "ready-for-human")) |
+    select(any(.labels[]; .name == "spec" or .name == "backlog" or (.name | startswith("wayfinder:"))) | not) |
+    .number' "$issues" > "$workdir/candidates.txt"
+  while IFS= read -r n; do
+    if ! gh api --paginate "repos/{owner}/{repo}/issues/$n/dependencies/blocked_by?per_page=100" \
+        > "$workdir/dependencies.json"; then
+      printf 'tracker.sh: cannot read native blockers for #%s; readiness unavailable\n' "$n" >&2
+      return 1
+    fi
+    # gh emits one JSON array per page. Reject empty/malformed responses as
+    # well as unknown states rather than silently treating them as no blockers.
+    if ! jq -e -s 'length > 0 and all(.[];
+        type == "array" and all(.[];
+          (.number | type == "number" and . > 0 and . == floor) and (.title | type == "string") and
+          (.html_url | type == "string" and test("^https?://[^[:space:]]+$")) and
+          (.state == "open" or
+            (.state == "closed" and
+              (.state_reason == "completed" or .state_reason == "not_planned")))))' \
+        "$workdir/dependencies.json" >/dev/null; then
+      printf 'tracker.sh: invalid native blockers for #%s; readiness unavailable\n' "$n" >&2
+      return 1
+    fi
+    jq -sc --argjson number "$n" \
+      '{number: $number, nativeBlockers: (add | unique_by(.html_url) |
+        map({number, title, state, state_reason, html_url}))}' "$workdir/dependencies.json" \
+      >> "$workdir/native.jsonl"
+  done < "$workdir/candidates.txt"
+  jq --slurpfile native "$workdir/native.jsonl" '
+    ($native | map({key: (.number | tostring), value: .nativeBlockers}) | from_entries) as $by_number |
+    map(. + {nativeBlockers: ($by_number[.number | tostring] // [])})
+  ' "$issues" > "$output"
+}
+
+ticket_signals() { # work-directory
+  config_source ADDW_SPEC_LABELS ADDW_HIGH_SEVERITY_BUG_QUEUE ADDW_FOCUS_SPEC
+  : > "$1/bug-queue.md"
+  if [ -n "${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ]; then
+    issue_body "$ADDW_HIGH_SEVERITY_BUG_QUEUE" > "$1/bug-queue.md"
+  fi
 }
 
 branches() {
@@ -806,12 +865,9 @@ case "$cmd" in
     [ "$#" -eq 0 ] || usage
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
-    snapshot > "$tmpdir/issues.json"
-    config_source ADDW_SPEC_LABELS ADDW_HIGH_SEVERITY_BUG_QUEUE ADDW_FOCUS_SPEC
-    : > "$tmpdir/bug-queue.md"
-    if [ -n "${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ]; then
-      issue_body "$ADDW_HIGH_SEVERITY_BUG_QUEUE" > "$tmpdir/bug-queue.md"
-    fi
+    snapshot > "$tmpdir/base.json"
+    native_dependencies "$tmpdir/base.json" "$tmpdir/issues.json" "$tmpdir"
+    ticket_signals "$tmpdir"
     set +e
     (
       set -e
@@ -831,6 +887,17 @@ case "$cmd" in
         bash "$RESOLVE" frontier --specs-unavailable "$diag" \
           "$tmpdir/issues.json" "$tmpdir/branches.txt" '' "$tmpdir/bug-queue.md"
     fi
+    ;;
+  eligible)
+    [ "$#" -eq 1 ] || usage
+    case "$1" in *[!0-9]*|''|0) usage ;; esac
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf "$tmpdir"' EXIT
+    snapshot > "$tmpdir/base.json"
+    native_dependencies "$tmpdir/base.json" "$tmpdir/issues.json" "$tmpdir" "$1"
+    ticket_signals "$tmpdir"
+    ADDW_HIGH_SEVERITY_BUG_QUEUE="${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ADDW_SPEC_LABELS="${ADDW_SPEC_LABELS:-}" ADDW_FOCUS_SPEC="${ADDW_FOCUS_SPEC:-}" \
+      bash "$RESOLVE" eligible "$1" "$tmpdir/issues.json" "$tmpdir/bug-queue.md"
     ;;
   spec-complete)
     [ "$#" -eq 1 ] || usage

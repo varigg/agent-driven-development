@@ -2,13 +2,17 @@
 # Pure frontier and spec-completion resolution over an issue snapshot — no
 # network, no tracker CLI. The snapshot is the gh --json shape (number, title,
 # state, stateReason, labels, assignees, body), produced live by tracker.sh or
-# checked in as a fixture. Bodies go through parse.sh, which owns the edge
+# checked in as a fixture. Optional nativeBlockers holds REST dependency
+# records (number, title, state, state_reason, html_url). Body and native
+# blockers form a union by URL; missing nativeBlockers means none.
+# Bodies go through parse.sh, which owns the body edge
 # semantics; a blocker or child closed for any reason other than completed or
 # not-planned refuses loudly (exit 2) rather than guessing an edge.
 #
 # Usage:
 #   resolve.sh frontier <issues.json> [branches-file] [deliveries-file] [bug-queue-body]
 #   resolve.sh frontier --specs-unavailable <diag> <issues.json> [branches-file]
+#   resolve.sh eligible <issue-number> <issues.json> [bug-queue-body]
 #   resolve.sh spec-complete <spec-number> <issues.json> [deliveries-file]
 #   resolve.sh specs <issues.json> [deliveries-file]
 #
@@ -20,7 +24,7 @@
 #   human-ready:         open, unblocked ready-for-human tickets
 #   high-severity-bugs-waiting: high-priority bugs with open blockers
 #   needs-rescoping:     dependents of a blocker closed as not planned
-#   unknown-blockers:    dependents of a blocker absent from the snapshot
+#   unknown-blockers:    dependents whose blocker state cannot be resolved
 #   label-corrections:   missing/conflicting priority or spec labels
 #   complete-specs:      open spec-labeled issues whose verdict is `complete`
 #                        after folding in any declared ADR obligation, each
@@ -36,7 +40,12 @@
 # line in place of that section and exits 3.
 # When one ticket has blockers in several states, the loudest wins the
 # listing: unknown over not-planned over open (an open blocker excludes
-# silently — waiting is the normal case).
+# silently, except high-severity bugs surfaced in Waiting).
+#
+# eligible prints eligible (exit 0) only for an open agent-ready ticket with
+# valid signals and all effective blockers completed. Otherwise it prints a
+# diagnostic (exit 1). Malformed input or unsupported close reasons refuse
+# the query, as they do for frontier. No branch or delivery input is needed.
 #
 # spec-complete prints the four-way verdict — complete, partial, planned, or
 # no-children — as its first line (exit 0 iff complete), folding a declared ADR
@@ -66,7 +75,7 @@ usage() {
   exit 2
 }
 
-declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS OBLIGATION DELIVERY_ADR URL QUEUE_POS SPEC_MAP
+declare -A STATE REASON TITLE LABELS ASSIGNEES PARENT BLOCKERS OBLIGATION DELIVERY_ADR URL QUEUE_POS SPEC_MAP NATIVE_KEYS NATIVE_STATE NATIVE_REASON NATIVE_TITLE NATIVE_NUMBER
 NUMBERS=()
 
 load_snapshot() { # issues.json
@@ -75,8 +84,13 @@ load_snapshot() { # issues.json
     printf 'resolve.sh: cannot read snapshot: %s\n' "$snapshot" >&2
     exit 1
   fi
-  if ! jq -e 'type == "array"' "$snapshot" >/dev/null 2>&1; then
-    printf 'resolve.sh: snapshot is not a JSON array: %s\n' "$snapshot" >&2
+  if ! jq -e 'type == "array" and all(.[];
+      (.nativeBlockers // []) | type == "array" and all(.[];
+        (.number | type == "number") and (.title | type == "string") and
+        (.html_url | type == "string" and test("^https?://[^[:space:]]+$")) and
+        (.state == null or (.state | type == "string")) and
+        (.state_reason == null or (.state_reason | type == "string"))))' "$snapshot" >/dev/null 2>&1; then
+    printf 'resolve.sh: invalid snapshot or native blocker records: %s\n' "$snapshot" >&2
     exit 1
   fi
   # One jq pass frames each issue as an H header followed by B-prefixed body
@@ -106,6 +120,22 @@ load_snapshot() { # issues.json
       ] | join("\u001f"))),
       ((.body // "") | tostring | split("\n")[] | "B" + .)
     ' "$snapshot" | bash "$PARSE" edges
+  )
+  local owner key native_url native_num native_title native_state native_reason
+  while IFS=$'\x1f' read -r owner native_url native_num native_title native_state native_reason; do
+    key="$owner:$native_url"
+    if [ -z "${NATIVE_STATE[$key]+set}" ]; then
+      NATIVE_KEYS[$owner]="${NATIVE_KEYS[$owner]:-} $native_url"
+    fi
+    NATIVE_STATE[$key]=$native_state
+    NATIVE_REASON[$key]=$native_reason
+    NATIVE_TITLE[$key]=$native_title
+    NATIVE_NUMBER[$key]=$native_num
+  done < <(
+    jq -r '.[] | .number as $owner | .nativeBlockers[]? |
+      [$owner, .html_url, .number, .title, (.state // "" | ascii_upcase),
+       (.state_reason // "" | ascii_upcase)] |
+      map(tostring | gsub("[\u0000-\u001f]"; " ")) | join("\u001f")' "$snapshot"
   )
 }
 
@@ -190,6 +220,83 @@ classify() { # num
   bash "$PARSE" classify-reason "${REASON[$1]}"
 }
 
+# Body references use their repository URL when available, so the same edge
+# recorded natively is scanned once. External issues sharing a number differ.
+blocker_identity() { # dependent-number blocker-number; sets BLOCKER_KEY
+  BLOCKER_KEY=${URL[$2]:-}
+  if [ -z "$BLOCKER_KEY" ]; then
+    case "${URL[$1]:-}" in
+      */issues/*) BLOCKER_KEY="${URL[$1]%/issues/*}/issues/$2" ;;
+      *) BLOCKER_KEY="#$2" ;;
+    esac
+  fi
+}
+
+# Shared by frontier and explicit pickup. Native state can resolve a body edge
+# absent from the bounded snapshot. Diagnostic precedence is decided by callers.
+blocker_scan() { # dependent-number; sets BLOCKER_UNKNOWN/NOTPLANNED/OPEN
+  local n=$1 b key edge state reason title url number label native
+  local -a keys=()
+  local -A seen=() body_numbers=()
+  BLOCKER_UNKNOWN="" BLOCKER_NOTPLANNED="" BLOCKER_OPEN=""
+  for b in ${BLOCKERS[$n]}; do
+    blocker_identity "$n" "$b"
+    key=$BLOCKER_KEY
+    body_numbers[$key]=$b
+    [ -z "${seen[$key]+set}" ] || continue
+    seen[$key]=yes
+    keys+=("$key")
+  done
+  for key in ${NATIVE_KEYS[$n]:-}; do
+    [ -z "${seen[$key]+set}" ] || continue
+    seen[$key]=yes
+    keys+=("$key")
+  done
+  for key in "${keys[@]}"; do
+    edge="$n:$key"
+    native=no
+    if [ -n "${NATIVE_STATE[$edge]+set}" ]; then
+      native=yes
+      state=${NATIVE_STATE[$edge]}
+      reason=${NATIVE_REASON[$edge]}
+      title=${NATIVE_TITLE[$edge]}
+      number=${NATIVE_NUMBER[$edge]}
+      url=$key
+      label=$url
+    else
+      b=${body_numbers[$key]}
+      state=${STATE[$b]:-}
+      reason=${REASON[$b]:-}
+      title=${TITLE[$b]:-}
+      number=$b
+      url=${URL[$b]:-}
+      label="#$b"
+    fi
+    case "$state" in
+      OPEN)
+        BLOCKER_OPEN="${BLOCKER_OPEN}${BLOCKER_OPEN:+, }[$number: $title]($url)"
+        ;;
+      CLOSED)
+        case "$reason" in
+          COMPLETED) ;;
+          NOT_PLANNED) [ -n "$BLOCKER_NOTPLANNED" ] || BLOCKER_NOTPLANNED=$label ;;
+          *)
+            if [ "$native" = no ]; then classify "$b" >/dev/null || exit $?; fi
+            [ -n "$BLOCKER_UNKNOWN" ] || BLOCKER_UNKNOWN="blocker $label has unknown close reason"
+            ;;
+        esac
+        ;;
+      *)
+        if [ "$native" = no ]; then
+          [ -n "$BLOCKER_UNKNOWN" ] || BLOCKER_UNKNOWN="blocker $label not in snapshot"
+        else
+          [ -n "$BLOCKER_UNKNOWN" ] || BLOCKER_UNKNOWN="blocker $label has unknown state"
+        fi
+        ;;
+    esac
+  done
+}
+
 # One pass over spec $1's children, classifying each closed one exactly once.
 # Sets two globals: SPEC_VERDICT (complete | partial | planned | no-children)
 # and SPEC_CHILD_LINES (an array of "<status>\t#<n>\t<title>" entries, empty
@@ -249,7 +356,7 @@ frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliverie
   fi
 
   local agent_lines=() human_lines=() waiting_lines=() rescope_lines=() unknown_lines=() spec_lines=() signal_lines=()
-  local n b line ann branch ready priority_rank queue_rank focus_rank order_key open_blockers blocker_url marker
+  local n line ann branch ready priority_rank queue_rank focus_rank order_key marker
   for n in "${NUMBERS[@]}"; do
     [ "${STATE[$n]}" = "OPEN" ] || continue
 
@@ -274,30 +381,14 @@ frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliverie
     signal_issue "$n"
     [ -z "$SIGNAL_DIAG" ] || signal_lines+=("$(printf '#%s\t%s' "$n" "$SIGNAL_DIAG")")
 
-    local unknown_b="" notplanned_b="" open_seen="" class
-    open_blockers=""
-    for b in ${BLOCKERS[$n]}; do
-      if [ -z "${STATE[$b]:-}" ]; then
-        [ -n "$unknown_b" ] || unknown_b=$b
-      elif [ "${STATE[$b]}" = "OPEN" ]; then
-        open_seen=yes
-        blocker_url=${URL[$b]:-}
-        open_blockers="${open_blockers}${open_blockers:+, }[$b: ${TITLE[$b]}]($blocker_url)"
-      else
-        class="$(classify "$b")" || exit $?
-        if [ "$class" = "not-planned" ] && [ -z "$notplanned_b" ]; then
-          notplanned_b=$b
-        fi
-      fi
-    done
-
-    if [ -n "$unknown_b" ]; then
-      unknown_lines+=("$(printf '#%s\t%s\t[blocker #%s not in snapshot]' "$n" "${TITLE[$n]}" "$unknown_b")")
-    elif [ -n "$notplanned_b" ]; then
-      rescope_lines+=("$(printf '#%s\t%s\t[blocker #%s closed as not planned]' "$n" "${TITLE[$n]}" "$notplanned_b")")
-    elif [ -n "$open_seen" ]; then
+    blocker_scan "$n"
+    if [ -n "$BLOCKER_UNKNOWN" ]; then
+      unknown_lines+=("$(printf '#%s\t%s\t[%s]' "$n" "${TITLE[$n]}" "$BLOCKER_UNKNOWN")")
+    elif [ -n "$BLOCKER_NOTPLANNED" ]; then
+      rescope_lines+=("$(printf '#%s\t%s\t[blocker %s closed as not planned]' "$n" "${TITLE[$n]}" "$BLOCKER_NOTPLANNED")")
+    elif [ -n "$BLOCKER_OPEN" ]; then
       if has_label "$n" bug && has_label "$n" priority:high; then
-        waiting_lines+=("$(printf '#%s\t%s\t%s' "$n" "${TITLE[$n]}" "$open_blockers")")
+        waiting_lines+=("$(printf '#%s\t%s\t%s' "$n" "${TITLE[$n]}" "$BLOCKER_OPEN")")
       fi
       continue
     else
@@ -343,6 +434,40 @@ frontier() { # [--specs-unavailable diag] issues.json [branches-file] [deliverie
     return 3
   fi
   print_section complete-specs: "${spec_lines[@]:-}"
+}
+
+eligible() { # issue-number issues.json [bug-queue-body]
+  local n=$1
+  load_snapshot "$2"
+  load_signals "${3:-}"
+  if [ "${STATE[$n]:-}" != OPEN ] || ! has_label "$n" ready-for-agent ||
+      has_label "$n" ready-for-human || has_label "$n" spec || has_label "$n" backlog; then
+    printf '#%s: not an open agent-ready implementation ticket\n' "$n"
+    return 1
+  fi
+  case "${LABELS[$n]}" in
+    *,wayfinder:*) printf '#%s: wayfinder work is not an implementation ticket\n' "$n"; return 1 ;;
+  esac
+  signal_issue "$n"
+  if [ -n "$SIGNAL_DIAG" ]; then
+    printf '#%s: %s\n' "$n" "$SIGNAL_DIAG"
+    return 1
+  fi
+  blocker_scan "$n"
+  if [ -n "$BLOCKER_UNKNOWN" ]; then
+    printf '#%s: %s\n' "$n" "$BLOCKER_UNKNOWN"
+  elif [ -n "$BLOCKER_NOTPLANNED" ]; then
+    printf '#%s: blocker %s closed as not planned; needs rescoping\n' "$n" "$BLOCKER_NOTPLANNED"
+  elif [ -n "$BLOCKER_OPEN" ]; then
+    printf '#%s: open blockers: %s\n' "$n" "$BLOCKER_OPEN"
+  elif has_label "$n" bug && [ "$SIGNAL_PRIORITY" = priority:high ] &&
+      [ -n "${ADDW_HIGH_SEVERITY_BUG_QUEUE:-}" ] && [ -z "${QUEUE_POS[$n]:-}" ]; then
+    printf '#%s: high-severity bug missing from ordered bug queue\n' "$n"
+  else
+    printf 'eligible\n'
+    return 0
+  fi
+  return 1
 }
 
 print_section() { # header [lines...]
@@ -393,6 +518,11 @@ cmd=$1
 shift
 
 case "$cmd" in
+  eligible)
+    [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || usage
+    case "$1" in *[!0-9]*|'') usage ;; esac
+    eligible "$@"
+    ;;
   frontier)
     if [ "${1:-}" = --specs-unavailable ]; then
       [ "$#" -ge 3 ] && [ "$#" -le 6 ] || usage
