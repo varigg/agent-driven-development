@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.1 — 2026-11-01
+
+### Fixes
+- fix(tracker): enforce native blockers for frontier and explicit pickup (#292)
+
+### Other
+- chore: maintenance audit 2026-10-31 (#290)
+
 ## v0.6.0 — 2026-10-31
 
 ### Features
