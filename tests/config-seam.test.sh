@@ -20,7 +20,7 @@ REPO="$(cd .. && pwd)"
 # the path in backticks, which is what keeps it out.
 # ponytail: a nested `$( $(...) )` before the path is not matched; widen SUB if one ships.
 SUB='\$\([^)]*\)'
-OPEN='(^|[[:space:];&|(`"'"'"'])((\.|source|cat|head|tail|grep|sed|awk|cut)[[:space:]]|<[[:space:]]*)(([^;&|`$]|\$[^(]|'"$SUB"')*[[:space:]"'"'"'])?(([^[:space:];&|`$]|\$[^(]|'"$SUB"')*/)?docs/addw\.env'
+OPEN='(^|[[:space:];&|(`"'"'"'])((\.|source|cat|head|tail|grep|sed|awk|cut)[[:space:]]|[0-9]*<[[:space:]]*)(([^;&|`$]|\$[^(]|'"$SUB"')*[[:space:]"'"'"'])?(([^[:space:];&|`$]|\$[^(]|'"$SUB"')*/)?docs/addw\.env'
 
 opens() { grep -nE "$OPEN" || true; }
 
@@ -32,6 +32,7 @@ for line in \
   'grep -E ^ADDW_ docs/addw.env' \
   '. ./docs/addw.env' \
   'done <docs/addw.env' \
+  'exec 3<docs/addw.env' \
   'v="$(<docs/addw.env)"' \
   '. "$ROOT"/docs/addw.env' \
   'cat "$(git rev-parse --show-toplevel)/docs/addw.env"' \
