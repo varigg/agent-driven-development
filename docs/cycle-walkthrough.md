@@ -56,7 +56,8 @@ flaw is cheapest to fix while the spec is still prose (§ *Execution*).
 
 3. **Fixes land in the issue body in place; only the final verdict is posted as a comment.**
    The spec stays readable — a reader sees the current spec, not an archaeology of rounds.
-   The verdict comment also records a truncated hash of the approved body, so any later
+   An `APPROVED` verdict comment also records a truncated hash of the approved body (a
+   capped, non-approving one records none), so any later
    consumer can detect a spec edited after its approval with
    `tracker.sh approval-drift <n>` — `addw-implement` runs that check whenever it reads a
    parent spec (ADR 0009).
@@ -167,7 +168,8 @@ The fresh-build path (§ *Mode B: Fresh Build*):
    findings judged against `skills/codex-code-review/checklist.md`). **The final round runs
    against a fully committed HEAD**, and that SHA is what the verdict covers — recorded
    alongside the ticket-body hash, which pins the ticket the diff was judged against and is
-   posted as the ticket's `Approved-body:` marker, so drift stays one command away
+   posted as the ticket's `Approved-body:` marker when the verdict is `APPROVED`, so drift
+   stays one command away
    (ADR 0009).
 
 9. **Open the PR and stop** (§ *Step 11: Open the PR*). The agent does not merge and does not
