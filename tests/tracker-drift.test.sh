@@ -129,6 +129,22 @@ assert_eq "$hash" "$(bash "$TRACKER" body-hash 5)" \
 out="$(bash "$TRACKER" approval-drift 5 2>&1)"
 assert_contains "$out" "match" "approval-drift: an amendment is not drift"
 
+# --- a non-approving verdict comment records no approval (#297) ---
+capped="$(bash "$PARSE" verdict-comment spec REQUEST_CHANGES 5 "$hash")"
+comments_json "$work/comments.json" OWNER "$capped"
+out="$(bash "$TRACKER" approval-drift 5 2>&1)"
+assert_contains "$out" "no approval hash recorded" \
+  "approval-drift: a capped, non-approving verdict reads as unrecorded"
+assert_exit 0 "approval-drift: a capped, non-approving verdict exits zero" \
+  bash "$TRACKER" approval-drift 5
+
+comments_json "$work/comments.json" \
+  OWNER "$(bash "$PARSE" verdict-comment spec APPROVED 1 sha256:000000000000)" \
+  OWNER "$capped"
+status=0
+out="$(bash "$TRACKER" approval-drift 5 2>&1)" || status=$?
+assert_eq 1 "$status" "approval-drift: a later non-approving verdict leaves the earlier approval standing"
+
 # --- CLI seam hygiene ---
 assert_exit 2 "approval-drift: missing issue number refuses loudly" \
   bash "$TRACKER" approval-drift
