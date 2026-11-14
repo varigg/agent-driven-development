@@ -53,8 +53,8 @@ the retirement tickets of Step 7 — goes through the tracker layer at
    - `NEEDS_REWORK` — surface to the user before mass-editing.
 
 6. **Verdict comment** — when the loop converges (or is capped), post a comment recording
-   **the final verdict** to the issue; only an `APPROVED` verdict carries the marker,
-   including when the loop is capped. Round-by-round findings and implementer notes stay in
+   **the final verdict** to the issue. Whether the loop converged or was capped, only an
+   `APPROVED` verdict carries the marker. Round-by-round findings and implementer notes stay in
    adapter state so the issue remains readable. Hash the state buffer — the reviewed bytes —
    with `parse.sh`, not the remote body. `verdict-comment` refuses an `APPROVED` verdict with
    an empty or malformed hash, and the `&&` keeps that refusal from posting anything: an empty

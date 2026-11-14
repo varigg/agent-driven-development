@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Tracker-contract parsers: pure text-in/conclusion-out, no network, no gh.
+# Tracker-contract parsers, plus the approval marker's one writer: pure
+# text-in/conclusion-out, no network, no gh.
 # The section encoding is the to-tickets template — a level-2 "## Parent"
 # section referencing the spec issue and a "## Blocked by" section listing
 # blocking issues as list items (or the literal none-sentinel). Only list
@@ -37,7 +38,9 @@
 #   parse.sh body-hash [file]         -> truncated body sha256 (exit 0)
 #   parse.sh approval-hash [file]     -> last recorded body hash, or empty (exit 0)
 #   parse.sh verdict-comment <spec|code> <tag> <rounds> <hash>
-#                                      -> verdict comment (exit 0)
+#                                      -> verdict comment (exit 0); APPROVED
+#                                         without a valid hash exits 1;
+#                                         a bad argument exits 2
 #   parse.sh amendment-summary [file] -> summary of the last anchored
 #                                         "Amends-contract: <summary>" line in
 #                                         a comment, or empty (exit 0)
@@ -45,6 +48,9 @@
 # parent/blockers/adr-obligation/strip-section read the issue body from
 # <file> or stdin; approval-hash and amendment-summary read a comment.
 set -euo pipefail
+
+# The marker grammar's hash (ADR 0009), shared by its reader and its writer.
+HASH_RE='sha256:[0-9a-f]{12}'
 
 usage() {
   sed -n 's/^# \{0,1\}//p' "${BASH_SOURCE[0]}" | sed -n '/^Usage:/,/^$/p' >&2
@@ -223,7 +229,7 @@ approval_hash() { # [file]
   # A trailing CR is tolerated and stripped: a comment edited in the web UI
   # comes back CRLF, and a CR-blind anchor would fail open — the marker would
   # read as "never recorded" and silently disable the drift check.
-  body "$@" | { grep -E $'^Approved-body: sha256:[0-9a-f]{12}\r?$' || true; } \
+  body "$@" | { grep -E "^Approved-body: $HASH_RE"$'\r?$' || true; } \
     | tail -n 1 | sed $'s/^Approved-body: //; s/\r$//'
 }
 
@@ -255,7 +261,7 @@ verdict_comment() { # kind tag rounds hash
 
   [[ "$rounds" =~ ^[1-9][0-9]*$ ]] || usage
 
-  if [ "$tag" = APPROVED ] && [[ ! "$hash" =~ ^sha256:[0-9a-f]{12}$ ]]; then
+  if [ "$tag" = APPROVED ] && [[ ! "$hash" =~ ^$HASH_RE$ ]]; then
     printf 'parse.sh: APPROVED verdict requires a valid body hash: sha256:<12 lowercase hex>\n' >&2
     exit 1
   fi

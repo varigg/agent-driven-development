@@ -3,7 +3,8 @@
 # approval-integrity reads (#30).
 #
 # body-hash prints the truncated sha256 of an issue's current body, the value
-# codex-spec-review records in its verdict comment. approval-drift compares
+# an APPROVED verdict comment records (parse.sh verdict-comment, called by
+# codex-spec-review and addw-implement). approval-drift compares
 # that live hash against the last recorded "Approved-body:" marker in the
 # issue's comments: no marker recorded and a match both exit 0 (a pre-feature
 # approval is not drift), a mismatch exits 1. The gh stub answers the two

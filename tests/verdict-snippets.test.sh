@@ -27,10 +27,12 @@ snippet() {
   ' "$1"
 }
 
-# run_snippet <skill> <tag> <hash-for-implement> : prints what was posted,
-# or NOTHING-POSTED, so an empty comment is told apart from no comment.
+# run_snippet <skill> <tag> <capture> : <capture> is the hash the implement
+# loop recorded; an empty one also withholds the spec state buffer, so both
+# writers face a failed capture. Prints what was posted, or NOTHING-POSTED,
+# so an empty comment is told apart from no comment.
 run_snippet() {
-  local skill=$1 tag=$2 hash=$3 root="$work/install-$1-$2"
+  local skill=$1 tag=$2 capture=$3 root="$work/install-$1-$2"
   rm -rf "$root"
   mkdir -p "$root/.claude/skills/lib/tracker" "$root/.claude/skills/codex-spec-review/state"
   cp "$PARSE" "$root/.claude/skills/lib/tracker/parse.sh"
@@ -39,14 +41,12 @@ run_snippet() {
 [ "$1" = comment ] || { echo "tracker stub: unexpected $*" >&2; exit 97; }
 cp "$3" "$POSTED"
 SH
-  # An empty <hash> also withholds the spec state buffer, so spec review's own
-  # body-hash capture comes back empty too.
-  [ -z "$hash" ] || printf 'The spec body.\n' > "$root/.claude/skills/codex-spec-review/state/issue-7.md"
+  [ -z "$capture" ] || printf 'The spec body.\n' > "$root/.claude/skills/codex-spec-review/state/issue-7.md"
   local code
   code="$(snippet "$REPO/skills/$skill/SKILL.md" \
     | sed "s/<TAG>/$tag/g; s/<R>/3/g; s/<N>/7/g; s/<issue-number>/7/g")"
   [ -n "$code" ] || fail "$skill: no verdict-comment snippet found"
-  ( cd "$root" && export POSTED="$root/posted" hash && bash -c "$code" ) >/dev/null 2>&1 || true
+  ( cd "$root" && export POSTED="$root/posted" hash="$capture" && bash -c "$code" ) >/dev/null 2>&1 || true
   if [ -f "$root/posted" ]; then cat "$root/posted"; else echo NOTHING-POSTED; fi
 }
 
