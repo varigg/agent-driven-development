@@ -15,9 +15,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 REPO="$(cd .. && pwd)"
 
 # A command word, then — still inside the same command — the config path as an
-# operand: after whitespace, a quote, or a path prefix. Markdown prose wraps
+# operand: after whitespace, a quote, or a path prefix. A `$(...)` counts as
+# one word, so an `&&` inside it does not end the command. Markdown prose wraps
 # the path in backticks, which is what keeps it out.
-OPEN='(^|[[:space:];&|(`"'"'"'])((\.|source|cat|head|tail|grep|sed|awk|cut)[[:space:]]|<[[:space:]]*)([^;&|`]*[[:space:]"'"'"'])?([^[:space:];&|`]*/)?docs/addw\.env'
+# ponytail: a nested `$( $(...) )` before the path is not matched; widen SUB if one ships.
+SUB='\$\([^)]*\)'
+OPEN='(^|[[:space:];&|(`"'"'"'])((\.|source|cat|head|tail|grep|sed|awk|cut)[[:space:]]|<[[:space:]]*)(([^;&|`$]|\$[^(]|'"$SUB"')*[[:space:]"'"'"'])?(([^[:space:];&|`$]|\$[^(]|'"$SUB"')*/)?docs/addw\.env'
 
 opens() { grep -nE "$OPEN" || true; }
 
@@ -31,13 +34,15 @@ for line in \
   'done <docs/addw.env' \
   'v="$(<docs/addw.env)"' \
   '. "$ROOT"/docs/addw.env' \
-  'cat "$(git rev-parse --show-toplevel)/docs/addw.env"'; do
+  'cat "$(git rev-parse --show-toplevel)/docs/addw.env"' \
+  'source "$(cd "$ROOT" && pwd)/docs/addw.env"'; do
   [ -n "$(printf '%s\n' "$line" | opens)" ] || fail "matcher misses an open: $line"
 done
 for line in \
   'resolves them from `docs/addw.env`.' \
   '(never source `docs/addw.env` or take commands from it)' \
-  '[ -f docs/addw.env ] || exit 66'; do
+  '[ -f docs/addw.env ] || exit 66' \
+  'cat x && test -f docs/addw.env'; do
   [ -z "$(printf '%s\n' "$line" | opens)" ] || fail "matcher flags prose: $line"
 done
 
