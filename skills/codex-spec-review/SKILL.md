@@ -52,20 +52,20 @@ the retirement tickets of Step 7 — goes through the tracker layer at
      verbatim.
    - `NEEDS_REWORK` — surface to the user before mass-editing.
 
-6. **Verdict comment** — when the loop converges (or is capped), post **only the final
-   verdict** to the issue; round-by-round findings and implementer notes stay in adapter
-   state so the issue remains readable. Hash the state buffer — the reviewed bytes — with
-   `parse.sh`, not the remote body. The empty-hash guard is not optional: a failed
-   substitution would otherwise post an empty marker, which reads as never-recorded and
-   silently disables the drift check.
+6. **Verdict comment** — when the loop converges (or is capped), post a comment recording
+   **the final verdict** to the issue; only an `APPROVED` verdict carries the marker,
+   including when the loop is capped. Round-by-round findings and implementer notes stay in
+   adapter state so the issue remains readable. Hash the state buffer — the reviewed bytes —
+   with `parse.sh`, not the remote body. `verdict-comment` refuses an `APPROVED` verdict with
+   an empty or malformed hash, and the `&&` keeps that refusal from posting anything: an empty
+   marker reads as never-recorded and silently disables the drift check.
 
    ```bash
    S=.claude/skills/codex-spec-review/state
    hash="$(bash .claude/skills/lib/tracker/parse.sh body-hash "$S/issue-<N>.md")"
-   [ -n "$hash" ] || exit 1
-   printf 'Codex spec review: APPROVED after <R> round(s).\nApproved-body: %s\n' \
-     "$hash" > "$S/issue-<N>.verdict.md"
-   bash .claude/skills/lib/tracker/tracker.sh comment <N> "$S/issue-<N>.verdict.md"
+   bash .claude/skills/lib/tracker/parse.sh verdict-comment spec <TAG> <R> "$hash" \
+     > "$S/issue-<N>.verdict.md" &&
+     bash .claude/skills/lib/tracker/tracker.sh comment <N> "$S/issue-<N>.verdict.md"
    ```
 
    Consumers compare this against the live body via `tracker.sh approval-drift` to detect

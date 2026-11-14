@@ -137,6 +137,9 @@ lives inside `skills/` rather than at the repo root.
     unrecorded rather than as drift. Unit-tested (`tests/tracker-drift.test.sh`,
     the parsers in `tests/tracker-parse.test.sh`) because normalization and the
     three-way verdict are logic rather than passthrough.
+    The marker's only writer, `verdict-comment`, lives beside its reader, so the
+    grammar has one home and the APPROVED-only rule is a script property rather
+    than prose two skills must each get right.
     `parse.sh amendment-summary` recognizes the other cross-skill comment
     marker (ADR 0020): one anchored `Amends-contract: <summary>` line by which
     a trusted author amends a ticket's contract without editing its body, the

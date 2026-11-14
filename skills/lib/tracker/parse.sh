@@ -36,6 +36,8 @@
 #   parse.sh classify-reason <reason> -> "completed" | "not-planned" (else exit 2)
 #   parse.sh body-hash [file]         -> truncated body sha256 (exit 0)
 #   parse.sh approval-hash [file]     -> last recorded body hash, or empty (exit 0)
+#   parse.sh verdict-comment <spec|code> <tag> <rounds> <hash>
+#                                      -> verdict comment (exit 0)
 #   parse.sh amendment-summary [file] -> summary of the last anchored
 #                                         "Amends-contract: <summary>" line in
 #                                         a comment, or empty (exit 0)
@@ -235,6 +237,35 @@ amendment_summary() { # [file]
     | tail -n 1 | sed $'s/^Amends-contract: //; s/\r$//'
 }
 
+verdict_comment() { # kind tag rounds hash
+  local kind=$1
+  local tag=$2
+  local rounds=$3
+  local hash=$4
+
+  case "$kind" in
+    spec|code) ;;
+    *) usage ;;
+  esac
+
+  case "$tag" in
+    APPROVED|REQUEST_CHANGES|NEEDS_REWORK) ;;
+    *) usage ;;
+  esac
+
+  [[ "$rounds" =~ ^[1-9][0-9]*$ ]] || usage
+
+  if [ "$tag" = APPROVED ] && [[ ! "$hash" =~ ^sha256:[0-9a-f]{12}$ ]]; then
+    printf 'parse.sh: APPROVED verdict requires a valid body hash: sha256:<12 lowercase hex>\n' >&2
+    exit 1
+  fi
+
+  printf 'Codex %s review: %s after %s round(s).\n' "$kind" "$tag" "$rounds"
+  if [ "$tag" = APPROVED ]; then
+    printf 'Approved-body: %s\n' "$hash"
+  fi
+}
+
 body() { # [file]
   if [ "$#" -eq 0 ]; then
     cat
@@ -287,6 +318,10 @@ case "$cmd" in
     ;;
   approval-hash)
     approval_hash "$@"
+    ;;
+  verdict-comment)
+    [ "$#" -eq 4 ] || usage
+    verdict_comment "$@"
     ;;
   amendment-summary)
     amendment_summary "$@"
