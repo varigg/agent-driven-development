@@ -374,12 +374,12 @@ for p in start resume; do
   assert_not_contains "$prompt" ". docs/addw.env" "$p prompt: never sources the config"
   assert_contains "$prompt" 'git diff "$MERGE_BASE"' \
     "$p prompt: still reviews merge base to working tree"
-  # Same stop wording in both, compared whole rather than probed for a phrase.
-  stop_para() { sed -n '/^If the `eval` fails/,/^$/p' "$1"; }
-  assert_eq "$(stop_para "$work/prompt-start")" "$(stop_para "$work/prompt-$p")" \
-    "$p prompt: carries the shared stop-on-failure paragraph"
 done
-[ -n "$(sed -n '/^If the `eval` fails/p' "$work/prompt-start")" ] \
+# Same stop wording in both, compared whole rather than probed for a phrase.
+stop_para() { sed -n '/^If the `eval` fails/,/^$/p' "$1"; }
+assert_eq "$(stop_para "$work/prompt-start")" "$(stop_para "$work/prompt-resume")" \
+  "start and resume carry the shared stop-on-failure paragraph"
+[ -n "$(stop_para "$work/prompt-start")" ] \
   || fail "start prompt: no stop-on-failure paragraph"
 
 shells=(bash sh)
