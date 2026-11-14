@@ -92,9 +92,10 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    addressed while never having seen it.
 
    Also run `bash .claude/skills/lib/tracker/tracker.sh approval-drift <issue-number>` —
-   the final review round posted the ticket's approval marker, so drift from the body the
-   verdict judged is one command. Surface drift before addressing anything: the feedback
-   may be responding to a ticket the verdict never saw.
+   an `APPROVED` final round posted the ticket's approval marker, so drift from the body the
+   verdict judged is one command. A loop capped on any other tag posted none, and reads as
+   unrecorded. Surface drift before addressing anything: the feedback may be responding to a
+   ticket the verdict never saw.
 
    Then re-read the effective contract (Step 4), before addressing anything: an amendment
    posted since the PR opened steers the fix like any other.
