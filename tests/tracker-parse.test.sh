@@ -202,6 +202,32 @@ assert_eq "" "$(bash "$PARSE" amendment-summary "$FIX/amendment-comments-none.md
 assert_exit 0 "amendment-summary: no marker still exits zero" \
   bash "$PARSE" amendment-summary "$FIX/amendment-comments-none.md"
 
+# --- verdict-comment: the marker's only writer (#297) ---
+h=sha256:0123456789ab
+for kind in spec code; do
+  for tag in APPROVED REQUEST_CHANGES NEEDS_REWORK; do
+    out="$(bash "$PARSE" verdict-comment "$kind" "$tag" 5 "$h")"
+    assert_eq "Codex $kind review: $tag after 5 round(s)." "$(printf '%s\n' "$out" | head -n 1)" \
+      "verdict-comment $kind $tag: headline names the verdict"
+    if [ "$tag" = APPROVED ]; then want="$h"; else want=""; fi
+    assert_eq "$want" "$(printf '%s\n' "$out" | bash "$PARSE" approval-hash)" \
+      "verdict-comment $kind $tag: marker iff APPROVED, readable by approval-hash"
+  done
+done
+assert_eq "Codex code review: NEEDS_REWORK after 1 round(s)." \
+  "$(bash "$PARSE" verdict-comment code NEEDS_REWORK 1 "")" \
+  "verdict-comment: a non-approving verdict needs no hash"
+for bad in "" "sha256:XYZ" "0123456789ab"; do
+  status=0
+  out="$(bash "$PARSE" verdict-comment spec APPROVED 2 "$bad" 2>/dev/null)" || status=$?
+  assert_eq "1:" "$status:$out" "verdict-comment: APPROVED with hash '$bad' refuses, prints nothing"
+done
+assert_exit 2 "verdict-comment: unknown kind" bash "$PARSE" verdict-comment plan APPROVED 1 "$h"
+assert_exit 2 "verdict-comment: unknown tag" bash "$PARSE" verdict-comment spec LGTM 1 "$h"
+assert_exit 2 "verdict-comment: rounds must be a positive integer" \
+  bash "$PARSE" verdict-comment spec APPROVED 0 "$h"
+assert_exit 2 "verdict-comment: wrong argument count" bash "$PARSE" verdict-comment spec APPROVED 1
+
 # --- CLI seam hygiene ---
 assert_exit 2 "unknown subcommand refuses loudly" \
   bash "$PARSE" frobnicate

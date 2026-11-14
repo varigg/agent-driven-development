@@ -32,8 +32,8 @@ tracker work here.
 
 No review artifact is produced. What survives the loop is the PR body's verdict line — the
 tag, the round count, the commit SHA the verdict covers, and the ticket-body hash it was
-judged against — plus the `Approved-body:` marker comment `addw-implement` posts on the
-ticket at the final round, which is what `tracker.sh approval-drift <n>` checks (ADR 0009).
+judged against — plus, on an `APPROVED` verdict, the `Approved-body:` marker comment
+`addw-implement` posts on the ticket at the final round, which is what `tracker.sh approval-drift <n>` checks (ADR 0009).
 
 ## Arguments
 
@@ -79,8 +79,8 @@ ticket at the final round, which is what `tracker.sh approval-drift <n>` checks 
 The final round must run against a **fully committed HEAD** — commit everything before the
 round you expect to be the last. Record `git rev-parse HEAD` and
 `tracker.sh body-hash <n>` at that moment: the SHA is the diff the verdict covers, the hash
-is the ticket it was judged against, and `addw-implement` writes both into the PR body and
-posts the hash as the ticket's `Approved-body:` marker. A change made after the verdict
+is the ticket it was judged against, and `addw-implement` writes both into the PR body and,
+on an `APPROVED` verdict, posts the hash as the ticket's `Approved-body:` marker. A change made after the verdict
 either earns another round or is disclosed in the PR body as uncovered.
 
 ## Notes

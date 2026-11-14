@@ -3,7 +3,8 @@
 # approval-integrity reads (#30).
 #
 # body-hash prints the truncated sha256 of an issue's current body, the value
-# codex-spec-review records in its verdict comment. approval-drift compares
+# an APPROVED verdict comment records (parse.sh verdict-comment, called by
+# codex-spec-review and addw-implement). approval-drift compares
 # that live hash against the last recorded "Approved-body:" marker in the
 # issue's comments: no marker recorded and a match both exit 0 (a pre-feature
 # approval is not drift), a mismatch exits 1. The gh stub answers the two
@@ -128,6 +129,22 @@ assert_eq "$hash" "$(bash "$TRACKER" body-hash 5)" \
   "body-hash: an amendment comment leaves the body hash unchanged"
 out="$(bash "$TRACKER" approval-drift 5 2>&1)"
 assert_contains "$out" "match" "approval-drift: an amendment is not drift"
+
+# --- a non-approving verdict comment records no approval (#297) ---
+capped="$(bash "$PARSE" verdict-comment spec REQUEST_CHANGES 5 "$hash")"
+comments_json "$work/comments.json" OWNER "$capped"
+out="$(bash "$TRACKER" approval-drift 5 2>&1)"
+assert_contains "$out" "no approval hash recorded" \
+  "approval-drift: a capped, non-approving verdict reads as unrecorded"
+assert_exit 0 "approval-drift: a capped, non-approving verdict exits zero" \
+  bash "$TRACKER" approval-drift 5
+
+comments_json "$work/comments.json" \
+  OWNER "$(bash "$PARSE" verdict-comment spec APPROVED 1 sha256:000000000000)" \
+  OWNER "$capped"
+status=0
+out="$(bash "$TRACKER" approval-drift 5 2>&1)" || status=$?
+assert_eq 1 "$status" "approval-drift: a later non-approving verdict leaves the earlier approval standing"
 
 # --- CLI seam hygiene ---
 assert_exit 2 "approval-drift: missing issue number refuses loudly" \

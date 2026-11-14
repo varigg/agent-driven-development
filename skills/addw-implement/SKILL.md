@@ -92,9 +92,10 @@ The human has reviewed and left feedback. Same skill, not a separate procedure.
    addressed while never having seen it.
 
    Also run `bash .claude/skills/lib/tracker/tracker.sh approval-drift <issue-number>` —
-   the final review round posted the ticket's approval marker, so drift from the body the
-   verdict judged is one command. Surface drift before addressing anything: the feedback
-   may be responding to a ticket the verdict never saw.
+   an `APPROVED` final round posted the ticket's approval marker, so drift from the body the
+   verdict judged is one command. A loop capped on any other tag posted no new marker; without
+   an earlier approval, it reads as unrecorded. Surface drift before addressing anything: the feedback may be responding to a
+   ticket the verdict never saw.
 
    Then re-read the effective contract (Step 4), before addressing anything: an amendment
    posted since the PR opened steers the fix like any other.
@@ -443,18 +444,19 @@ round you expect to be the last, and record `git rev-parse HEAD` plus
 `hash="$(bash .claude/skills/lib/tracker/tracker.sh body-hash <issue-number>)"` at that
 moment — before invoking the round, when the ticket the reviewer is handed is the ticket
 the hash pins. The verdict SHA pins the diff, the body hash pins the ticket it was judged
-against, and the PR body states both. After the verdict, post that **recorded** hash as the
-ticket's approval marker — never recompute it here, which would hash bytes the reviewer may
-never have seen — so anyone, the merging human included, can re-check the ticket with one
-command (`tracker.sh approval-drift <issue-number>`) for as long as the PR sits unmerged.
-The empty-hash guard is what keeps a failed capture from posting an empty marker, which
-would read as never-recorded and silently disable the check:
+against, and the PR body states both. After the verdict, post the final tag as the
+ticket's verdict comment. Only `APPROVED` carries the **recorded** hash as the approval
+marker — never recompute it here, which would hash bytes the reviewer may never have seen —
+so anyone, the merging human included, can re-check the ticket with one command
+(`tracker.sh approval-drift <issue-number>`) for as long as the PR sits unmerged. A loop
+capped on any other tag records no approval. `verdict-comment` refuses an `APPROVED` verdict
+with an empty or malformed hash, and the `&&` keeps that refusal from posting anything — an
+empty marker would read as never-recorded and silently disable the check:
 
 ```bash
-[ -n "$hash" ] || exit 1     # the hash recorded before the final round
 f="$(mktemp)"
-printf 'Codex code review: <TAG> after <R> round(s).\nApproved-body: %s\n' "$hash" > "$f"
-bash .claude/skills/lib/tracker/tracker.sh comment <issue-number> "$f"
+bash .claude/skills/lib/tracker/parse.sh verdict-comment code <TAG> <R> "$hash" > "$f" &&
+  bash .claude/skills/lib/tracker/tracker.sh comment <issue-number> "$f"
 ```
 
 Any change made after that verdict either earns another round or is disclosed as
